@@ -302,6 +302,25 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .joinrow{display:flex;gap:8px}
 .joinrow input{flex:1;text-transform:uppercase;letter-spacing:.18em;font:700 16px "Courier New",monospace}
 .soon{color:var(--muted);font-size:13px;font-style:italic}
+.mystats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.mstat{flex:1;min-width:86px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.mstat b{display:block;font:800 20px Georgia,serif;color:var(--ink)}
+.mstat span{font-size:9.5px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.histsess{margin:14px 0 4px;font-weight:800;font-size:13px;color:var(--green)}
+.histsess span{color:var(--muted);font-weight:600;font-size:11.5px;margin-left:6px}
+.histrow{display:flex;gap:8px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13.5px;flex-wrap:wrap}
+.wl{font-size:11px;font-weight:800;border-radius:8px;padding:2px 7px;color:#fff;flex:none}
+.wl.w{background:var(--ok)}.wl.l{background:var(--red)}
+.histrow .vs{flex:1;min-width:150px}
+.histrow .vs small{color:var(--muted)}
+.histrow .sc{font:700 13.5px "Courier New",monospace;color:var(--green);flex:none}
+.histrow .dur{color:var(--muted);font-size:11.5px;flex:none}
+.pedit{display:none;border-top:1px dashed var(--line);margin-top:10px;padding-top:10px}
+.pedit.on{display:block}
+.pedit .fld{margin:8px 0}
+.pedit label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
+.pedit input,.pedit select{width:100%}
+.pemsg{min-height:16px;font-size:12.5px;margin-top:4px}
 </style>
 </head>
 <body>
@@ -484,11 +503,20 @@ window.SS_CONFIG = {
 <!-- ================= PLAYER HOME (Phase 1) ================= -->
 <section id="playerHome">
   <div class="phcard">
-    <h3>My Profile</h3>
+    <h3>My Profile <button class="small ghost" style="float:right" onclick="toggleProfileEdit()">✏️ Edit</button></h3>
     <div class="phrow"><span>Reclub name</span><b id="phReclub">—</b></div>
     <div class="phrow"><span>Full name</span><b id="phFull">—</b></div>
     <div class="phrow"><span>Level</span><b id="phLevel">—</b></div>
     <div class="phrow"><span>Username</span><b id="phUser">—</b></div>
+    <div class="pedit" id="pedit">
+      <div class="fld"><label>Reclub name</label><input id="peReclub"></div>
+      <div class="fld"><label>Full name</label><input id="peFull"></div>
+      <div class="fld"><label>Level</label><select id="peLevel"></select></div>
+      <div class="fld"><label>New password <small>(optional, min 6)</small></label><input id="pePass" type="password" autocomplete="new-password"></div>
+      <div class="controls"><button onclick="saveProfile()">Save</button>
+        <button class="ghost" onclick="toggleProfileEdit()">Cancel</button></div>
+      <p class="pemsg" id="peMsg"></p>
+    </div>
   </div>
   <div class="phcard">
     <h3>Join Tonight's Session</h3>
@@ -497,6 +525,11 @@ window.SS_CONFIG = {
       <button onclick="playerJoin()">Join</button>
     </div>
     <p class="autherr" id="joinMsg"></p>
+  </div>
+  <div class="phcard">
+    <h3>📜 My Match History <button class="small ghost" style="float:right" onclick="loadMyHistory(true)">🔄</button></h3>
+    <div class="mystats" id="myStats"></div>
+    <div id="myHist"><p class="soon">Your battles across every session will be recorded here once you've played.</p></div>
   </div>
   <div class="phcard" style="padding:8px"><div id="pboardWrap">
     <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
@@ -2097,6 +2130,7 @@ async function enterApp(){
     document.getElementById("phLevel").textContent=p.level||"—";
     document.getElementById("phUser").textContent=p.username||"—";
     playerAutoBoard();
+    loadMyHistory();
   }
 }
 /* ---------- admin: sessions ---------- */
@@ -2266,6 +2300,98 @@ class MiniPhoenix{
   }
   close(){ this.onclose=null; clearInterval(this.hb); try{ this.ws.close(); }catch(e){} }
 }
+/* ---- Phase 3: profile editing ---- */
+function toggleProfileEdit(){
+  const box=document.getElementById("pedit");
+  const on=!box.classList.contains("on");
+  box.classList.toggle("on",on);
+  if(on&&myProfile){
+    document.getElementById("peReclub").value=myProfile.reclub_name||"";
+    document.getElementById("peFull").value=myProfile.full_name||"";
+    const sel=document.getElementById("peLevel"); sel.innerHTML="";
+    LEVELS.forEach(l=>{const o=document.createElement("option");o.value=l;o.textContent=l;
+      if(l===myProfile.level)o.selected=true;sel.appendChild(o);});
+    document.getElementById("pePass").value="";
+    document.getElementById("peMsg").textContent="";
+  }
+}
+async function saveProfile(){
+  const msg=document.getElementById("peMsg");
+  const rec=document.getElementById("peReclub").value.trim();
+  const full=document.getElementById("peFull").value.trim();
+  const lvl=document.getElementById("peLevel").value;
+  const pass=document.getElementById("pePass").value;
+  if(!rec||!full){ msg.style.color="var(--red)"; return msg.textContent="Reclub name and full name are required."; }
+  if(pass && pass.length<6){ msg.style.color="var(--red)"; return msg.textContent="New password must be at least 6 characters."; }
+  const r=await sFetch("/rest/v1/profiles?id=eq."+auth.uid,{method:"PATCH",
+    headers:{Prefer:"return=representation"},
+    body:{reclub_name:rec, full_name:full, level:lvl}});
+  if(!r.ok){ const j=await r.json().catch(()=>({}));
+    msg.style.color="var(--red)"; return msg.textContent=j.message||"Could not save profile."; }
+  if(pass){
+    const pr=await sFetch("/auth/v1/user",{method:"PUT",body:{password:pass}});
+    if(!pr.ok){ msg.style.color="var(--red)"; return msg.textContent="Profile saved, but the password change failed."; }
+  }
+  myProfile=Object.assign({},myProfile,{reclub_name:rec,full_name:full,level:lvl});
+  document.getElementById("phReclub").textContent=rec;
+  document.getElementById("phFull").textContent=full;
+  document.getElementById("phLevel").textContent=lvl;
+  document.getElementById("userBadge").textContent=rec+(myProfile.is_admin?" · admin":"");
+  msg.style.color="var(--ok)"; msg.textContent="Saved!"+(pass?" Password updated.":"");
+  toast("Profile updated");
+  setTimeout(()=>toggleProfileEdit(),700);
+}
+/* ---- Phase 3: cross-session match history ---- */
+let histMatchCount=-1;
+async function loadMyHistory(manual){
+  const hist=document.getElementById("myHist"), stats=document.getElementById("myStats");
+  const uid=auth.uid;
+  const r=await sFetch("/rest/v1/matches?or=(t1.cs.{"+uid+"},t2.cs.{"+uid+"})"+
+    "&select=*&order=ended_at.desc&limit=200").catch(()=>null);
+  if(!r||!r.ok){ if(manual) toast("Could not load history"); return; }
+  const rows=await r.json();
+  if(!rows.length){
+    stats.innerHTML="";
+    hist.innerHTML='<p class="soon">Your battles across every session will be recorded here once you\'ve played.</p>';
+    return;
+  }
+  // resolve names + session titles
+  const pidSet=new Set(), sidSet=new Set();
+  rows.forEach(m=>{ [...m.t1,...m.t2].forEach(id=>pidSet.add(id)); sidSet.add(m.session_id); });
+  const names={}, sess={};
+  const pr=await sFetch("/rest/v1/profiles?id=in.("+[...pidSet].join(",")+")&select=id,reclub_name").catch(()=>null);
+  if(pr&&pr.ok) (await pr.json()).forEach(p=>names[p.id]=p.reclub_name);
+  const sr=await sFetch("/rest/v1/sessions?id=in.("+[...sidSet].join(",")+")&select=id,title,session_date").catch(()=>null);
+  if(sr&&sr.ok) (await sr.json()).forEach(s=>sess[s.id]=s);
+  const nm=id=>esc(names[id]||"Guest");
+  // career stats
+  let w=0,diff=0;
+  rows.forEach(m=>{ const onT1=m.t1.includes(uid), won=onT1===(m.s1>m.s2);
+    if(won)w++; diff+=onT1? m.s1-m.s2 : m.s2-m.s1; });
+  const g=rows.length;
+  stats.innerHTML=[["Games",g],["Wins",w],["Win rate",Math.round(100*w/g)+"%"],["+/-",(diff>0?"+":"")+diff]]
+    .map(x=>'<div class="mstat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("");
+  // grouped list
+  let html="", lastSess=null;
+  rows.forEach(m=>{
+    if(m.session_id!==lastSess){
+      lastSess=m.session_id;
+      const s=sess[m.session_id];
+      html+='<div class="histsess">'+esc(s?s.title:"Session")+
+        '<span>'+esc(s?s.session_date:"")+'</span></div>';
+    }
+    const onT1=m.t1.includes(uid), won=onT1===(m.s1>m.s2);
+    const mates=(onT1?m.t1:m.t2).filter(id=>id!==uid).map(nm);
+    const opps=(onT1?m.t2:m.t1).map(nm);
+    html+='<div class="histrow"><span class="wl '+(won?"w":"l")+'">'+(won?"W":"L")+'</span>'+
+      '<span class="vs">'+(mates.length?("w/ "+mates.join(", ")+" "):"")+
+      '<small>vs</small> '+opps.join(", ")+'</span>'+
+      '<span class="sc">'+(onT1? m.s1+"–"+m.s2 : m.s2+"–"+m.s1)+'</span>'+
+      '<span class="dur">'+mmss(new Date(m.ended_at)-new Date(m.started_at))+'</span></div>';
+  });
+  hist.innerHTML=html;
+  histMatchCount=g;
+}
 /* ---- player live board ---- */
 function prefixCss(css,scope){
   return css.split("}").map(chunk=>{
@@ -2292,6 +2418,7 @@ async function mountPlayerBoard(sessionId){
   const paint=state=>{ if(!state||!state.summary) return;
     pbAvg=state.summary.avgMs||pbAvg;
     wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
+    if(histMatchCount>=0 && state.summary.matches>histMatchCount) loadMyHistory();
   };
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
