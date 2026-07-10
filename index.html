@@ -305,6 +305,19 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 </style>
 </head>
 <body>
+<script id="ss-config">
+/* ================================================================
+   SUPABASE CONFIG — EDIT ONLY THE TWO VALUES BELOW
+   url : your Project URL      (Supabase → Settings → API)
+   anon: your "anon public" key (same page — the long eyJ... string)
+   Keep each value inside ONE pair of straight quotes "like this".
+   Leave both empty to run the classic offline/standalone mode.
+   ================================================================ */
+window.SS_CONFIG = {
+  url:  "https://gmishjfworkylgweecob.supabase.co",
+  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA"
+};
+</script>
 <header>
   <img id="logoTop" alt="Stranger Strings logo">
   <div class="brand"><h1>Stranger Strings</h1><p>Greenfield Badminton Club · Est. 2026</p></div>
@@ -1929,8 +1942,28 @@ setInterval(()=>{
 /* ======================= INTEGRATED SYSTEM · PHASE 1 ======================= */
 /* Fill these two values from your Supabase project (Settings -> API).        */
 /* Leave blank to run in the classic standalone/offline mode.                 */
-const SUPA={ url:"https://gmishjfworkylgweecob.supabase.co", anon:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA" };
-if(window.__SUPA) Object.assign(SUPA,window.__SUPA);
+const SUPA=Object.assign({url:"",anon:""}, window.SS_CONFIG||{}, window.__SUPA||{});
+SUPA.url=String(SUPA.url||"").trim().replace(/\/+$/,"");
+SUPA.anon=String(SUPA.anon||"").trim();
+function configHealth(){
+  if(!window.SS_CONFIG && !window.__SUPA)
+    return "The config block at the top of index.html has a typo (JavaScript error), so the app fell back to offline mode. Re-check the two quoted values.";
+  if(SUPA.url && !/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(SUPA.url))
+    return "The url in the config block doesn't look like a Supabase Project URL (expected https://xxxx.supabase.co).";
+  if(SUPA.url && !SUPA.anon) return "Config: url is set but the anon key is empty.";
+  if(!SUPA.url && SUPA.anon) return "Config: anon key is set but the url is empty.";
+  return null;
+}
+function cfgBanner(msg){
+  const b=document.createElement("div");
+  b.style.cssText="position:fixed;left:12px;right:12px;bottom:12px;z-index:200;background:var(--red);color:#fff;"+
+    "padding:12px 16px;border-radius:12px;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.35)";
+  b.textContent="⚠️ "+msg;
+  const x=document.createElement("button");
+  x.textContent="✕"; x.style.cssText="float:right;background:transparent;border:none;color:#fff;font-size:15px;margin-left:10px";
+  x.onclick=()=>b.remove(); b.prepend(x);
+  document.body.appendChild(b);
+}
 const AUTH_KEY="strangerStrings.auth";
 const PSEUDO_DOMAIN="players.strangerstrings.app";
 let auth=null, myProfile=null;
@@ -2061,7 +2094,13 @@ async function adminCreateSession(){
   const r=await sFetch("/rest/v1/sessions",{method:"POST",
     headers:{Prefer:"return=representation"},
     body:{title,session_date:date,created_by:auth.uid}});
-  if(!r.ok){ toast("Could not create session"); return; }
+  if(!r.ok){
+    const j=await r.json().catch(()=>({}));
+    alert("Could not create session (HTTP "+r.status+").\n\n"+
+      (j.message||j.error||"")+(j.details?"\nDetails: "+j.details:"")+(j.hint?"\nHint: "+j.hint:"")+
+      "\n\nCommon causes:\n• sessions.code default missing — run the ALTER TABLE line I sent\n• not logged in as admin (badge should say “· admin”)");
+    return;
+  }
   const row=(await r.json())[0];
   document.getElementById("asTitle").value="";
   toast("Session created — code "+row.code);
@@ -2070,7 +2109,8 @@ async function adminCreateSession(){
 async function adminLoadSessions(){
   const box=document.getElementById("sessList");
   const r=await sFetch("/rest/v1/sessions?select=*&order=created_at.desc");
-  if(!r.ok){ box.innerHTML='<p class="hint">Could not load sessions.</p>'; return; }
+  if(!r.ok){ const j=await r.json().catch(()=>({}));
+    box.innerHTML='<p class="hint">Could not load sessions — HTTP '+r.status+' '+esc(j.message||"")+'</p>'; return; }
   const rows=await r.json();
   if(!rows.length){ box.innerHTML='<p class="hint">No sessions yet — create the first one above.</p>'; return; }
   box.innerHTML="";
@@ -2120,11 +2160,15 @@ function legacyInit(){
 }
 if(SPEC){
   spectatorMode(SPEC[1]);
-}else if(SUPA.url){
-  document.getElementById("logoTop").src=LOGO; applyDark();
-  integratedBoot();
 }else{
-  legacyInit();
+  const cfgWarn=configHealth();
+  if(SUPA.url && SUPA.anon && !cfgWarn){
+    document.getElementById("logoTop").src=LOGO; applyDark();
+    integratedBoot();
+  }else{
+    legacyInit();
+    if(cfgWarn) setTimeout(()=>cfgBanner(cfgWarn),300);
+  }
 }
 </script>
 </body>
