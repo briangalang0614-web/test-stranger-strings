@@ -2040,7 +2040,7 @@ async function enterApp(){
   document.getElementById("userBadge").textContent=(p.reclub_name||p.name||"")+(p.is_admin?" · admin":"");
   document.getElementById("logoutBtn").style.display="";
   if(p.is_admin){
-    document.getElementById("tabAdminBtn").style.display="";
+    document.getElementById("tabAdminBtn").style.display="flex";
     legacyInit();
     adminLoadSessions();
   }else{
