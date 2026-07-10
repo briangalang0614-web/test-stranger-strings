@@ -347,6 +347,14 @@ window.SS_CONFIG = {
 <main>
 <!-- ================= HOME ================= -->
 <section id="tab-home" class="tab on">
+  <div class="card" id="sessBar" style="display:none;margin-bottom:14px">
+    <div class="controls" style="align-items:center">
+      <b style="font-size:13px;letter-spacing:.08em;color:var(--green)">🗓 ACTIVE SESSION</b>
+      <select id="activeSess" style="flex:1;min-width:180px" onchange="selectSession(this.value)"></select>
+      <button class="small ghost" onclick="importRoster(true)">🔄 Roster</button>
+      <span class="hint" id="sessInfo"></span>
+    </div>
+  </div>
   <div class="grid home-grid">
     <div class="card kcol" id="colPlayers">
       <h3>Players <span class="spacer"></span>
@@ -490,8 +498,9 @@ window.SS_CONFIG = {
     </div>
     <p class="autherr" id="joinMsg"></p>
   </div>
-  <div class="phcard"><h3>Live Board & Match History</h3>
-    <p class="soon">Coming in the next update — once you've joined a session, this is where you'll watch live courts and browse every match you've ever played.</p></div>
+  <div class="phcard" style="padding:8px"><div id="pboardWrap">
+    <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
+  </div></div>
 </section>
 </main>
 <footer class="app">Stranger Strings · Greenfield Badminton Club</footer>
@@ -640,7 +649,7 @@ function load(){
     return d;
   }catch(e){ return null; }
 }
-function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} schedulePush(); }
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} schedulePush(); scheduleDbPush(); }
 
 /* ======================= HELPERS ======================= */
 const player = id => S.players.find(p=>p.id===id);
@@ -762,7 +771,7 @@ function savePlayer(){
   const fields={name,level:pickedLevel,timeIn:document.getElementById("pmIn").value,
     timeOut:document.getElementById("pmOut").value,active:document.getElementById("pmActive").checked};
   if(editingId){ Object.assign(player(editingId),fields); toast("Saved "+name); }
-  else { S.players.push({id:uid(),...fields,waitSince:now(),addedAt:now()}); toast("Added "+name); }
+  else { S.players.push({id:pidNew(),...fields,waitSince:now(),addedAt:now()}); toast("Added "+name); }
   save(); closeModal("playerModal"); renderHome();
 }
 function deletePlayer(id, fromModal){
@@ -783,7 +792,7 @@ function bulkAdd(){
     if(!rawName) continue;
     if(S.players.some(p=>p.name.toLowerCase()===rawName.toLowerCase())) continue;
     const lvl=LEVELS.find(l=>l.toLowerCase()===(rawLvl||"").toLowerCase())||"Low Int";
-    S.players.push({id:uid(),name:rawName,level:lvl,timeIn:timeNowHM(),timeOut:"",active:true,waitSince:now(),addedAt:now()});
+    S.players.push({id:pidNew(),name:rawName,level:lvl,timeIn:timeNowHM(),timeOut:"",active:true,waitSince:now(),addedAt:now()});
     added++;
   }
   document.getElementById("bulkText").value="";
@@ -1054,9 +1063,10 @@ function finishInline(c){
   const s1=+c.s1||0, s2=+c.s2||0;
   if(s1===s2) return alert(s1===0?"Enter the final score first.":"Badminton has no draws — scores can't be equal.");
   const t1=c.slots.slice(0,2).filter(Boolean), t2=c.slots.slice(2).filter(Boolean);
-  S.matches.push({id:uid(),n:S.matchNo++,court:c.name,
+  const _m={id:uid(),n:S.matchNo++,court:c.name,
     t1,t2,t1n:t1.map(pname),t2n:t2.map(pname),
-    s1,s2,start:c.start,end:now(),waits:c.waits||{}});
+    s1,s2,start:c.start,end:now(),waits:c.waits||{}};
+  S.matches.push(_m); dbRecordMatch(_m);
   endCourt(c);
   toast("Match #"+(S.matchNo-1)+" saved — players are back in the pool");
   renderStats(true);
@@ -1097,9 +1107,10 @@ function saveScore(){
   if(scoreCtx.court){
     const c=scoreCtx.court;
     const t1=c.slots.slice(0,2).filter(Boolean), t2=c.slots.slice(2).filter(Boolean);
-    S.matches.push({id:uid(),n:S.matchNo++,court:c.name,
+    const _m2={id:uid(),n:S.matchNo++,court:c.name,
       t1,t2,t1n:t1.map(pname),t2n:t2.map(pname),
-      s1,s2,start:c.start,end:now(),waits:c.waits||{}});
+      s1,s2,start:c.start,end:now(),waits:c.waits||{}};
+  S.matches.push(_m2); dbRecordMatch(_m2);
     endCourt(c);
     toast("Match #"+(S.matchNo-1)+" saved — players are back in the pool");
   }else{
@@ -2076,6 +2087,7 @@ async function enterApp(){
     document.getElementById("tabAdminBtn").style.display="flex";
     legacyInit();
     adminLoadSessions();
+    loadOpenSessions();
   }else{
     document.querySelector("nav").style.display="none";
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
@@ -2084,6 +2096,7 @@ async function enterApp(){
     document.getElementById("phFull").textContent=p.full_name||"—";
     document.getElementById("phLevel").textContent=p.level||"—";
     document.getElementById("phUser").textContent=p.username||"—";
+    playerAutoBoard();
   }
 }
 /* ---------- admin: sessions ---------- */
@@ -2135,7 +2148,9 @@ async function playerJoin(){
   if(code.length!==6) return msg.textContent="Codes are 6 characters.";
   msg.textContent="";
   const r=await sFetch("/rest/v1/rpc/join_session",{method:"POST",body:{p_code:code}});
-  if(r.ok){ msg.style.color="var(--ok)"; msg.textContent="You're in! See you on court 🏸"; }
+  if(r.ok){ msg.style.color="var(--ok)"; msg.textContent="You're in! See you on court 🏸";
+    const sid=await r.json().catch(()=>null);
+    if(sid) mountPlayerBoard(sid); }
   else{ const j=await r.json().catch(()=>({}));
     msg.style.color="var(--red)";
     msg.textContent=(j.message||"Invalid or closed session code").replace(/^.*: /,""); }
@@ -2147,6 +2162,167 @@ async function integratedBoot(){
     try{ await enterApp(); return; }catch(e){ auth=null; authSave(); }
   }
   showAuth();
+}
+
+/* ======================= PHASE 2 · DB-NATIVE QUEUE + REALTIME BOARD ======================= */
+function pidNew(){
+  return (SUPA.url && auth && crypto.randomUUID)? crypto.randomUUID() : uid();
+}
+const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/* ---- admin: active session + roster ---- */
+async function loadOpenSessions(){
+  const bar=document.getElementById("sessBar");
+  const r=await sFetch("/rest/v1/sessions?status=eq.open&select=id,title,session_date,code&order=created_at.desc");
+  if(!r.ok) return;
+  const rows=await r.json();
+  const sel=document.getElementById("activeSess");
+  sel.innerHTML='<option value="">— choose the session you are running —</option>';
+  rows.forEach(s=>{ const o=document.createElement("option");
+    o.value=s.id; o.textContent=s.title+" · "+s.code+" · "+s.session_date;
+    if(S.db && S.db.sessionId===s.id) o.selected=true;
+    sel.appendChild(o); });
+  bar.style.display="";
+  if(S.db && S.db.sessionId) importRoster();
+}
+async function selectSession(id){
+  if(!id){ S.db=null; save(); document.getElementById("sessInfo").textContent=""; return; }
+  S.db={sessionId:id}; save();
+  toast("Session linked — matches now save to the database");
+  importRoster(true);
+}
+let rosterTimer=null;
+async function importRoster(manual){
+  if(!S.db || !S.db.sessionId) return;
+  const r=await sFetch("/rest/v1/session_players?session_id=eq."+S.db.sessionId+
+    "&active=is.true&select=profile_id,profiles(reclub_name,full_name,level)");
+  if(!r.ok){ if(manual) toast("Roster fetch failed"); return; }
+  const rows=await r.json();
+  let added=0;
+  rows.forEach(row=>{
+    if(!row.profiles) return;
+    if(!S.players.some(p=>p.id===row.profile_id)){
+      S.players.push({id:row.profile_id, name:row.profiles.reclub_name||row.profiles.full_name||"Player",
+        level:row.profiles.level||"Low Int", timeIn:timeNowHM(), timeOut:"", active:true,
+        waitSince:now(), addedAt:now()});
+      added++;
+    }
+  });
+  document.getElementById("sessInfo").textContent=rows.length+" joined";
+  if(added){ save(); renderHome(); toast(added+(added===1?" player":" players")+" joined from the app"); }
+  else if(manual) toast("Roster up to date");
+  clearTimeout(rosterTimer);
+  rosterTimer=setTimeout(()=>importRoster(false),20000);
+}
+/* ---- matches → Postgres ---- */
+async function dbRecordMatch(m){
+  if(!SUPA.url || !S.db || !S.db.sessionId) return;
+  const ids=[...m.t1,...m.t2];
+  if(!ids.every(id=>UUID_RE.test(id))) return;      // legacy/local ids — keep match local only
+  const body={session_id:S.db.sessionId, match_no:m.n, court_name:m.court,
+    t1:m.t1, t2:m.t2, s1:m.s1, s2:m.s2,
+    started_at:new Date(m.start).toISOString(), ended_at:new Date(m.end).toISOString(),
+    waits:m.waits||{}};
+  const r=await sFetch("/rest/v1/matches",{method:"POST",body}).catch(()=>null);
+  if(!r || !r.ok) toast("⚠️ Match saved locally but not to the database");
+}
+/* ---- queue_state upsert on every save ---- */
+let dbPushTimer=null;
+function scheduleDbPush(){
+  if(!SUPA.url || !S.db || !S.db.sessionId || !myProfile || !myProfile.is_admin) return;
+  clearTimeout(dbPushTimer);
+  dbPushTimer=setTimeout(async()=>{
+    await sFetch("/rest/v1/queue_state?on_conflict=session_id",{method:"POST",
+      headers:{Prefer:"resolution=merge-duplicates"},
+      body:[{session_id:S.db.sessionId, state:liveData(), updated_at:new Date().toISOString()}]
+    }).catch(()=>{});
+  },1200);
+}
+/* ---- minimal Supabase Realtime (Phoenix channels) client ---- */
+class MiniPhoenix{
+  constructor(){ this.ref=0; }
+  connect(){
+    return new Promise((res,rej)=>{
+      const url=SUPA.url.replace(/^http/,"ws")+"/realtime/v1/websocket?apikey="+
+        encodeURIComponent(SUPA.anon)+"&vsn=1.0.0";
+      let ws; try{ ws=new WebSocket(url); }catch(e){ return rej(e); }
+      this.ws=ws;
+      const to=setTimeout(()=>{ try{ws.close();}catch(e){} rej(new Error("timeout")); },8000);
+      ws.onopen=()=>{ clearTimeout(to); this.hb=setInterval(()=>this.send("phoenix","heartbeat",{}),25000); res(this); };
+      ws.onerror=()=>{ clearTimeout(to); rej(new Error("socket error")); };
+      ws.onclose=()=>{ clearInterval(this.hb); if(this.onclose) this.onclose(); };
+      ws.onmessage=ev=>{ let m; try{ m=JSON.parse(ev.data); }catch(e){ return; }
+        if(m.event==="postgres_changes"&&this.oncdc){
+          const rec=(m.payload&&m.payload.data&&m.payload.data.record)||(m.payload&&m.payload.record);
+          if(rec) this.oncdc(rec);
+        } };
+    });
+  }
+  send(topic,event,payload){ try{ this.ws.send(JSON.stringify({topic,event,payload,ref:String(++this.ref)})); }catch(e){} }
+  subQueueState(sessionId){
+    this.send("realtime:qs-"+sessionId.slice(0,8),"phx_join",{
+      config:{postgres_changes:[{event:"UPDATE",schema:"public",table:"queue_state",
+        filter:"session_id=eq."+sessionId}]},
+      access_token:auth? auth.access_token : SUPA.anon});
+  }
+  close(){ this.onclose=null; clearInterval(this.hb); try{ this.ws.close(); }catch(e){} }
+}
+/* ---- player live board ---- */
+function prefixCss(css,scope){
+  return css.split("}").map(chunk=>{
+    const i=chunk.indexOf("{"); if(i<0) return chunk;
+    const sels=chunk.slice(0,i).split(",").map(s=>{
+      s=s.trim(); if(!s) return s;
+      return s==="body"? scope : scope+" "+s;
+    }).join(",");
+    return sels+chunk.slice(i);
+  }).join("}");
+}
+let pbSocket=null, pbPoll=null, pbTick=null, pbAvg=15*60000, pbSession=null;
+async function mountPlayerBoard(sessionId){
+  pbSession=sessionId;
+  const wrap=document.getElementById("pboardWrap");
+  if(!document.getElementById("pboardCss")){
+    const st=document.createElement("style"); st.id="pboardCss";
+    st.textContent=prefixCss(LIVE_CSS,"#pboardWrap")+
+      "#pboardWrap{display:block;border-radius:12px;overflow:hidden;background:#050d08}"+
+      "#pboardWrap main{padding:12px 10px 26px}";
+    document.head.appendChild(st);
+  }
+  wrap.innerHTML='<main><p class="dim" style="margin-top:30px">Opening the gate…</p></main>';
+  const paint=state=>{ if(!state||!state.summary) return;
+    pbAvg=state.summary.avgMs||pbAvg;
+    wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
+  };
+  const pull=async()=>{
+    const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
+    if(!r||!r.ok) return;
+    const rows=await r.json();
+    if(rows[0]&&rows[0].state) paint(rows[0].state);
+    else wrap.innerHTML='<main><p class="dim" style="margin-top:30px">Gate open · waiting for the queue master to start the night…</p></main>';
+  };
+  await pull();
+  clearInterval(pbPoll); pbPoll=setInterval(pull,12000);
+  clearInterval(pbTick); pbTick=setInterval(()=>{
+    wrap.querySelectorAll("[data-start]").forEach(el=>{
+      const e=Date.now()-(+el.getAttribute("data-start"));
+      const t=el.querySelector(".lt"); if(t)t.textContent=fmtClock(e);
+      const f=el.querySelector(".fill"); if(f)f.style.width=Math.min(100,e/pbAvg*100)+"%"; });
+  },1000);
+  if(pbSocket) pbSocket.close();
+  try{
+    pbSocket=await new MiniPhoenix().connect();
+    pbSocket.oncdc=rec=>{ if(rec&&rec.state) paint(rec.state); };
+    pbSocket.subQueueState(sessionId);
+    pbSocket.onclose=()=>setTimeout(()=>{ if(pbSession===sessionId) mountPlayerBoard(sessionId); },5000);
+  }catch(e){ /* polling continues as fallback */ }
+}
+async function playerAutoBoard(){
+  const r=await sFetch("/rest/v1/session_players?profile_id=eq."+auth.uid+
+    "&select=session_id,time_in,sessions(status)&order=time_in.desc&limit=10").catch(()=>null);
+  if(!r||!r.ok) return;
+  const rows=await r.json();
+  const open=rows.find(x=>x.sessions&&x.sessions.status==="open");
+  if(open) mountPlayerBoard(open.session_id);
 }
 
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
