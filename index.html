@@ -523,6 +523,25 @@ window.SS_CONFIG = {
     <h3>Sessions</h3>
     <div id="sessList"><p class="hint">Loading sessions…</p></div>
   </div>
+  <div class="card" style="max-width:760px;margin:14px auto 0">
+    <h3>🏆 Hall of Fame <button class="small ghost" style="float:right" onclick="loadHall(true)">🔄</button></h3>
+    <div class="hallbox">
+    <div class="authtabs" style="margin-bottom:10px">
+      <button class="hfW on" onclick="hallMode('w')">Weekly</button>
+      <button class="hfM" onclick="hallMode('m')">Monthly</button>
+    </div>
+    <div class="controls" style="justify-content:space-between;margin-bottom:6px">
+      <button class="small ghost" onclick="hallNav(-1)">◀</button>
+      <b class="hfLabel" style="font-size:13px"></b>
+      <button class="small ghost hfNext" onclick="hallNav(1)">▶</button>
+    </div>
+    <div class="hfList"><p class="soon">Summoning the champions…</p></div>
+    </div>
+  </div>
+  <div class="card" style="max-width:760px;margin:14px auto 0">
+    <h3>🎞 Match Manager <button class="small ghost" style="float:right" onclick="adminLoadMatches(true)">🔄</button></h3>
+    <div id="mmList"><p class="hint">Select your active session in the Home tab to manage its matches.</p></div>
+  </div>
 </section>
 
 <!-- ================= PLAYER HOME (Phase 1) ================= -->
@@ -566,21 +585,27 @@ window.SS_CONFIG = {
   </div>
   <div class="phcard">
     <h3>🏆 Hall of Fame <button class="small ghost" style="float:right" onclick="loadHall(true)">🔄</button></h3>
+    <div class="hallbox">
     <div class="authtabs" style="margin-bottom:10px">
-      <button id="hfW" class="on" onclick="hallMode('w')">Weekly</button>
-      <button id="hfM" onclick="hallMode('m')">Monthly</button>
+      <button class="hfW on" onclick="hallMode('w')">Weekly</button>
+      <button class="hfM" onclick="hallMode('m')">Monthly</button>
     </div>
     <div class="controls" style="justify-content:space-between;margin-bottom:6px">
       <button class="small ghost" onclick="hallNav(-1)">◀</button>
-      <b id="hfLabel" style="font-size:13px"></b>
-      <button class="small ghost" id="hfNext" onclick="hallNav(1)">▶</button>
+      <b class="hfLabel" style="font-size:13px"></b>
+      <button class="small ghost hfNext" onclick="hallNav(1)">▶</button>
     </div>
-    <div id="hfList"><p class="soon">Summoning the champions…</p></div>
+    <div class="hfList"><p class="soon">Summoning the champions…</p></div>
+    </div>
   </div>
   <div class="phcard">
     <h3>🎴 Session Stat Cards</h3>
     <div class="controls">
-      <select id="scSel" style="flex:1;min-width:170px" onchange="renderSessionCard()"></select>
+      <select id="scSel" style="flex:1;min-width:150px" onchange="renderSessionCard()"></select>
+      <select id="scStyle" style="width:150px" onchange="renderSessionCard()">
+        <option value="classic">🌲 Classic</option>
+        <option value="upside">🔻 Upside Down</option>
+      </select>
       <button class="small" id="scDl" onclick="downloadSessionCard()" disabled>⬇ Download</button>
     </div>
     <div class="scwrap"><img id="scImg" alt="" style="display:none"></div>
@@ -1519,7 +1544,8 @@ function renderIG(){
   document.getElementById("igBest").textContent=ex.bestWinText||"";
   document.getElementById("igQuip").textContent=quipFor(st,ex);
 }
-function buildShareCard(name, st, ex, done){
+function buildShareCard(name, st, ex, done, opts){
+  opts=opts||{};
   const W=720,H=1280,cx=W/2;
   const c=document.createElement("canvas"); c.width=W; c.height=H;
   const x=c.getContext("2d");
@@ -1629,6 +1655,18 @@ function buildShareCard(name, st, ex, done){
     x.fillText(new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}), cx, 1196);
     x.fillStyle="#9dc2a6"; x.font="600 15px Georgia";
     x.fillText("#StrangerStrings  #GreenfieldBadminton  #SeeYouOnCourt", cx, 1226);
+    if(opts.variant==="upside"){
+      x.save();
+      x.globalCompositeOperation="color";
+      x.fillStyle="rgba(120,10,25,.55)"; x.fillRect(0,0,W,H);
+      x.globalCompositeOperation="source-over";
+      const vg=x.createRadialGradient(cx,H/2,180,cx,H/2,760);
+      vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(30,0,5,.55)");
+      x.fillStyle=vg; x.fillRect(0,0,W,H);
+      x.shadowColor="rgba(255,60,60,.8)"; x.shadowBlur=16;
+      x.strokeStyle="#ff4444"; x.lineWidth=5; x.strokeRect(16,16,W-32,H-32);
+      x.restore();
+    }
     done(c);
   };
   img.src=LOGO;
@@ -2186,6 +2224,7 @@ async function enterApp(){
     legacyInit();
     adminLoadSessions();
     loadOpenSessions();
+    loadHall();
   }else{
     document.querySelector("nav").style.display="none";
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
@@ -2282,13 +2321,14 @@ async function loadOpenSessions(){
     if(S.db && S.db.sessionId===s.id) o.selected=true;
     sel.appendChild(o); });
   bar.style.display="";
-  if(S.db && S.db.sessionId) importRoster();
+  if(S.db && S.db.sessionId){ importRoster(); adminLoadMatches(); }
 }
 async function selectSession(id){
   if(!id){ S.db=null; save(); document.getElementById("sessInfo").textContent=""; return; }
   S.db={sessionId:id}; save();
   toast("Session linked — matches now save to the database");
   importRoster(true);
+  adminLoadMatches();
 }
 let rosterTimer=null;
 async function importRoster(manual){
@@ -2540,12 +2580,15 @@ function careerStatsFrom(rows,uid){
     if(won&&(!bestWin||margin>Math.abs(bestWin.s1-bestWin.s2))) bestWin=m;
   });
   const g=rows.length;
+  let nights=0;
+  rows.forEach(m=>{ const hh=new Date(new Date(m.ended_at).getTime()+8*3600e3).getUTCHours();
+    if(hh>=22||hh<5) nights++; });
   const st={g,w,l:g-w,winRate:g?100*w/g:0,diff,
     avgPlay:g? (playMs/g)/60000 : 0, avgWait: waitN? waitMin/waitN : 0};
   const bestWinText=bestWin?
     ("Best W · "+bestWin.s1+"–"+bestWin.s2+" vs "+
      ((bestWin.t1.includes(uid)? bestWin.t2n : bestWin.t1n)||[]).map(n=>n||"Guest").join("/")):"";
-  return {st, ex:{streak:best,clutch,bestWin,bestWinText,curStreak:streak}};
+  return {st, ex:{streak:best,clutch,bestWin,bestWinText,curStreak:streak,nights}};
 }
 function xpOf(st){ return st.w*30+(st.l)*10; }
 function levelOf(xp){ let lv=1; while(xp>=25*lv*lv) lv++; return lv; }
@@ -2558,7 +2601,13 @@ const BADGES=[
  {id:"mara",   em:"🏃", name:"Marathoner",             d:"Play 25 matches",                   f:(st,ex)=>st.g>=25},
  {id:"party",  em:"🗓", name:"Party Regular",          d:"Battle in 3 different sessions",    f:(st,ex,ns)=>ns>=3},
  {id:"cent",   em:"💯", name:"Centurion of the Court", d:"Play 100 matches",                  f:(st,ex)=>st.g>=100},
+ {id:"swarm",  em:"🦇", name:"Demobat Swarm",          d:"Win 50 matches",                    f:(st,ex)=>st.w>=50},
+ {id:"wall",   em:"🛡", name:"Iron Wall",              d:"10-win streak",                     f:(st,ex)=>ex.streak>=10},
+ {id:"owl",    em:"🌙", name:"Night Owl",              d:"Finish a match after 10pm",         f:(st,ex)=>ex.nights>=1},
+ {id:"leader", em:"⚡", name:"Leader of the Party",    d:"Battle in 5 different sessions",    f:(st,ex,ns)=>ns>=5},
 ];
+const TIERS=[[13,"Mythic"],[10,"Legend"],[8,"Warden"],[5,"Knight"],[3,"Squire"],[1,"Rookie"]];
+function tierOf(lv){ for(const [min,t] of TIERS) if(lv>=min) return t; return "Rookie"; }
 function renderRPG(){
   if(!myProfile) return;
   const uid=auth.uid;
@@ -2569,7 +2618,7 @@ function renderRPG(){
   const xp=xpOf(st), lv=levelOf(xp);
   const prev=25*(lv-1)*(lv-1), next=25*lv*lv;
   document.getElementById("csLvl").textContent=lv;
-  document.getElementById("csXp").textContent=xp+" XP · "+(next-xp)+" to LV "+(lv+1);
+  document.getElementById("csXp").textContent=tierOf(lv)+" · "+xp+" XP · "+(next-xp)+" to LV "+(lv+1);
   document.getElementById("xpFill").style.width=Math.min(100,100*(xp-prev)/(next-prev))+"%";
   document.getElementById("csChips").innerHTML=
     [["Wins",st.w],["Losses",st.l],["Win rate",st.g?Math.round(st.winRate)+"%":"—"],
@@ -2602,12 +2651,13 @@ function renderSessionCard(){
   buildShareCard(myProfile.reclub_name||"Player", st, ex, c=>{
     scCanvas=c; img.src=c.toDataURL("image/png");
     img.style.display=""; hint.style.display="none";
-  });
+  }, {variant:document.getElementById("scStyle").value});
 }
 function downloadSessionCard(){
   if(!scCanvas) return;
   const s=mySessions[document.getElementById("scSel").value];
-  scCanvas.toBlob(b=>download(((myProfile.reclub_name||"player")+"_"+(s?s.session_date:"session")+"_card.png").replace(/\s+/g,"_"),b));
+  const v=document.getElementById("scStyle").value==="upside"?"_upsidedown":"";
+  scCanvas.toBlob(b=>download(((myProfile.reclub_name||"player")+"_"+(s?s.session_date:"session")+v+"_card.png").replace(/\s+/g,"_"),b));
 }
 
 /* ======================= HALL OF FAME + NAME REPAIR ======================= */
@@ -2632,60 +2682,94 @@ async function adminRepairNames(){
 }
 /* ---- weekly/monthly hall of fame ---- */
 let hfMode="w", hfOffset=0, hfSeq=0;
+function mnlNow(){ return new Date(Date.now()+8*3600*1000); } // Manila wall clock via getUTC*
 function weekStartISO(off){
-  const d=new Date();
+  const d=mnlNow();
   const day=(d.getUTCDay()+6)%7;             // Monday=0
   const mon=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-day+off*7);
   return new Date(mon).toISOString().slice(0,10);
 }
 function monthStartISO(off){
-  const d=new Date();
+  const d=mnlNow();
   return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+off,1)).toISOString().slice(0,10);
 }
 function hallMode(m){ hfMode=m; hfOffset=0;
-  document.getElementById("hfW").classList.toggle("on",m==="w");
-  document.getElementById("hfM").classList.toggle("on",m==="m");
+  document.querySelectorAll(".hallbox .hfW").forEach(b=>b.classList.toggle("on",m==="w"));
+  document.querySelectorAll(".hallbox .hfM").forEach(b=>b.classList.toggle("on",m==="m"));
   loadHall();
 }
 function hallNav(dir){ if(hfOffset+dir>0) return; hfOffset+=dir; loadHall(); }
 async function loadHall(manual){
   const seq=++hfSeq;
-  const list=document.getElementById("hfList"), label=document.getElementById("hfLabel");
-  document.getElementById("hfNext").disabled=hfOffset>=0;
+  const boxes=[...document.querySelectorAll(".hallbox")];
+  if(!boxes.length) return;
+  boxes.forEach(b=>b.querySelector(".hfNext").disabled=hfOffset>=0);
   const start= hfMode==="w"? weekStartISO(hfOffset) : monthStartISO(hfOffset);
-  label.textContent= hfMode==="w"
+  const labelTxt= hfMode==="w"
     ? (hfOffset===0? "This Week" : "Week of "+new Date(start+"T00:00:00Z").toLocaleDateString(undefined,{month:"short",day:"numeric"}))
     : new Date(start+"T00:00:00Z").toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  boxes.forEach(b=>b.querySelector(".hfLabel").textContent=labelTxt);
   const view= hfMode==="w"? "leaderboard_weekly":"leaderboard_monthly";
   const col=  hfMode==="w"? "week_start":"month_start";
   const r=await sFetch("/rest/v1/"+view+"?"+col+"=eq."+start+"&select=*").catch(()=>null);
   if(!r||!r.ok){ if(manual) toast("Could not load the leaderboard"); return; }
   let rows=await r.json();
   if(seq!==hfSeq) return;
+  const paintAll=html=>boxes.forEach(b=>b.querySelector(".hfList").innerHTML=html);
   if(!rows.length){
-    list.innerHTML='<p class="soon">No battles logged in this window yet — the throne is up for grabs.</p>';
+    paintAll('<p class="soon">No battles logged in this window yet — the throne is up for grabs.</p>');
     return;
   }
   rows.sort((a,b)=>b.wins-a.wins||b.win_rate-a.win_rate||b.diff-a.diff);
-  const names={};
-  const pr=await sFetch("/rest/v1/profiles?id=in.("+rows.map(x=>x.profile_id).join(",")+")&select=id,reclub_name").catch(()=>null);
-  if(pr&&pr.ok) (await pr.json()).forEach(p=>names[p.id]=p.reclub_name);
-  if(seq!==hfSeq) return;
   const medals=["🥇","🥈","🥉"];
-  list.innerHTML=rows.slice(0,10).map((x,i)=>{
-    const me=x.profile_id===auth.uid;
+  let html=rows.slice(0,10).map((x,i)=>{
+    const me=auth&&x.profile_id===auth.uid;
     return '<div class="lbprow'+(me?" me":"")+'">'+
       '<span class="lbrank">'+(medals[i]||(i+1))+'</span>'+
-      '<span class="lbnm">'+esc(names[x.profile_id]||"Guest")+(me?'<span class="youpill">YOU</span>':"")+'</span>'+
+      '<span class="lbnm">'+esc(x.display_name||"Player")+(me?'<span class="youpill">YOU</span>':"")+'</span>'+
       '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'% · '+(x.diff>0?"+":"")+x.diff+'</small></span></div>';
   }).join("");
-  const myIdx=rows.findIndex(x=>x.profile_id===auth.uid);
-  if(myIdx>=10){
-    const x=rows[myIdx];
-    list.innerHTML+='<div class="lbprow me"><span class="lbrank">'+(myIdx+1)+'</span>'+
-      '<span class="lbnm">'+esc(names[x.profile_id]||"You")+'<span class="youpill">YOU</span></span>'+
-      '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'%</small></span></div>';
-  }
+  const myIdx=auth? rows.findIndex(x=>x.profile_id===auth.uid) : -1;
+  if(myIdx>=10){ const x=rows[myIdx];
+    html+='<div class="lbprow me"><span class="lbrank">'+(myIdx+1)+'</span>'+
+      '<span class="lbnm">'+esc(x.display_name||"You")+'<span class="youpill">YOU</span></span>'+
+      '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'%</small></span></div>'; }
+  paintAll(html);
+}
+/* ---- admin: match manager ---- */
+async function adminLoadMatches(manual){
+  const box=document.getElementById("mmList"); if(!box) return;
+  if(!S.db||!S.db.sessionId){ box.innerHTML='<p class="hint">Select your active session in the Home tab first.</p>'; return; }
+  const r=await sFetch("/rest/v1/matches?session_id=eq."+S.db.sessionId+
+    "&select=id,match_no,t1n,t2n,s1,s2,court_name&order=match_no.desc&limit=200").catch(()=>null);
+  if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load matches.</p>'; return; }
+  const rows=await r.json();
+  if(!rows.length){ box.innerHTML='<p class="hint">No matches recorded for this session yet.</p>'; return; }
+  box.innerHTML="";
+  rows.forEach(m=>{
+    const div=document.createElement("div"); div.className="sessrow";
+    div.innerHTML='<div class="st"><b>#'+m.match_no+' · '+esc((m.t1n||[]).join("/")||"?")+
+      ' vs '+esc((m.t2n||[]).join("/")||"?")+'</b><span>'+esc(m.court_name||"")+'</span></div>'+
+      '<span class="sesscode">'+m.s1+'–'+m.s2+'</span>';
+    const ed=document.createElement("button"); ed.className="small ghost"; ed.textContent="✏️";
+    ed.onclick=async()=>{
+      const a=prompt("Team 1 score ("+((m.t1n||[]).join("/")||"T1")+"):",m.s1); if(a===null) return;
+      const b=prompt("Team 2 score ("+((m.t2n||[]).join("/")||"T2")+"):",m.s2); if(b===null) return;
+      const s1=+a, s2=+b;
+      if(!(s1>=0&&s2>=0)||s1===s2) return alert("Scores must be non-negative and not a draw.");
+      const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"PATCH",body:{s1,s2}});
+      toast(pr.ok?"Match #"+m.match_no+" updated":"Update failed");
+      adminLoadMatches();
+    };
+    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+    del.onclick=async()=>{
+      if(!confirm("Delete match #"+m.match_no+" ("+m.s1+"–"+m.s2+")? This removes it from history and leaderboards.")) return;
+      const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"DELETE"});
+      toast(pr.ok?"Match #"+m.match_no+" deleted":"Delete failed");
+      adminLoadMatches();
+    };
+    div.append(ed,del); box.appendChild(div);
+  });
 }
 
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
