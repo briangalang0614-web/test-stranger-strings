@@ -321,6 +321,10 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .pedit label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
 .pedit input,.pedit select{width:100%}
 .pemsg{min-height:16px;font-size:12.5px;margin-top:4px}
+#tabAdminBtn{position:relative}
+.paybadge{position:absolute;top:1px;right:3px;background:var(--red);color:#fff;border-radius:10px;
+  font-size:10px;font-weight:800;padding:1px 6px;display:none;line-height:1.4}
+.badge.pend{background:#b8860b;color:#fff}
 </style>
 </head>
 <body>
@@ -498,6 +502,10 @@ window.SS_CONFIG = {
     <h3>Sessions</h3>
     <div id="sessList"><p class="hint">Loading sessions…</p></div>
   </div>
+  <div class="card" style="max-width:760px;margin:14px auto 0">
+    <h3>💸 Payments <span class="hint" id="payHint" style="font-weight:400"></span></h3>
+    <div id="payList"><p class="hint">Select your active session in the Home tab to review payments.</p></div>
+  </div>
 </section>
 
 <!-- ================= PLAYER HOME (Phase 1) ================= -->
@@ -525,6 +533,17 @@ window.SS_CONFIG = {
       <button onclick="playerJoin()">Join</button>
     </div>
     <p class="autherr" id="joinMsg"></p>
+  </div>
+  <div class="phcard" id="payCard" style="display:none">
+    <h3>💸 Session Payment</h3>
+    <div class="phrow"><span>Amount due</span><b id="payDue">—</b></div>
+    <div class="phrow"><span>Status</span><b id="payStatus">No payment submitted</b></div>
+    <p class="pemsg" id="payNote"></p>
+    <div class="controls">
+      <input type="file" id="payFile" accept="image/*" style="display:none" onchange="uploadReceipt(this)">
+      <button id="payBtn" onclick="document.getElementById('payFile').click()">📤 Upload receipt</button>
+    </div>
+    <p class="pemsg" id="payMsg"></p>
   </div>
   <div class="phcard">
     <h3>📜 My Match History <button class="small ghost" style="float:right" onclick="loadMyHistory(true)">🔄</button></h3>
@@ -559,6 +578,11 @@ window.SS_CONFIG = {
     <button class="wide" id="authGo" onclick="authSubmit()">Log in</button>
   </div>
 </div>
+<div class="overlay" id="payModal"><div class="modal" style="max-width:520px;text-align:center">
+  <h3>🧾 Receipt</h3>
+  <img id="payImg" alt="receipt" style="max-width:100%;max-height:70vh;border-radius:10px;border:1px solid var(--line)">
+  <div class="actions"><button class="ghost" onclick="closeModal('payModal')">Close</button></div>
+</div></div>
 <div class="overlay" id="playerModal"><div class="modal">
   <h3 id="pmTitle">Add Player</h3>
   <div class="row" style="display:block"><label>Name</label><input id="pmName" style="width:100%"></div>
@@ -1587,11 +1611,19 @@ function exportMatchesCSV(){
   toast("Matches CSV downloaded");
 }
 /* ======================= LIVE BOARD (shareable) ======================= */
+function moneySummary(){
+  const shuttle=S.shuttles.reduce((a,s)=>a+(+s.price||0)*(+s.qty||0),0);
+  const court=(+S.money.rate||0)*(+S.money.hours||0);
+  const qm=+S.money.qm||0;
+  const n=+S.money.nPlayers || S.players.filter(p=>p.active).length || 1;
+  const total=shuttle+court+qm;
+  return {total, n, per:Math.ceil(total/Math.max(1,n))};
+}
 function liveData(){
   const avgMs=S.matches.length? S.matches.reduce((a,m)=>a+(m.end-m.start),0)/S.matches.length : 15*60000;
   const pl=id=>{const p=player(id);return{n:p?p.name:"?"};};
   return {
-    v:1, generated:now(),
+    v:1, generated:now(), pay:moneySummary(),
     sess:new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
     summary:{players:S.players.length,matches:S.matches.length,avgMs:Math.round(avgMs)},
     live:S.courts.filter(c=>c.start).map(c=>({court:c.name,start:c.start,
@@ -2216,13 +2248,15 @@ async function loadOpenSessions(){
     if(S.db && S.db.sessionId===s.id) o.selected=true;
     sel.appendChild(o); });
   bar.style.display="";
-  if(S.db && S.db.sessionId) importRoster();
+  if(S.db && S.db.sessionId){ importRoster(); adminLoadPayments(); startAdminPayRealtime(); }
 }
 async function selectSession(id){
   if(!id){ S.db=null; save(); document.getElementById("sessInfo").textContent=""; return; }
   S.db={sessionId:id}; save();
   toast("Session linked — matches now save to the database");
   importRoster(true);
+  adminLoadPayments();
+  startAdminPayRealtime();
 }
 let rosterTimer=null;
 async function importRoster(manual){
@@ -2253,7 +2287,7 @@ async function dbRecordMatch(m){
   const ids=[...m.t1,...m.t2];
   if(!ids.every(id=>UUID_RE.test(id))) return;      // legacy/local ids — keep match local only
   const body={session_id:S.db.sessionId, match_no:m.n, court_name:m.court,
-    t1:m.t1, t2:m.t2, s1:m.s1, s2:m.s2,
+    t1:m.t1, t2:m.t2, t1n:m.t1n||[], t2n:m.t2n||[], s1:m.s1, s2:m.s2,
     started_at:new Date(m.start).toISOString(), ended_at:new Date(m.end).toISOString(),
     waits:m.waits||{}};
   const r=await sFetch("/rest/v1/matches",{method:"POST",body}).catch(()=>null);
@@ -2296,6 +2330,13 @@ class MiniPhoenix{
     this.send("realtime:qs-"+sessionId.slice(0,8),"phx_join",{
       config:{postgres_changes:[{event:"UPDATE",schema:"public",table:"queue_state",
         filter:"session_id=eq."+sessionId}]},
+      access_token:auth? auth.access_token : SUPA.anon});
+  }
+  subPayments(sessionId){
+    this.send("realtime:pay-"+sessionId.slice(0,8),"phx_join",{
+      config:{postgres_changes:[
+        {event:"INSERT",schema:"public",table:"payments",filter:"session_id=eq."+sessionId},
+        {event:"UPDATE",schema:"public",table:"payments",filter:"session_id=eq."+sessionId}]},
       access_token:auth? auth.access_token : SUPA.anon});
   }
   close(){ this.onclose=null; clearInterval(this.hb); try{ this.ws.close(); }catch(e){} }
@@ -2363,7 +2404,7 @@ async function loadMyHistory(manual){
   if(pr&&pr.ok) (await pr.json()).forEach(p=>names[p.id]=p.reclub_name);
   const sr=await sFetch("/rest/v1/sessions?id=in.("+[...sidSet].join(",")+")&select=id,title,session_date").catch(()=>null);
   if(sr&&sr.ok) (await sr.json()).forEach(s=>sess[s.id]=s);
-  const nm=id=>esc(names[id]||"Guest");
+  const nm=(id,i,stored)=>esc(names[id]||(stored&&stored[i])||"Guest");
   // career stats
   let w=0,diff=0;
   rows.forEach(m=>{ const onT1=m.t1.includes(uid), won=onT1===(m.s1>m.s2);
@@ -2381,8 +2422,10 @@ async function loadMyHistory(manual){
         '<span>'+esc(s?s.session_date:"")+'</span></div>';
     }
     const onT1=m.t1.includes(uid), won=onT1===(m.s1>m.s2);
-    const mates=(onT1?m.t1:m.t2).filter(id=>id!==uid).map(nm);
-    const opps=(onT1?m.t2:m.t1).map(nm);
+    const myIds=onT1?m.t1:m.t2, myNames=onT1?m.t1n:m.t2n;
+    const opIds=onT1?m.t2:m.t1, opNames=onT1?m.t2n:m.t1n;
+    const mates=myIds.map((id,i)=>id!==uid? nm(id,i,myNames):null).filter(Boolean);
+    const opps=opIds.map((id,i)=>nm(id,i,opNames));
     html+='<div class="histrow"><span class="wl '+(won?"w":"l")+'">'+(won?"W":"L")+'</span>'+
       '<span class="vs">'+(mates.length?("w/ "+mates.join(", ")+" "):"")+
       '<small>vs</small> '+opps.join(", ")+'</span>'+
@@ -2419,6 +2462,9 @@ async function mountPlayerBoard(sessionId){
     pbAvg=state.summary.avgMs||pbAvg;
     wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
     if(histMatchCount>=0 && state.summary.matches>histMatchCount) loadMyHistory();
+    if(state.pay){ window.__lastBoardPay=state.pay;
+      const pd=document.getElementById("payDue");
+      if(pd) pd.textContent="₱"+state.pay.per+"  ·  split of ₱"+state.pay.total+" ÷ "+state.pay.n; }
   };
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
@@ -2428,6 +2474,7 @@ async function mountPlayerBoard(sessionId){
     else wrap.innerHTML='<main><p class="dim" style="margin-top:30px">Gate open · waiting for the queue master to start the night…</p></main>';
   };
   await pull();
+  refreshMyPayment(sessionId);
   clearInterval(pbPoll); pbPoll=setInterval(pull,12000);
   clearInterval(pbTick); pbTick=setInterval(()=>{
     wrap.querySelectorAll("[data-start]").forEach(el=>{
@@ -2450,6 +2497,140 @@ async function playerAutoBoard(){
   const rows=await r.json();
   const open=rows.find(x=>x.sessions&&x.sessions.status==="open");
   if(open) mountPlayerBoard(open.session_id);
+}
+
+/* ======================= PHASE 4 · PAYMENTS ======================= */
+/* ---- player side ---- */
+let payPollTimer=null, myPay=null;
+async function refreshMyPayment(sessionId){
+  if(!sessionId||!auth) return;
+  document.getElementById("payCard").style.display="";
+  const r=await sFetch("/rest/v1/payments?session_id=eq."+sessionId+"&profile_id=eq."+auth.uid+"&select=*").catch(()=>null);
+  if(r&&r.ok){ myPay=(await r.json())[0]||null; paintPayStatus(); }
+  clearTimeout(payPollTimer);
+  if(!myPay || myPay.status!=="verified")
+    payPollTimer=setTimeout(()=>refreshMyPayment(sessionId),30000);
+}
+function paintPayStatus(){
+  const st=document.getElementById("payStatus"), note=document.getElementById("payNote"),
+        btn=document.getElementById("payBtn");
+  note.textContent="";
+  if(!myPay){ st.textContent="No payment submitted"; st.style.color="var(--muted)";
+    btn.textContent="📤 Upload receipt"; btn.disabled=false; return; }
+  if(myPay.status==="submitted"){ st.textContent="Submitted — awaiting verification ⏳"; st.style.color="#b8860b";
+    btn.textContent="📤 Replace receipt"; btn.disabled=false; }
+  else if(myPay.status==="verified"){ st.textContent="Verified ✅ — thank you!"; st.style.color="var(--ok)";
+    btn.textContent="All settled 🏸"; btn.disabled=true; }
+  else{ st.textContent="Rejected — please re-upload"; st.style.color="var(--red)";
+    if(myPay.note){ note.style.color="var(--red)"; note.textContent="Note from admin: "+myPay.note; }
+    btn.textContent="📤 Re-upload receipt"; btn.disabled=false; }
+}
+async function uploadReceipt(input){
+  const f=input.files&&input.files[0]; input.value="";
+  if(!f) return;
+  if(!pbSession) return toast("Join a session first");
+  const msg=document.getElementById("payMsg");
+  msg.style.color="var(--muted)"; msg.textContent="Uploading receipt…";
+  const ext=((f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,""))||"jpg";
+  const path=pbSession+"/"+auth.uid+"/"+Date.now()+"."+ext;
+  const up=await fetch(SUPA.url+"/storage/v1/object/receipts/"+path,{method:"POST",
+    headers:{apikey:SUPA.anon, Authorization:"Bearer "+auth.access_token,
+      "Content-Type":f.type||"image/jpeg"},
+    body:f}).catch(()=>null);
+  if(!up||!up.ok){ msg.style.color="var(--red)";
+    msg.textContent="Upload failed — check your connection and try again."; return; }
+  const amt=(window.__lastBoardPay&&window.__lastBoardPay.per)||null;
+  const r=await sFetch("/rest/v1/payments?on_conflict=session_id,profile_id",{method:"POST",
+    headers:{Prefer:"resolution=merge-duplicates"},
+    body:[{session_id:pbSession, profile_id:auth.uid, amount:amt,
+      receipt_path:path, status:"submitted", note:null}]});
+  if(!r.ok){ msg.style.color="var(--red)";
+    msg.textContent="Receipt stored but recording it failed — try again."; return; }
+  msg.style.color="var(--ok)"; msg.textContent="Receipt sent! The queue master will verify it.";
+  refreshMyPayment(pbSession);
+}
+/* ---- admin side ---- */
+let adminPaySocket=null, payPollAdmin=null;
+function updatePayBadge(n){
+  let b=document.getElementById("payBadge");
+  if(!b){ b=document.createElement("span"); b.id="payBadge"; b.className="paybadge";
+    document.getElementById("tabAdminBtn").appendChild(b); }
+  b.textContent=n; b.style.display=n>0?"":"none";
+}
+function payBeep(){ try{
+  const a=new (window.AudioContext||window.webkitAudioContext)();
+  const o=a.createOscillator(), g=a.createGain();
+  o.connect(g); g.connect(a.destination);
+  o.frequency.value=880; g.gain.value=0.05; o.start();
+  setTimeout(()=>{ o.stop(); a.close(); },150);
+}catch(e){} }
+async function adminLoadPayments(){
+  const box=document.getElementById("payList"), hint=document.getElementById("payHint");
+  if(!S.db||!S.db.sessionId){
+    box.innerHTML='<p class="hint">Select your active session in the Home tab to review payments.</p>';
+    updatePayBadge(0); return;
+  }
+  const r=await sFetch("/rest/v1/payments?session_id=eq."+S.db.sessionId+
+    "&select=*,profiles(reclub_name,full_name)&order=created_at.desc").catch(()=>null);
+  if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load payments.</p>'; return; }
+  const rows=await r.json();
+  const pending=rows.filter(x=>x.status==="submitted").length;
+  updatePayBadge(pending);
+  hint.textContent=rows.length? "· "+pending+" pending / "+rows.length+" total":"";
+  if(!rows.length){ box.innerHTML='<p class="hint">No payments submitted yet.</p>'; }
+  else{
+    box.innerHTML="";
+    rows.forEach(pm=>{
+      const div=document.createElement("div"); div.className="sessrow";
+      const nm=pm.profiles? (pm.profiles.reclub_name||pm.profiles.full_name||"Player"):"Player";
+      div.innerHTML='<div class="st"><b>'+esc(nm)+'</b><span>'+
+        (pm.amount!=null?("₱"+pm.amount+" · "):"")+
+        new Date(pm.created_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})+
+        (pm.status==="rejected"&&pm.note? " · "+esc(pm.note):"")+'</span></div>'+
+        '<span class="badge '+(pm.status==="verified"?"open":pm.status==="submitted"?"pend":"closed")+'">'+
+        pm.status.toUpperCase()+'</span>';
+      const view=document.createElement("button"); view.className="small ghost"; view.textContent="🧾 View";
+      view.onclick=()=>viewReceipt(pm.receipt_path); div.appendChild(view);
+      if(pm.status!=="verified"){
+        const ok=document.createElement("button"); ok.className="small"; ok.textContent="✅ Verify";
+        ok.onclick=()=>reviewPayment(pm.id,"verified",null); div.appendChild(ok); }
+      if(pm.status==="submitted"){
+        const rej=document.createElement("button"); rej.className="small ghost"; rej.textContent="❌ Reject";
+        rej.onclick=()=>{ const note=prompt("Reason (shown to the player):","Amount doesn't match");
+          if(note!==null) reviewPayment(pm.id,"rejected",note); };
+        div.appendChild(rej); }
+      box.appendChild(div);
+    });
+  }
+  clearTimeout(payPollAdmin); payPollAdmin=setTimeout(adminLoadPayments,45000);
+}
+async function reviewPayment(id,status,note){
+  const r=await sFetch("/rest/v1/payments?id=eq."+id,{method:"PATCH",
+    body:{status, note, reviewed_by:auth.uid}});
+  if(!r.ok) toast("Update failed — try again");
+  else toast(status==="verified"? "Payment verified ✅":"Payment rejected");
+  adminLoadPayments();
+}
+async function viewReceipt(path){
+  if(!path) return toast("No receipt file on this payment");
+  const r=await sFetch("/storage/v1/object/sign/receipts/"+path,{method:"POST",
+    body:{expiresIn:3600}}).catch(()=>null);
+  if(!r||!r.ok) return toast("Could not open the receipt");
+  const j=await r.json();
+  document.getElementById("payImg").src=SUPA.url+"/storage/v1"+j.signedURL;
+  openModal("payModal");
+}
+async function startAdminPayRealtime(){
+  if(!S.db||!S.db.sessionId||!myProfile||!myProfile.is_admin) return;
+  if(adminPaySocket) adminPaySocket.close();
+  try{
+    adminPaySocket=await new MiniPhoenix().connect();
+    adminPaySocket.oncdc=rec=>{ if(!rec) return;
+      adminLoadPayments();
+      if(rec.status==="submitted"){ toast("💸 New payment receipt to review"); payBeep(); } };
+    adminPaySocket.subPayments(S.db.sessionId);
+    adminPaySocket.onclose=()=>setTimeout(startAdminPayRealtime,6000);
+  }catch(e){ /* 45s polling continues */ }
 }
 
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
