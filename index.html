@@ -338,6 +338,13 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .abadge.locked{opacity:.35;filter:grayscale(1)}
 .scwrap{text-align:center;margin-top:10px}
 .scwrap img{max-width:250px;width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
+.lbprow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
+.lbprow.me{background:rgba(31,68,41,.10);border:1.5px solid var(--green);border-radius:10px}
+.lbrank{width:28px;text-align:center;font-weight:800;flex:none}
+.lbnm{flex:1;font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.youpill{font-size:9px;background:var(--green);color:#f5eedb;border-radius:8px;padding:1.5px 6px;margin-left:6px;font-weight:800;letter-spacing:.06em;vertical-align:middle}
+.lbst{flex:none;font:700 12.5px "Courier New",monospace;color:var(--green)}
+.lbst small{color:var(--muted);font-weight:600}
 </style>
 </head>
 <body>
@@ -388,6 +395,7 @@ window.SS_CONFIG = {
       <b style="font-size:13px;letter-spacing:.08em;color:var(--green)">🗓 ACTIVE SESSION</b>
       <select id="activeSess" style="flex:1;min-width:180px" onchange="selectSession(this.value)"></select>
       <button class="small ghost" onclick="importRoster(true)">🔄 Roster</button>
+      <button class="small ghost" onclick="adminRepairNames()" title="Backfill player names on old database matches from this device's local record">🩹 Fix names</button>
       <span class="hint" id="sessInfo"></span>
     </div>
   </div>
@@ -555,6 +563,19 @@ window.SS_CONFIG = {
   <div class="phcard">
     <h3>🏅 Achievements</h3>
     <div class="badges" id="csBadges"><p class="soon">Play matches to start unlocking badges.</p></div>
+  </div>
+  <div class="phcard">
+    <h3>🏆 Hall of Fame <button class="small ghost" style="float:right" onclick="loadHall(true)">🔄</button></h3>
+    <div class="authtabs" style="margin-bottom:10px">
+      <button id="hfW" class="on" onclick="hallMode('w')">Weekly</button>
+      <button id="hfM" onclick="hallMode('m')">Monthly</button>
+    </div>
+    <div class="controls" style="justify-content:space-between;margin-bottom:6px">
+      <button class="small ghost" onclick="hallNav(-1)">◀</button>
+      <b id="hfLabel" style="font-size:13px"></b>
+      <button class="small ghost" id="hfNext" onclick="hallNav(1)">▶</button>
+    </div>
+    <div id="hfList"><p class="soon">Summoning the champions…</p></div>
   </div>
   <div class="phcard">
     <h3>🎴 Session Stat Cards</h3>
@@ -2175,6 +2196,7 @@ async function enterApp(){
     document.getElementById("phUser").textContent=p.username||"—";
     playerAutoBoard();
     loadMyHistory();
+    loadHall();
   }
 }
 /* ---------- admin: sessions ---------- */
@@ -2468,7 +2490,7 @@ async function mountPlayerBoard(sessionId){
   const paint=state=>{ if(!state||!state.summary) return;
     pbAvg=state.summary.avgMs||pbAvg;
     wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
-    if(histMatchCount>=0 && state.summary.matches>histMatchCount) loadMyHistory();
+    if(histMatchCount>=0 && state.summary.matches>histMatchCount){ loadMyHistory(); loadHall(); }
   };
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
@@ -2586,6 +2608,84 @@ function downloadSessionCard(){
   if(!scCanvas) return;
   const s=mySessions[document.getElementById("scSel").value];
   scCanvas.toBlob(b=>download(((myProfile.reclub_name||"player")+"_"+(s?s.session_date:"session")+"_card.png").replace(/\s+/g,"_"),b));
+}
+
+/* ======================= HALL OF FAME + NAME REPAIR ======================= */
+async function adminRepairNames(){
+  if(!S.db||!S.db.sessionId) return toast("Select your active session first");
+  const r=await sFetch("/rest/v1/matches?session_id=eq."+S.db.sessionId+"&select=id,match_no,t1n,t2n").catch(()=>null);
+  if(!r||!r.ok) return toast("Could not read matches");
+  const rows=await r.json();
+  let fixed=0, skipped=0;
+  for(const row of rows){
+    const hasNames=(row.t1n&&row.t1n.length)||(row.t2n&&row.t2n.length);
+    if(hasNames) continue;
+    const local=S.matches.find(m=>m.n===row.match_no && m.t1n && m.t1n.length);
+    if(!local){ skipped++; continue; }
+    const pr=await sFetch("/rest/v1/matches?id=eq."+row.id,{method:"PATCH",
+      body:{t1n:local.t1n,t2n:local.t2n}}).catch(()=>null);
+    if(pr&&pr.ok) fixed++;
+  }
+  toast(fixed? "🩹 Named "+fixed+" match"+(fixed===1?"":"es")
+       : skipped? "No local record for "+skipped+" unnamed match"+(skipped===1?"":"es")
+       : "All matches already have names");
+}
+/* ---- weekly/monthly hall of fame ---- */
+let hfMode="w", hfOffset=0, hfSeq=0;
+function weekStartISO(off){
+  const d=new Date();
+  const day=(d.getUTCDay()+6)%7;             // Monday=0
+  const mon=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-day+off*7);
+  return new Date(mon).toISOString().slice(0,10);
+}
+function monthStartISO(off){
+  const d=new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+off,1)).toISOString().slice(0,10);
+}
+function hallMode(m){ hfMode=m; hfOffset=0;
+  document.getElementById("hfW").classList.toggle("on",m==="w");
+  document.getElementById("hfM").classList.toggle("on",m==="m");
+  loadHall();
+}
+function hallNav(dir){ if(hfOffset+dir>0) return; hfOffset+=dir; loadHall(); }
+async function loadHall(manual){
+  const seq=++hfSeq;
+  const list=document.getElementById("hfList"), label=document.getElementById("hfLabel");
+  document.getElementById("hfNext").disabled=hfOffset>=0;
+  const start= hfMode==="w"? weekStartISO(hfOffset) : monthStartISO(hfOffset);
+  label.textContent= hfMode==="w"
+    ? (hfOffset===0? "This Week" : "Week of "+new Date(start+"T00:00:00Z").toLocaleDateString(undefined,{month:"short",day:"numeric"}))
+    : new Date(start+"T00:00:00Z").toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  const view= hfMode==="w"? "leaderboard_weekly":"leaderboard_monthly";
+  const col=  hfMode==="w"? "week_start":"month_start";
+  const r=await sFetch("/rest/v1/"+view+"?"+col+"=eq."+start+"&select=*").catch(()=>null);
+  if(!r||!r.ok){ if(manual) toast("Could not load the leaderboard"); return; }
+  let rows=await r.json();
+  if(seq!==hfSeq) return;
+  if(!rows.length){
+    list.innerHTML='<p class="soon">No battles logged in this window yet — the throne is up for grabs.</p>';
+    return;
+  }
+  rows.sort((a,b)=>b.wins-a.wins||b.win_rate-a.win_rate||b.diff-a.diff);
+  const names={};
+  const pr=await sFetch("/rest/v1/profiles?id=in.("+rows.map(x=>x.profile_id).join(",")+")&select=id,reclub_name").catch(()=>null);
+  if(pr&&pr.ok) (await pr.json()).forEach(p=>names[p.id]=p.reclub_name);
+  if(seq!==hfSeq) return;
+  const medals=["🥇","🥈","🥉"];
+  list.innerHTML=rows.slice(0,10).map((x,i)=>{
+    const me=x.profile_id===auth.uid;
+    return '<div class="lbprow'+(me?" me":"")+'">'+
+      '<span class="lbrank">'+(medals[i]||(i+1))+'</span>'+
+      '<span class="lbnm">'+esc(names[x.profile_id]||"Guest")+(me?'<span class="youpill">YOU</span>':"")+'</span>'+
+      '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'% · '+(x.diff>0?"+":"")+x.diff+'</small></span></div>';
+  }).join("");
+  const myIdx=rows.findIndex(x=>x.profile_id===auth.uid);
+  if(myIdx>=10){
+    const x=rows[myIdx];
+    list.innerHTML+='<div class="lbprow me"><span class="lbrank">'+(myIdx+1)+'</span>'+
+      '<span class="lbnm">'+esc(names[x.profile_id]||"You")+'<span class="youpill">YOU</span></span>'+
+      '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'%</small></span></div>';
+  }
 }
 
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
