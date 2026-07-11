@@ -321,10 +321,23 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .pedit label{font-size:11.5px;color:var(--muted);display:block;margin-bottom:3px}
 .pedit input,.pedit select{width:100%}
 .pemsg{min-height:16px;font-size:12.5px;margin-top:4px}
-#tabAdminBtn{position:relative}
-.paybadge{position:absolute;top:1px;right:3px;background:var(--red);color:#fff;border-radius:10px;
-  font-size:10px;font-weight:800;padding:1px 6px;display:none;line-height:1.4}
-.badge.pend{background:#b8860b;color:#fff}
+.csheet{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+.cav{width:64px;height:64px;border-radius:50%;background:#123322;border:2.5px solid var(--green);
+  color:#f0e6cc;display:flex;align-items:center;justify-content:center;font:800 26px Georgia,serif;flex:none;
+  box-shadow:0 0 12px rgba(31,68,41,.35)}
+.cinfo{flex:1;min-width:0}
+.cinfo>b{font-size:18px;font-family:Georgia,serif}
+.cclass{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin:2px 0 4px}
+.clvl{font-size:12px;color:var(--muted)}.clvl b{color:var(--ink);font-size:14px}
+.xpbar{height:8px;border-radius:5px;background:var(--panel2);border:1px solid var(--line);overflow:hidden;margin-top:4px}
+.xpbar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--green),#caa64e);transition:width .6s}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.abadge{text-align:center;padding:9px 4px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.abadge .em{font-size:22px}
+.abadge b{display:block;font-size:10px;margin-top:3px;line-height:1.25}
+.abadge.locked{opacity:.35;filter:grayscale(1)}
+.scwrap{text-align:center;margin-top:10px}
+.scwrap img{max-width:250px;width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
 </style>
 </head>
 <body>
@@ -502,19 +515,24 @@ window.SS_CONFIG = {
     <h3>Sessions</h3>
     <div id="sessList"><p class="hint">Loading sessions…</p></div>
   </div>
-  <div class="card" style="max-width:760px;margin:14px auto 0">
-    <h3>💸 Payments <span class="hint" id="payHint" style="font-weight:400"></span></h3>
-    <div id="payList"><p class="hint">Select your active session in the Home tab to review payments.</p></div>
-  </div>
 </section>
 
 <!-- ================= PLAYER HOME (Phase 1) ================= -->
 <section id="playerHome">
   <div class="phcard">
-    <h3>My Profile <button class="small ghost" style="float:right" onclick="toggleProfileEdit()">✏️ Edit</button></h3>
-    <div class="phrow"><span>Reclub name</span><b id="phReclub">—</b></div>
+    <h3>🎮 Character Sheet <button class="small ghost" style="float:right" onclick="toggleProfileEdit()">✏️ Edit</button></h3>
+    <div class="csheet">
+      <div class="cav" id="csAv">?</div>
+      <div class="cinfo">
+        <b id="phReclub">—</b>
+        <div class="cclass" id="csClass">Unranked Wanderer</div>
+        <div class="clvl">LV <b id="csLvl">1</b> · <span id="csXp">0 XP</span></div>
+        <div class="xpbar"><i id="xpFill"></i></div>
+      </div>
+    </div>
+    <div class="mystats" id="csChips"></div>
     <div class="phrow"><span>Full name</span><b id="phFull">—</b></div>
-    <div class="phrow"><span>Level</span><b id="phLevel">—</b></div>
+    <div class="phrow"><span>Skill level</span><b id="phLevel">—</b></div>
     <div class="phrow"><span>Username</span><b id="phUser">—</b></div>
     <div class="pedit" id="pedit">
       <div class="fld"><label>Reclub name</label><input id="peReclub"></div>
@@ -527,26 +545,28 @@ window.SS_CONFIG = {
     </div>
   </div>
   <div class="phcard">
-    <h3>Join Tonight's Session</h3>
+    <h3>🎟 Enter the Gate — Session Code</h3>
     <div class="joinrow">
       <input id="joinCode" maxlength="6" placeholder="CODE">
       <button onclick="playerJoin()">Join</button>
     </div>
     <p class="autherr" id="joinMsg"></p>
   </div>
-  <div class="phcard" id="payCard" style="display:none">
-    <h3>💸 Session Payment</h3>
-    <div class="phrow"><span>Amount due</span><b id="payDue">—</b></div>
-    <div class="phrow"><span>Status</span><b id="payStatus">No payment submitted</b></div>
-    <p class="pemsg" id="payNote"></p>
-    <div class="controls">
-      <input type="file" id="payFile" accept="image/*" style="display:none" onchange="uploadReceipt(this)">
-      <button id="payBtn" onclick="document.getElementById('payFile').click()">📤 Upload receipt</button>
-    </div>
-    <p class="pemsg" id="payMsg"></p>
+  <div class="phcard">
+    <h3>🏅 Achievements</h3>
+    <div class="badges" id="csBadges"><p class="soon">Play matches to start unlocking badges.</p></div>
   </div>
   <div class="phcard">
-    <h3>📜 My Match History <button class="small ghost" style="float:right" onclick="loadMyHistory(true)">🔄</button></h3>
+    <h3>🎴 Session Stat Cards</h3>
+    <div class="controls">
+      <select id="scSel" style="flex:1;min-width:170px" onchange="renderSessionCard()"></select>
+      <button class="small" id="scDl" onclick="downloadSessionCard()" disabled>⬇ Download</button>
+    </div>
+    <div class="scwrap"><img id="scImg" alt="" style="display:none"></div>
+    <p class="soon" id="scHint">Your shareable stats card for each session you've battled in appears here.</p>
+  </div>
+  <div class="phcard">
+    <h3>📜 Quest Log <button class="small ghost" style="float:right" onclick="loadMyHistory(true)">🔄</button></h3>
     <div class="mystats" id="myStats"></div>
     <div id="myHist"><p class="soon">Your battles across every session will be recorded here once you've played.</p></div>
   </div>
@@ -578,11 +598,6 @@ window.SS_CONFIG = {
     <button class="wide" id="authGo" onclick="authSubmit()">Log in</button>
   </div>
 </div>
-<div class="overlay" id="payModal"><div class="modal" style="max-width:520px;text-align:center">
-  <h3>🧾 Receipt</h3>
-  <img id="payImg" alt="receipt" style="max-width:100%;max-height:70vh;border-radius:10px;border:1px solid var(--line)">
-  <div class="actions"><button class="ghost" onclick="closeModal('payModal')">Close</button></div>
-</div></div>
 <div class="overlay" id="playerModal"><div class="modal">
   <h3 id="pmTitle">Add Player</h3>
   <div class="row" style="display:block"><label>Name</label><input id="pmName" style="width:100%"></div>
@@ -1439,7 +1454,10 @@ function playerExtras(id){
     if(won&&margin<=2) clutch++;
     if(won&&(!bestWin||margin>Math.abs(bestWin.s1-bestWin.s2))) bestWin=m;
   });
-  return {streak:best,clutch,bestWin};
+  const bestWinText = bestWin?
+    ("Best W · "+bestWin.s1+"–"+bestWin.s2+" vs "+
+     (bestWin.t1.includes(id)? bestWin.t2n : bestWin.t1n).join("/")) : "";
+  return {streak:best,clutch,bestWin,bestWinText};
 }
 function epithetFor(st,ex){
   if(st.g>=3&&st.winRate>=75) return "The Upside Down Conqueror";
@@ -1477,14 +1495,10 @@ function renderIG(){
   document.getElementById("igFlair").textContent=
     ex.streak>=2? "🔥 "+ex.streak+"-win streak" :
     ex.clutch>=1? "🧠 "+ex.clutch+" clutch win"+(ex.clutch>1?"s":"") : "⚡ First season with the Party";
-  const bw=ex.bestWin;
-  document.getElementById("igBest").textContent=
-    bw? "Best W · "+bw.s1+"–"+bw.s2+" vs "+(bw.t1.includes(id)?bw.t2n:bw.t1n).join("/") : "";
+  document.getElementById("igBest").textContent=ex.bestWinText||"";
   document.getElementById("igQuip").textContent=quipFor(st,ex);
 }
-function downloadIG(){
-  const id=document.getElementById("igSelect").value;
-  const p=player(id), st=statsFor(id), ex=playerExtras(id);
+function buildShareCard(name, st, ex, done){
   const W=720,H=1280,cx=W/2;
   const c=document.createElement("canvas"); c.width=W; c.height=H;
   const x=c.getContext("2d");
@@ -1532,13 +1546,13 @@ function downloadIG(){
     x.fillText("S T R A N G E R   S T R I N G S", cx, 292);
     // name with pink glow (auto-fit)
     let size=62; x.font="bold "+size+"px Georgia";
-    while(x.measureText(p.name.toUpperCase()).width>W-140 && size>30){ size-=4; x.font="bold "+size+"px Georgia"; }
+    while(x.measureText(name.toUpperCase()).width>W-140 && size>30){ size-=4; x.font="bold "+size+"px Georgia"; }
     x.save(); x.shadowColor="rgba(202,166,78,.8)"; x.shadowBlur=18;
-    x.fillStyle="#f5edd8"; x.fillText(p.name.toUpperCase(), cx, 358); x.restore();
+    x.fillStyle="#f5edd8"; x.fillText(name.toUpperCase(), cx, 358); x.restore();
     // mirrored upside-down name echo
     x.save(); x.translate(cx,380); x.rotate(Math.PI);
     x.globalAlpha=0.32; x.fillStyle="#caa64e"; x.font="bold "+Math.round(size*0.45)+"px Georgia";
-    x.fillText(p.name.toUpperCase(),0,0); x.restore();
+    x.fillText(name.toUpperCase(),0,0); x.restore();
     // cyan glow epithet
     x.save(); x.shadowColor="rgba(255,90,78,.9)"; x.shadowBlur=16;
     x.fillStyle="#ff5a4e"; x.font="800 24px Georgia";
@@ -1581,9 +1595,9 @@ function downloadIG(){
     const flair= ex.streak>=2? "🔥 "+ex.streak+"-WIN STREAK" :
                  ex.clutch>=1? "🧠 "+ex.clutch+" CLUTCH WIN"+(ex.clutch>1?"S":"") : "⚡ FIRST SEASON WITH THE PARTY";
     x.fillText(flair, cx, 1000); x.restore();
-    if(ex.bestWin){ const bw=ex.bestWin;
+    if(ex.bestWinText){
       x.fillStyle="#c9d6c4"; x.font="600 21px Georgia";
-      x.fillText("Best W · "+bw.s1+"–"+bw.s2+" vs "+(bw.t1.includes(id)?bw.t2n:bw.t1n).join("/"), cx, 1038); }
+      x.fillText(ex.bestWinText, cx, 1038); }
     let qsize=23; const quip=quipFor(st,ex);
     x.font="italic 600 "+qsize+"px Georgia";
     while(x.measureText(quip).width>W-120 && qsize>15){ qsize-=2; x.font="italic 600 "+qsize+"px Georgia"; }
@@ -1594,9 +1608,15 @@ function downloadIG(){
     x.fillText(new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}), cx, 1196);
     x.fillStyle="#9dc2a6"; x.font="600 15px Georgia";
     x.fillText("#StrangerStrings  #GreenfieldBadminton  #SeeYouOnCourt", cx, 1226);
-    c.toBlob(b=>download(p.name.replace(/\s+/g,"_")+"_stranger_strings_card.png",b));
+    done(c);
   };
   img.src=LOGO;
+}
+function downloadIG(){
+  const id=document.getElementById("igSelect").value;
+  const p=player(id), st=statsFor(id), ex=playerExtras(id);
+  buildShareCard(p.name, st, ex,
+    c=>c.toBlob(b=>download(p.name.replace(/\s+/g,"_")+"_stranger_strings_card.png",b)));
 }
 
 /* ======================= EXPORTS ======================= */
@@ -1611,19 +1631,11 @@ function exportMatchesCSV(){
   toast("Matches CSV downloaded");
 }
 /* ======================= LIVE BOARD (shareable) ======================= */
-function moneySummary(){
-  const shuttle=S.shuttles.reduce((a,s)=>a+(+s.price||0)*(+s.qty||0),0);
-  const court=(+S.money.rate||0)*(+S.money.hours||0);
-  const qm=+S.money.qm||0;
-  const n=+S.money.nPlayers || S.players.filter(p=>p.active).length || 1;
-  const total=shuttle+court+qm;
-  return {total, n, per:Math.ceil(total/Math.max(1,n))};
-}
 function liveData(){
   const avgMs=S.matches.length? S.matches.reduce((a,m)=>a+(m.end-m.start),0)/S.matches.length : 15*60000;
   const pl=id=>{const p=player(id);return{n:p?p.name:"?"};};
   return {
-    v:1, generated:now(), pay:moneySummary(),
+    v:1, generated:now(),
     sess:new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
     summary:{players:S.players.length,matches:S.matches.length,avgMs:Math.round(avgMs)},
     live:S.courts.filter(c=>c.start).map(c=>({court:c.name,start:c.start,
@@ -2248,15 +2260,13 @@ async function loadOpenSessions(){
     if(S.db && S.db.sessionId===s.id) o.selected=true;
     sel.appendChild(o); });
   bar.style.display="";
-  if(S.db && S.db.sessionId){ importRoster(); adminLoadPayments(); startAdminPayRealtime(); }
+  if(S.db && S.db.sessionId) importRoster();
 }
 async function selectSession(id){
   if(!id){ S.db=null; save(); document.getElementById("sessInfo").textContent=""; return; }
   S.db={sessionId:id}; save();
   toast("Session linked — matches now save to the database");
   importRoster(true);
-  adminLoadPayments();
-  startAdminPayRealtime();
 }
 let rosterTimer=null;
 async function importRoster(manual){
@@ -2332,13 +2342,6 @@ class MiniPhoenix{
         filter:"session_id=eq."+sessionId}]},
       access_token:auth? auth.access_token : SUPA.anon});
   }
-  subPayments(sessionId){
-    this.send("realtime:pay-"+sessionId.slice(0,8),"phx_join",{
-      config:{postgres_changes:[
-        {event:"INSERT",schema:"public",table:"payments",filter:"session_id=eq."+sessionId},
-        {event:"UPDATE",schema:"public",table:"payments",filter:"session_id=eq."+sessionId}]},
-      access_token:auth? auth.access_token : SUPA.anon});
-  }
   close(){ this.onclose=null; clearInterval(this.hb); try{ this.ws.close(); }catch(e){} }
 }
 /* ---- Phase 3: profile editing ---- */
@@ -2391,9 +2394,11 @@ async function loadMyHistory(manual){
     "&select=*&order=ended_at.desc&limit=200").catch(()=>null);
   if(!r||!r.ok){ if(manual) toast("Could not load history"); return; }
   const rows=await r.json();
+  myMatches=rows;
   if(!rows.length){
     stats.innerHTML="";
     hist.innerHTML='<p class="soon">Your battles across every session will be recorded here once you\'ve played.</p>';
+    renderRPG();
     return;
   }
   // resolve names + session titles
@@ -2434,6 +2439,8 @@ async function loadMyHistory(manual){
   });
   hist.innerHTML=html;
   histMatchCount=g;
+  mySessions=sess;
+  renderRPG();
 }
 /* ---- player live board ---- */
 function prefixCss(css,scope){
@@ -2462,9 +2469,6 @@ async function mountPlayerBoard(sessionId){
     pbAvg=state.summary.avgMs||pbAvg;
     wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
     if(histMatchCount>=0 && state.summary.matches>histMatchCount) loadMyHistory();
-    if(state.pay){ window.__lastBoardPay=state.pay;
-      const pd=document.getElementById("payDue");
-      if(pd) pd.textContent="₱"+state.pay.per+"  ·  split of ₱"+state.pay.total+" ÷ "+state.pay.n; }
   };
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
@@ -2474,7 +2478,6 @@ async function mountPlayerBoard(sessionId){
     else wrap.innerHTML='<main><p class="dim" style="margin-top:30px">Gate open · waiting for the queue master to start the night…</p></main>';
   };
   await pull();
-  refreshMyPayment(sessionId);
   clearInterval(pbPoll); pbPoll=setInterval(pull,12000);
   clearInterval(pbTick); pbTick=setInterval(()=>{
     wrap.querySelectorAll("[data-start]").forEach(el=>{
@@ -2499,138 +2502,90 @@ async function playerAutoBoard(){
   if(open) mountPlayerBoard(open.session_id);
 }
 
-/* ======================= PHASE 4 · PAYMENTS ======================= */
-/* ---- player side ---- */
-let payPollTimer=null, myPay=null;
-async function refreshMyPayment(sessionId){
-  if(!sessionId||!auth) return;
-  document.getElementById("payCard").style.display="";
-  const r=await sFetch("/rest/v1/payments?session_id=eq."+sessionId+"&profile_id=eq."+auth.uid+"&select=*").catch(()=>null);
-  if(r&&r.ok){ myPay=(await r.json())[0]||null; paintPayStatus(); }
-  clearTimeout(payPollTimer);
-  if(!myPay || myPay.status!=="verified")
-    payPollTimer=setTimeout(()=>refreshMyPayment(sessionId),30000);
+/* ======================= RPG PLAYER VIEW ======================= */
+let myMatches=[], mySessions={};
+function careerStatsFrom(rows,uid){
+  let w=0,diff=0,playMs=0,waitMin=0,waitN=0;
+  const ordered=[...rows].sort((a,b)=>new Date(a.ended_at)-new Date(b.ended_at));
+  let streak=0,best=0,clutch=0,bestWin=null;
+  ordered.forEach(m=>{
+    const onT1=m.t1.includes(uid), won=onT1===(m.s1>m.s2), margin=Math.abs(m.s1-m.s2);
+    if(won)w++; diff+= onT1? m.s1-m.s2 : m.s2-m.s1;
+    playMs+=new Date(m.ended_at)-new Date(m.started_at);
+    if(m.waits && m.waits[uid]!=null){ waitMin+=(+m.waits[uid]||0); waitN++; }
+    streak=won?streak+1:0; best=Math.max(best,streak);
+    if(won&&margin<=2) clutch++;
+    if(won&&(!bestWin||margin>Math.abs(bestWin.s1-bestWin.s2))) bestWin=m;
+  });
+  const g=rows.length;
+  const st={g,w,l:g-w,winRate:g?100*w/g:0,diff,
+    avgPlay:g? (playMs/g)/60000 : 0, avgWait: waitN? waitMin/waitN : 0};
+  const bestWinText=bestWin?
+    ("Best W · "+bestWin.s1+"–"+bestWin.s2+" vs "+
+     ((bestWin.t1.includes(uid)? bestWin.t2n : bestWin.t1n)||[]).map(n=>n||"Guest").join("/")):"";
+  return {st, ex:{streak:best,clutch,bestWin,bestWinText,curStreak:streak}};
 }
-function paintPayStatus(){
-  const st=document.getElementById("payStatus"), note=document.getElementById("payNote"),
-        btn=document.getElementById("payBtn");
-  note.textContent="";
-  if(!myPay){ st.textContent="No payment submitted"; st.style.color="var(--muted)";
-    btn.textContent="📤 Upload receipt"; btn.disabled=false; return; }
-  if(myPay.status==="submitted"){ st.textContent="Submitted — awaiting verification ⏳"; st.style.color="#b8860b";
-    btn.textContent="📤 Replace receipt"; btn.disabled=false; }
-  else if(myPay.status==="verified"){ st.textContent="Verified ✅ — thank you!"; st.style.color="var(--ok)";
-    btn.textContent="All settled 🏸"; btn.disabled=true; }
-  else{ st.textContent="Rejected — please re-upload"; st.style.color="var(--red)";
-    if(myPay.note){ note.style.color="var(--red)"; note.textContent="Note from admin: "+myPay.note; }
-    btn.textContent="📤 Re-upload receipt"; btn.disabled=false; }
+function xpOf(st){ return st.w*30+(st.l)*10; }
+function levelOf(xp){ let lv=1; while(xp>=25*lv*lv) lv++; return lv; }
+const BADGES=[
+ {id:"first",  em:"🩸", name:"First Blood",            d:"Win your first match",              f:(st,ex)=>st.w>=1},
+ {id:"slayer", em:"⚔️", name:"Demogorgon Slayer",      d:"Win 10 matches",                    f:(st,ex)=>st.w>=10},
+ {id:"conq",   em:"👑", name:"Upside Down Conqueror",  d:"75%+ win rate over 10+ games",      f:(st,ex)=>st.g>=10&&st.winRate>=75},
+ {id:"clutch", em:"🧠", name:"Mind Flayer Slayer",     d:"3 clutch wins (by 2 pts or less)",  f:(st,ex)=>ex.clutch>=3},
+ {id:"streak", em:"🔥", name:"Unstoppable",            d:"5-win streak",                      f:(st,ex)=>ex.streak>=5},
+ {id:"mara",   em:"🏃", name:"Marathoner",             d:"Play 25 matches",                   f:(st,ex)=>st.g>=25},
+ {id:"party",  em:"🗓", name:"Party Regular",          d:"Battle in 3 different sessions",    f:(st,ex,ns)=>ns>=3},
+ {id:"cent",   em:"💯", name:"Centurion of the Court", d:"Play 100 matches",                  f:(st,ex)=>st.g>=100},
+];
+function renderRPG(){
+  if(!myProfile) return;
+  const uid=auth.uid;
+  const {st,ex}=careerStatsFrom(myMatches,uid);
+  const nSessions=new Set(myMatches.map(m=>m.session_id)).size;
+  document.getElementById("csAv").textContent=(myProfile.reclub_name||"?").trim().slice(0,1).toUpperCase();
+  document.getElementById("csClass").textContent= st.g? epithetFor(st,ex) : "Unranked Wanderer";
+  const xp=xpOf(st), lv=levelOf(xp);
+  const prev=25*(lv-1)*(lv-1), next=25*lv*lv;
+  document.getElementById("csLvl").textContent=lv;
+  document.getElementById("csXp").textContent=xp+" XP · "+(next-xp)+" to LV "+(lv+1);
+  document.getElementById("xpFill").style.width=Math.min(100,100*(xp-prev)/(next-prev))+"%";
+  document.getElementById("csChips").innerHTML=
+    [["Wins",st.w],["Losses",st.l],["Win rate",st.g?Math.round(st.winRate)+"%":"—"],
+     ["+/-",(st.diff>0?"+":"")+st.diff],["Best streak",ex.streak]]
+    .map(x=>'<div class="mstat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("");
+  const bb=document.getElementById("csBadges");
+  bb.innerHTML=BADGES.map(b=>{
+    const un=b.f(st,ex,nSessions);
+    return '<div class="abadge'+(un?"":" locked")+'" title="'+esc(b.d)+'">'+
+      '<span class="em">'+(un?b.em:"🔒")+'</span><b>'+esc(b.name)+'</b></div>';
+  }).join("");
+  // session card picker
+  const sel=document.getElementById("scSel");
+  const seen=[]; myMatches.forEach(m=>{ if(!seen.includes(m.session_id)) seen.push(m.session_id); });
+  sel.innerHTML= seen.length? "":"<option>— no sessions yet —</option>";
+  seen.forEach(sid=>{ const s=mySessions[sid];
+    const o=document.createElement("option"); o.value=sid;
+    o.textContent=(s?s.title:"Session")+(s?" · "+s.session_date:"");
+    sel.appendChild(o); });
+  document.getElementById("scDl").disabled=!seen.length;
+  if(seen.length) renderSessionCard();
 }
-async function uploadReceipt(input){
-  const f=input.files&&input.files[0]; input.value="";
-  if(!f) return;
-  if(!pbSession) return toast("Join a session first");
-  const msg=document.getElementById("payMsg");
-  msg.style.color="var(--muted)"; msg.textContent="Uploading receipt…";
-  const ext=((f.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,""))||"jpg";
-  const path=pbSession+"/"+auth.uid+"/"+Date.now()+"."+ext;
-  const up=await fetch(SUPA.url+"/storage/v1/object/receipts/"+path,{method:"POST",
-    headers:{apikey:SUPA.anon, Authorization:"Bearer "+auth.access_token,
-      "Content-Type":f.type||"image/jpeg"},
-    body:f}).catch(()=>null);
-  if(!up||!up.ok){ msg.style.color="var(--red)";
-    msg.textContent="Upload failed — check your connection and try again."; return; }
-  const amt=(window.__lastBoardPay&&window.__lastBoardPay.per)||null;
-  const r=await sFetch("/rest/v1/payments?on_conflict=session_id,profile_id",{method:"POST",
-    headers:{Prefer:"resolution=merge-duplicates"},
-    body:[{session_id:pbSession, profile_id:auth.uid, amount:amt,
-      receipt_path:path, status:"submitted", note:null}]});
-  if(!r.ok){ msg.style.color="var(--red)";
-    msg.textContent="Receipt stored but recording it failed — try again."; return; }
-  msg.style.color="var(--ok)"; msg.textContent="Receipt sent! The queue master will verify it.";
-  refreshMyPayment(pbSession);
+let scCanvas=null;
+function renderSessionCard(){
+  const sid=document.getElementById("scSel").value;
+  const rows=myMatches.filter(m=>m.session_id===sid);
+  const img=document.getElementById("scImg"), hint=document.getElementById("scHint");
+  if(!rows.length){ img.style.display="none"; hint.style.display=""; return; }
+  const {st,ex}=careerStatsFrom(rows,auth.uid);
+  buildShareCard(myProfile.reclub_name||"Player", st, ex, c=>{
+    scCanvas=c; img.src=c.toDataURL("image/png");
+    img.style.display=""; hint.style.display="none";
+  });
 }
-/* ---- admin side ---- */
-let adminPaySocket=null, payPollAdmin=null;
-function updatePayBadge(n){
-  let b=document.getElementById("payBadge");
-  if(!b){ b=document.createElement("span"); b.id="payBadge"; b.className="paybadge";
-    document.getElementById("tabAdminBtn").appendChild(b); }
-  b.textContent=n; b.style.display=n>0?"":"none";
-}
-function payBeep(){ try{
-  const a=new (window.AudioContext||window.webkitAudioContext)();
-  const o=a.createOscillator(), g=a.createGain();
-  o.connect(g); g.connect(a.destination);
-  o.frequency.value=880; g.gain.value=0.05; o.start();
-  setTimeout(()=>{ o.stop(); a.close(); },150);
-}catch(e){} }
-async function adminLoadPayments(){
-  const box=document.getElementById("payList"), hint=document.getElementById("payHint");
-  if(!S.db||!S.db.sessionId){
-    box.innerHTML='<p class="hint">Select your active session in the Home tab to review payments.</p>';
-    updatePayBadge(0); return;
-  }
-  const r=await sFetch("/rest/v1/payments?session_id=eq."+S.db.sessionId+
-    "&select=*,profiles(reclub_name,full_name)&order=created_at.desc").catch(()=>null);
-  if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load payments.</p>'; return; }
-  const rows=await r.json();
-  const pending=rows.filter(x=>x.status==="submitted").length;
-  updatePayBadge(pending);
-  hint.textContent=rows.length? "· "+pending+" pending / "+rows.length+" total":"";
-  if(!rows.length){ box.innerHTML='<p class="hint">No payments submitted yet.</p>'; }
-  else{
-    box.innerHTML="";
-    rows.forEach(pm=>{
-      const div=document.createElement("div"); div.className="sessrow";
-      const nm=pm.profiles? (pm.profiles.reclub_name||pm.profiles.full_name||"Player"):"Player";
-      div.innerHTML='<div class="st"><b>'+esc(nm)+'</b><span>'+
-        (pm.amount!=null?("₱"+pm.amount+" · "):"")+
-        new Date(pm.created_at).toLocaleString(undefined,{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})+
-        (pm.status==="rejected"&&pm.note? " · "+esc(pm.note):"")+'</span></div>'+
-        '<span class="badge '+(pm.status==="verified"?"open":pm.status==="submitted"?"pend":"closed")+'">'+
-        pm.status.toUpperCase()+'</span>';
-      const view=document.createElement("button"); view.className="small ghost"; view.textContent="🧾 View";
-      view.onclick=()=>viewReceipt(pm.receipt_path); div.appendChild(view);
-      if(pm.status!=="verified"){
-        const ok=document.createElement("button"); ok.className="small"; ok.textContent="✅ Verify";
-        ok.onclick=()=>reviewPayment(pm.id,"verified",null); div.appendChild(ok); }
-      if(pm.status==="submitted"){
-        const rej=document.createElement("button"); rej.className="small ghost"; rej.textContent="❌ Reject";
-        rej.onclick=()=>{ const note=prompt("Reason (shown to the player):","Amount doesn't match");
-          if(note!==null) reviewPayment(pm.id,"rejected",note); };
-        div.appendChild(rej); }
-      box.appendChild(div);
-    });
-  }
-  clearTimeout(payPollAdmin); payPollAdmin=setTimeout(adminLoadPayments,45000);
-}
-async function reviewPayment(id,status,note){
-  const r=await sFetch("/rest/v1/payments?id=eq."+id,{method:"PATCH",
-    body:{status, note, reviewed_by:auth.uid}});
-  if(!r.ok) toast("Update failed — try again");
-  else toast(status==="verified"? "Payment verified ✅":"Payment rejected");
-  adminLoadPayments();
-}
-async function viewReceipt(path){
-  if(!path) return toast("No receipt file on this payment");
-  const r=await sFetch("/storage/v1/object/sign/receipts/"+path,{method:"POST",
-    body:{expiresIn:3600}}).catch(()=>null);
-  if(!r||!r.ok) return toast("Could not open the receipt");
-  const j=await r.json();
-  document.getElementById("payImg").src=SUPA.url+"/storage/v1"+j.signedURL;
-  openModal("payModal");
-}
-async function startAdminPayRealtime(){
-  if(!S.db||!S.db.sessionId||!myProfile||!myProfile.is_admin) return;
-  if(adminPaySocket) adminPaySocket.close();
-  try{
-    adminPaySocket=await new MiniPhoenix().connect();
-    adminPaySocket.oncdc=rec=>{ if(!rec) return;
-      adminLoadPayments();
-      if(rec.status==="submitted"){ toast("💸 New payment receipt to review"); payBeep(); } };
-    adminPaySocket.subPayments(S.db.sessionId);
-    adminPaySocket.onclose=()=>setTimeout(startAdminPayRealtime,6000);
-  }catch(e){ /* 45s polling continues */ }
+function downloadSessionCard(){
+  if(!scCanvas) return;
+  const s=mySessions[document.getElementById("scSel").value];
+  scCanvas.toBlob(b=>download(((myProfile.reclub_name||"player")+"_"+(s?s.session_date:"session")+"_card.png").replace(/\s+/g,"_"),b));
 }
 
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
