@@ -336,6 +336,7 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .abadge .em{font-size:22px}
 .abadge b{display:block;font-size:10px;margin-top:3px;line-height:1.25}
 .abadge.locked{opacity:.35;filter:grayscale(1)}
+.abadge small{display:block;font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.3}
 .scwrap{text-align:center;margin-top:10px}
 .scwrap img{max-width:250px;width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
 .lbprow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
@@ -395,6 +396,9 @@ window.SS_CONFIG = {
       <b style="font-size:13px;letter-spacing:.08em;color:var(--green)">🗓 ACTIVE SESSION</b>
       <select id="activeSess" style="flex:1;min-width:180px" onchange="selectSession(this.value)"></select>
       <button class="small ghost" onclick="importRoster(true)">🔄 Roster</button>
+      <button class="small ghost" onclick="adminAddRegistered()">➕ Add player</button>
+      <select id="regSel" style="max-width:170px"><option value="">➕ add registered…</option></select>
+      <button class="small ghost" onclick="adminAddRegistered()">Add</button>
       <button class="small ghost" onclick="adminRepairNames()" title="Backfill player names on old database matches from this device's local record">🩹 Fix names</button>
       <span class="hint" id="sessInfo"></span>
     </div>
@@ -524,7 +528,9 @@ window.SS_CONFIG = {
     <div id="sessList"><p class="hint">Loading sessions…</p></div>
   </div>
   <div class="card" style="max-width:760px;margin:14px auto 0">
-    <h3>🏆 Hall of Fame <button class="small ghost" style="float:right" onclick="loadHall(true)">🔄</button></h3>
+    <h3>🏆 Hall of Fame
+      <button class="small ghost" style="float:right" onclick="resetHall()" title="Wipe ALL recorded matches — clears the Hall, Quest Logs and Session Cards for everyone">🧨 Reset</button>
+      <button class="small ghost" style="float:right;margin-right:6px" onclick="loadHall(true)">🔄</button></h3>
     <div class="hallbox">
     <div class="authtabs" style="margin-bottom:10px">
       <button class="hfW on" onclick="hallMode('w')">Weekly</button>
@@ -537,6 +543,10 @@ window.SS_CONFIG = {
     </div>
     <div class="hfList"><p class="soon">Summoning the champions…</p></div>
     </div>
+  </div>
+  <div class="card" style="max-width:760px;margin:14px auto 0">
+    <p class="hint" style="text-align:right;margin:0">
+      <button class="small ghost" onclick="resetHall()">🧨 Reset Hall of Fame</button></p>
   </div>
   <div class="card" style="max-width:760px;margin:14px auto 0">
     <h3>🎞 Match Manager <button class="small ghost" style="float:right" onclick="adminLoadMatches(true)">🔄</button></h3>
@@ -2273,11 +2283,13 @@ async function adminLoadSessions(){
       '<span class="badge '+s.status+'">'+s.status.toUpperCase()+'</span>';
     const copy=document.createElement("button"); copy.className="small ghost"; copy.textContent="Copy code";
     copy.onclick=async()=>{ try{ await navigator.clipboard.writeText(s.code); }catch(e){} toast("Code "+s.code+" copied"); };
+    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+    del.title="Delete session"; del.onclick=()=>adminDeleteSession(s);
     const tog=document.createElement("button"); tog.className="small "+(s.status==="open"?"ghost":"");
     tog.textContent=s.status==="open"?"Close":"Reopen";
     tog.onclick=async()=>{ await sFetch("/rest/v1/sessions?id=eq."+s.id,{method:"PATCH",
       body:{status:s.status==="open"?"closed":"open"}}); adminLoadSessions(); };
-    div.append(copy,tog); box.appendChild(div);
+    div.append(copy,tog,del); box.appendChild(div);
   });
 }
 /* ---------- player: join by code ---------- */
@@ -2321,6 +2333,7 @@ async function loadOpenSessions(){
     if(S.db && S.db.sessionId===s.id) o.selected=true;
     sel.appendChild(o); });
   bar.style.display="";
+  fillRegSel();
   if(S.db && S.db.sessionId){ importRoster(); adminLoadMatches(); }
 }
 async function selectSession(id){
@@ -2628,7 +2641,7 @@ function renderRPG(){
   bb.innerHTML=BADGES.map(b=>{
     const un=b.f(st,ex,nSessions);
     return '<div class="abadge'+(un?"":" locked")+'" title="'+esc(b.d)+'">'+
-      '<span class="em">'+(un?b.em:"🔒")+'</span><b>'+esc(b.name)+'</b></div>';
+      '<span class="em">'+(un?b.em:"🔒")+'</span><b>'+esc(b.name)+'</b><small>'+esc(b.d)+'</small></div>';
   }).join("");
   // session card picker
   const sel=document.getElementById("scSel");
@@ -2735,6 +2748,46 @@ async function loadHall(manual){
       '<span class="lbnm">'+esc(x.display_name||"You")+'<span class="youpill">YOU</span></span>'+
       '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'%</small></span></div>'; }
   paintAll(html);
+}
+async function adminAddRegistered(){
+  if(!S.db||!S.db.sessionId) return toast("Select your active session first");
+  const u=prompt("Username of the registered player to add:"); if(!u) return;
+  const r=await sFetch("/rest/v1/profiles?username=eq."+encodeURIComponent(u.trim().toLowerCase())+"&select=id,reclub_name").catch(()=>null);
+  const rows=(r&&r.ok)? await r.json():[];
+  if(!rows.length) return alert("No registered player with username “"+u.trim()+"”. Check the spelling — usernames are what they log in with.");
+  const pr=await sFetch("/rest/v1/session_players?on_conflict=session_id,profile_id",{method:"POST",
+    headers:{Prefer:"resolution=merge-duplicates"},
+    body:[{session_id:S.db.sessionId, profile_id:rows[0].id, active:true}]});
+  if(!pr.ok) return toast("Could not add player");
+  toast(rows[0].reclub_name+" added to the session ✅");
+  importRoster(true);
+}
+async function fillRegSel(){
+  const sel=document.getElementById("regSel"); if(!sel) return;
+  const r=await sFetch("/rest/v1/profiles?select=id,reclub_name,level&order=reclub_name.asc").catch(()=>null);
+  if(!r||!r.ok) return;
+  const rows=await r.json();
+  sel.innerHTML='<option value="">➕ add registered…</option>';
+  rows.forEach(p=>{ if(S.players.some(x=>x.id===p.id)) return;
+    const o=document.createElement("option"); o.value=p.id;
+    o.textContent=p.reclub_name+" · "+(p.level||""); sel.appendChild(o); });
+}
+async function adminDeleteSession(s){
+  if(!confirm('Delete “'+s.title+'” ('+s.code+')?\n\nThis permanently removes its roster, its matches (from Quest Logs, Session Cards and the Hall of Fame), and its live board.')) return;
+  const r=await sFetch("/rest/v1/sessions?id=eq."+s.id,{method:"DELETE"});
+  if(!r.ok){ const j=await r.json().catch(()=>({}));
+    return alert("Delete failed: "+(j.message||("HTTP "+r.status))+"\n(If this mentions policies, run admin-tools.sql)"); }
+  if(S.db&&S.db.sessionId===s.id){ S.db=null; save(); }
+  toast("Session deleted");
+  adminLoadSessions(); loadOpenSessions(); adminLoadMatches(); loadHall();
+}
+async function resetHall(){
+  const t=prompt("⚠️ MASTER RESET\n\nThis permanently deletes EVERY recorded match — all Quest Logs, Session Cards and the entire Hall of Fame, for every player, across all sessions.\n\nType RESET to confirm:");
+  if(t!=="RESET") return;
+  const r=await sFetch("/rest/v1/matches?match_no=gte.0",{method:"DELETE"});
+  if(!r.ok) return toast("Reset failed");
+  toast("🧨 All match history wiped clean");
+  adminLoadMatches(); loadHall();
 }
 /* ---- admin: match manager ---- */
 async function adminLoadMatches(manual){
