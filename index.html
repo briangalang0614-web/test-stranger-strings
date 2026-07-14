@@ -561,6 +561,16 @@ window.SS_CONFIG = {
     <h3>🎞 Match Manager <button class="small ghost" style="float:right" onclick="adminLoadMatches(true)">🔄</button></h3>
     <div id="mmList"><p class="hint">Select your active session in the Home tab to manage its matches.</p></div>
   </div>
+  <div class="card" style="max-width:760px;margin:14px auto 0">
+    <h3>🎖 Side Quests <span class="hint" style="font-weight:400">+100 XP each</span></h3>
+    <div class="controls" style="flex-wrap:wrap">
+      <select id="sqPlayer" style="flex:1;min-width:150px"><option value="">choose a player…</option></select>
+      <input id="sqTitle" placeholder="Quest (e.g. Tagged us on IG)" style="flex:1;min-width:150px" value="Tagged Stranger Strings on IG">
+      <input id="sqXp" type="number" value="100" style="width:80px" title="XP to award">
+      <button class="small" onclick="awardQuest()">🎖 Award</button>
+    </div>
+    <div id="sqList"><p class="hint">Recent quest awards will appear here.</p></div>
+  </div>
 </section>
 
 <!-- ================= PLAYER HOME (Phase 1) ================= -->
@@ -2312,6 +2322,8 @@ async function enterApp(){
     adminLoadSessions();
     loadOpenSessions();
     loadHall();
+    fillQuestPlayers();
+    loadQuestLog();
   }else{
     document.querySelector("nav").style.display="none";
     document.querySelectorAll(".tab").forEach(t=>t.classList.remove("on"));
@@ -2321,7 +2333,7 @@ async function enterApp(){
     document.getElementById("phLevel").textContent=p.level||"—";
     document.getElementById("phUser").textContent=p.username||"—";
     playerAutoBoard();
-    loadMyHistory();
+    loadMyQuests().then(loadMyHistory);
     loadHall();
   }
 }
@@ -2733,14 +2745,15 @@ function renderRPG(){
   const nSessions=new Set(myMatches.map(m=>m.session_id)).size;
   document.getElementById("csAv").textContent=(myProfile.reclub_name||"?").trim().slice(0,1).toUpperCase();
   document.getElementById("csClass").textContent= st.g? epithetFor(st,ex) : "Unranked Wanderer";
-  const xp=xpOf(st), lv=levelOf(xp);
+  const qxp=window.__questXp||0;
+  const xp=xpOf(st)+qxp, lv=levelOf(xp);
   const prev=25*(lv-1)*(lv-1), next=25*lv*lv;
   document.getElementById("csLvl").textContent=lv;
-  document.getElementById("csXp").textContent=tierOf(lv)+" · "+xp+" XP · "+(next-xp)+" to LV "+(lv+1);
+  document.getElementById("csXp").textContent=tierOf(lv)+" · "+xp+" XP"+(qxp?" ("+qxp+" from quests)":"")+" · "+(next-xp)+" to LV "+(lv+1);
   document.getElementById("xpFill").style.width=Math.min(100,100*(xp-prev)/(next-prev))+"%";
   document.getElementById("csChips").innerHTML=
     [["Wins",st.w],["Losses",st.l],["Win rate",st.g?Math.round(st.winRate)+"%":"—"],
-     ["+/-",(st.diff>0?"+":"")+st.diff],["Best streak",ex.streak]]
+     ["+/-",(st.diff>0?"+":"")+st.diff],["Best streak",ex.streak],["Side quests",window.__questCount||0]]
     .map(x=>'<div class="mstat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("");
   const unlockedNow=BADGES.filter(b=>b.f(st,ex,nSessions)).map(b=>b.id);
   const bb=document.getElementById("csBadges");
@@ -2901,6 +2914,59 @@ async function resetHall(){
   toast("🧨 All match history wiped clean");
   adminLoadMatches(); loadHall();
 }
+/* ======================= SIDE QUESTS ======================= */
+async function loadMyQuests(){
+  if(!auth) return;
+  window.__questXp=0; window.__questCount=0;
+  const r=await sFetch("/rest/v1/quest_awards?profile_id=eq."+auth.uid+"&select=xp").catch(()=>null);
+  if(r&&r.ok){ const rows=await r.json();
+    window.__questXp=rows.reduce((a,x)=>a+(+x.xp||0),0);
+    window.__questCount=rows.length; }
+}
+async function fillQuestPlayers(){
+  const sel=document.getElementById("sqPlayer"); if(!sel) return;
+  const r=await sFetch("/rest/v1/profiles?select=id,reclub_name&order=reclub_name.asc").catch(()=>null);
+  if(!r||!r.ok) return;
+  const rows=await r.json();
+  sel.innerHTML='<option value="">choose a player…</option>';
+  rows.forEach(p=>{ const o=document.createElement("option"); o.value=p.id; o.textContent=p.reclub_name; sel.appendChild(o); });
+}
+async function awardQuest(){
+  const pid=document.getElementById("sqPlayer").value;
+  const title=(document.getElementById("sqTitle").value||"Side Quest").trim();
+  const xp=+document.getElementById("sqXp").value||100;
+  if(!pid) return toast("Pick a player first");
+  const nm=document.getElementById("sqPlayer").selectedOptions[0].textContent;
+  if(!await uiConfirm("Award "+xp+" XP to "+nm+' for "'+title+'"?',{title:"🎖 Award side quest",ok:"Award"})) return;
+  const r=await sFetch("/rest/v1/quest_awards",{method:"POST",
+    body:[{profile_id:pid, title, xp, awarded_by:auth.uid}]});
+  if(!r.ok) return toast("Could not award XP");
+  toast("🎖 +"+xp+" XP to "+nm);
+  loadQuestLog(); loadHall();
+}
+async function loadQuestLog(){
+  const box=document.getElementById("sqList"); if(!box) return;
+  const r=await sFetch("/rest/v1/quest_awards?select=*,profiles!quest_awards_profile_id_fkey(reclub_name)&order=created_at.desc&limit=25").catch(()=>null);
+  if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load quest awards.</p>'; return; }
+  const rows=await r.json();
+  if(!rows.length){ box.innerHTML='<p class="hint">No quest awards yet.</p>'; return; }
+  box.innerHTML="";
+  rows.forEach(q=>{
+    const div=document.createElement("div"); div.className="sessrow";
+    const nm=q.profiles? q.profiles.reclub_name : "Player";
+    div.innerHTML='<div class="st"><b>'+esc(nm)+' · +'+q.xp+' XP</b><span>'+esc(q.title)+' · '+
+      new Date(q.created_at).toLocaleDateString(undefined,{month:"short",day:"numeric"})+'</span></div>';
+    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+    del.onclick=async()=>{
+      if(!await uiConfirm("Revoke this "+q.xp+" XP award from "+nm+"?",{title:"Revoke award",ok:"Revoke"})) return;
+      const pr=await sFetch("/rest/v1/quest_awards?id=eq."+q.id,{method:"DELETE"});
+      toast(pr.ok?"Award revoked":"Revoke failed");
+      loadQuestLog(); loadHall();
+    };
+    div.appendChild(del); box.appendChild(div);
+  });
+}
+
 /* ---- admin: match manager ---- */
 async function adminLoadMatches(manual){
   const box=document.getElementById("mmList"); if(!box) return;
