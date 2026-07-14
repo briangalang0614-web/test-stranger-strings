@@ -337,6 +337,17 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .abadge b{display:block;font-size:10px;margin-top:3px;line-height:1.25}
 .abadge.locked{opacity:.35;filter:grayscale(1)}
 .abadge small{display:block;font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+.dlgmsg{font-size:14px;line-height:1.5;margin:2px 0 14px;white-space:pre-wrap}
+.dlg input{width:100%;margin-top:4px}
+#summonBanner{position:fixed;left:12px;right:12px;top:12px;z-index:210;background:linear-gradient(90deg,var(--green),#caa64e);color:#0a1a0f;font-weight:800;padding:14px 16px;border-radius:14px;box-shadow:0 8px 26px rgba(0,0,0,.4);display:none;text-align:center;letter-spacing:.02em;animation:summonPulse 1s ease-in-out infinite alternate}
+@keyframes summonPulse{from{box-shadow:0 8px 20px rgba(202,166,78,.3)}to{box-shadow:0 8px 34px rgba(202,166,78,.75)}}
+.lbnm.summoned{color:#caa64e;text-shadow:0 0 10px rgba(202,166,78,.7)}
+.ach-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);z-index:215;background:var(--panel);border:1.5px solid var(--green);border-radius:14px;padding:12px 18px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(31,68,41,.5);opacity:0;transition:all .4s;pointer-events:none}
+.ach-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ach-toast .ae{font-size:30px;filter:drop-shadow(0 0 8px rgba(202,166,78,.8))}
+.ach-toast b{display:block;font-size:14px;color:var(--green)}
+.ach-toast span{font-size:11px;color:var(--muted)}
+
 .scwrap{text-align:center;margin-top:10px}
 .scwrap img{max-width:250px;width:100%;border-radius:16px;border:1px solid var(--line);box-shadow:var(--shadow)}
 .lbprow{display:flex;align-items:center;gap:10px;padding:8px 6px;border-bottom:1px solid var(--line);font-size:14px}
@@ -397,8 +408,6 @@ window.SS_CONFIG = {
       <select id="activeSess" style="flex:1;min-width:180px" onchange="selectSession(this.value)"></select>
       <button class="small ghost" onclick="importRoster(true)">🔄 Roster</button>
       <button class="small ghost" onclick="adminAddRegistered()">➕ Add player</button>
-      <select id="regSel" style="max-width:170px"><option value="">➕ add registered…</option></select>
-      <button class="small ghost" onclick="adminAddRegistered()">Add</button>
       <button class="small ghost" onclick="adminRepairNames()" title="Backfill player names on old database matches from this device's local record">🩹 Fix names</button>
       <span class="hint" id="sessInfo"></span>
     </div>
@@ -654,8 +663,18 @@ window.SS_CONFIG = {
     <button class="wide" id="authGo" onclick="authSubmit()">Log in</button>
   </div>
 </div>
+<div id="summonBanner" onclick="hideSummon()"></div>
+<div class="overlay" id="dlgModal"><div class="modal dlg" style="max-width:420px">
+  <h3 id="dlgTitle">Confirm</h3>
+  <div class="dlgmsg" id="dlgMsg"></div>
+  <div id="dlgInputWrap" style="display:none"><input id="dlgInput"></div>
+  <div class="actions"><button class="ghost" id="dlgCancel">Cancel</button>
+    <button id="dlgOk">OK</button></div>
+</div></div>
 <div class="overlay" id="playerModal"><div class="modal">
   <h3 id="pmTitle">Add Player</h3>
+  <div class="row" style="display:none" id="pmRegWrap"><label>Registered player</label>
+    <select id="pmReg" style="width:100%" onchange="pmRegPick()"></select></div>
   <div class="row" style="display:block"><label>Name</label><input id="pmName" style="width:100%"></div>
   <div class="row" style="display:block"><label>Skill level</label><div class="levels" id="pmLevels"></div></div>
   <div class="row">
@@ -865,6 +884,43 @@ function toast(msg){
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
 }
 
+/* ---- styled dialogs ---- */
+function uiConfirm(msg,opts){ opts=opts||{};
+  return new Promise(res=>{
+    document.getElementById("dlgTitle").textContent=opts.title||"Please confirm";
+    document.getElementById("dlgMsg").textContent=msg;
+    document.getElementById("dlgInputWrap").style.display="none";
+    const ok=document.getElementById("dlgOk"), cx=document.getElementById("dlgCancel");
+    ok.textContent=opts.ok||"OK"; cx.style.display="";
+    const done=v=>{ closeModal("dlgModal"); ok.onclick=cx.onclick=null; res(v); };
+    ok.onclick=()=>done(true); cx.onclick=()=>done(false);
+    openModal("dlgModal");
+  });
+}
+function uiPrompt(msg,def,opts){ opts=opts||{};
+  return new Promise(res=>{
+    document.getElementById("dlgTitle").textContent=opts.title||"Enter a value";
+    document.getElementById("dlgMsg").textContent=msg;
+    document.getElementById("dlgInputWrap").style.display="";
+    const inp=document.getElementById("dlgInput");
+    inp.value=def!=null?def:""; inp.type=opts.type||"text";
+    const ok=document.getElementById("dlgOk"), cx=document.getElementById("dlgCancel");
+    ok.textContent=opts.ok||"OK"; cx.style.display="";
+    const done=v=>{ closeModal("dlgModal"); ok.onclick=cx.onclick=inp.onkeydown=null; res(v); };
+    ok.onclick=()=>done(inp.value); cx.onclick=()=>done(null);
+    inp.onkeydown=e=>{ if(e.key==="Enter")done(inp.value); };
+    openModal("dlgModal"); setTimeout(()=>inp.focus(),50);
+  });
+}
+/* ---- achievement unlock toast ---- */
+function achToast(emoji,name){
+  const t=document.createElement("div"); t.className="ach-toast";
+  t.innerHTML='<span class="ae">'+emoji+'</span><div><b>Achievement unlocked!</b><span>'+esc(name)+'</span></div>';
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add("show"));
+  setTimeout(()=>{ t.classList.remove("show"); setTimeout(()=>t.remove(),500); },3600);
+}
+
 /* ======================= PLAYERS ======================= */
 let editingId=null;
 function openPlayerModal(id){
@@ -877,8 +933,22 @@ function openPlayerModal(id){
   document.getElementById("pmActive").checked=p?p.active:true;
   document.getElementById("pmDelete").style.display=p?"":"none";
   buildLevelBtns(p?p.level:"Low Int");
+  window._pmReg=null;
+  const rw=document.getElementById("pmRegWrap");
+  if(!id && SUPA.url && myProfile && myProfile.is_admin && S.db && S.db.sessionId){
+    rw.style.display="block"; fillRegSel();
+  } else rw.style.display="none";
   openModal("playerModal");
   document.getElementById("pmName").focus();
+}
+function pmRegPick(){
+  const sel=document.getElementById("pmReg");
+  const o=sel.options[sel.selectedIndex];
+  if(!sel.value){ window._pmReg=null; return; }
+  const [nm,lv]=o.textContent.split(" · ");
+  window._pmReg={id:sel.value, name:nm};
+  document.getElementById("pmName").value=nm;
+  if(lv) buildLevelBtns(lv.trim());
 }
 let pickedLevel="Low Int";
 function buildLevelBtns(sel){
@@ -899,14 +969,21 @@ function savePlayer(){
   const fields={name,level:pickedLevel,timeIn:document.getElementById("pmIn").value,
     timeOut:document.getElementById("pmOut").value,active:document.getElementById("pmActive").checked};
   if(editingId){ Object.assign(player(editingId),fields); toast("Saved "+name); }
+  else if(window._pmReg){
+    S.players.push({id:window._pmReg.id,...fields,waitSince:now(),addedAt:now()});
+    sFetch("/rest/v1/session_players?on_conflict=session_id,profile_id",{method:"POST",
+      headers:{Prefer:"resolution=merge-duplicates"},
+      body:[{session_id:S.db.sessionId, profile_id:window._pmReg.id, active:true}]}).catch(()=>{});
+    toast("Added "+name+" (registered)"); window._pmReg=null;
+  }
   else { S.players.push({id:pidNew(),...fields,waitSince:now(),addedAt:now()}); toast("Added "+name); }
   save(); closeModal("playerModal"); renderHome();
 }
-function deletePlayer(id, fromModal){
+async function deletePlayer(id, fromModal){
   const p=player(id); if(!p) return;
   const own=ownerOf(id);
   if(own.kind==="c"&&own.o.start) return alert(p.name+" is mid-match — finish or cancel the game first.");
-  if(!confirm("Delete "+p.name+"? Their finished matches stay in the results.")) return;
+  if(!await uiConfirm("Delete "+p.name+"? Their finished matches stay in the results.",{title:"Delete player",ok:"Delete"})) return;
   removeEverywhere(id);
   S.players=S.players.filter(x=>x.id!==id);
   save(); if(fromModal) closeModal("playerModal"); renderHome();
@@ -2360,7 +2437,10 @@ async function importRoster(manual){
       added++;
     }
   });
-  document.getElementById("sessInfo").textContent=rows.length+" joined";
+  (function(){ const el=document.getElementById("sessInfo");
+    el.textContent=rows.length+" joined"; el.style.cursor="pointer"; el.title="Tap to see who joined";
+    el.onclick=()=>{ const names=rows.map(x=>x.profiles?(x.profiles.reclub_name||x.profiles.full_name||"Player"):"Player");
+      uiConfirm(names.length?names.join("\n"):"No one has joined yet.",{title:rows.length+" joined",ok:"Close"}); }; })();
   if(added){ save(); renderHome(); toast(added+(added===1?" player":" players")+" joined from the app"); }
   else if(manual) toast("Roster up to date");
   clearTimeout(rosterTimer);
@@ -2544,6 +2624,7 @@ async function mountPlayerBoard(sessionId){
     pbAvg=state.summary.avgMs||pbAvg;
     wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
     if(histMatchCount>=0 && state.summary.matches>histMatchCount){ loadMyHistory(); loadHall(); }
+    checkSummoned(state);
   };
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
@@ -2568,6 +2649,30 @@ async function mountPlayerBoard(sessionId){
     pbSocket.onclose=()=>setTimeout(()=>{ if(pbSession===sessionId) mountPlayerBoard(sessionId); },5000);
   }catch(e){ /* polling continues as fallback */ }
 }
+function myBoardName(){ return myProfile? (myProfile.reclub_name||myProfile.full_name||"") : ""; }
+function checkSummoned(state){
+  const me=myBoardName().trim().toLowerCase();
+  if(!me || !state || !state.next) { hideSummon(); return; }
+  const inNext=state.next.some(q=>[].concat(q.t1||[],q.t2||[]).some(p=>(p.n||"").trim().toLowerCase()===me));
+  // highlight my name in the Up Next pills
+  document.querySelectorAll("#pboardWrap .panel .pn").forEach(el=>{
+    if(el.textContent.trim().toLowerCase()===me) el.classList.add("summoned");
+  });
+  const banner=document.getElementById("summonBanner");
+  if(inNext){
+    if(window.__wasSummoned!==true){
+      banner.textContent="⚡ You're summoned! You're up next — head to the courts.";
+      banner.style.display="block";
+      try{ if(navigator.vibrate) navigator.vibrate([120,60,120]); }catch(e){}
+      try{ if(window.AudioContext||window.webkitAudioContext){ const a=new (window.AudioContext||window.webkitAudioContext)();
+        const o=a.createOscillator(),g=a.createGain(); o.connect(g); g.connect(a.destination);
+        o.frequency.value=784; g.gain.value=0.06; o.start(); setTimeout(()=>{o.frequency.value=1047;},120);
+        setTimeout(()=>{o.stop();a.close();},260); } }catch(e){}
+    }
+    window.__wasSummoned=true;
+  }else{ hideSummon(); }
+}
+function hideSummon(){ const b=document.getElementById("summonBanner"); if(b) b.style.display="none"; window.__wasSummoned=false; }
 async function playerAutoBoard(){
   const r=await sFetch("/rest/v1/session_players?profile_id=eq."+auth.uid+
     "&select=session_id,time_in,sessions(status)&order=time_in.desc&limit=10").catch(()=>null);
@@ -2637,12 +2742,18 @@ function renderRPG(){
     [["Wins",st.w],["Losses",st.l],["Win rate",st.g?Math.round(st.winRate)+"%":"—"],
      ["+/-",(st.diff>0?"+":"")+st.diff],["Best streak",ex.streak]]
     .map(x=>'<div class="mstat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("");
+  const unlockedNow=BADGES.filter(b=>b.f(st,ex,nSessions)).map(b=>b.id);
   const bb=document.getElementById("csBadges");
   bb.innerHTML=BADGES.map(b=>{
     const un=b.f(st,ex,nSessions);
     return '<div class="abadge'+(un?"":" locked")+'" title="'+esc(b.d)+'">'+
       '<span class="em">'+(un?b.em:"🔒")+'</span><b>'+esc(b.name)+'</b><small>'+esc(b.d)+'</small></div>';
   }).join("");
+  // celebrate newly-earned badges (skip the very first paint after login)
+  if(window.__badgeSeen){
+    BADGES.forEach(b=>{ if(unlockedNow.includes(b.id) && !window.__badgeSeen.includes(b.id)) achToast(b.em,b.name); });
+  }
+  window.__badgeSeen=unlockedNow;
   // session card picker
   const sel=document.getElementById("scSel");
   const seen=[]; myMatches.forEach(m=>{ if(!seen.includes(m.session_id)) seen.push(m.session_id); });
@@ -2733,23 +2844,24 @@ async function loadHall(manual){
     paintAll('<p class="soon">No battles logged in this window yet — the throne is up for grabs.</p>');
     return;
   }
-  rows.sort((a,b)=>b.wins-a.wins||b.win_rate-a.win_rate||b.diff-a.diff);
+  const xpOfRow=x=>(x.xp!=null? x.xp : x.wins*30+(x.games-x.wins)*10);
+  rows.sort((a,b)=>xpOfRow(b)-xpOfRow(a)||b.wins-a.wins||b.diff-a.diff);
   const medals=["🥇","🥈","🥉"];
   let html=rows.slice(0,10).map((x,i)=>{
     const me=auth&&x.profile_id===auth.uid;
     return '<div class="lbprow'+(me?" me":"")+'">'+
       '<span class="lbrank">'+(medals[i]||(i+1))+'</span>'+
       '<span class="lbnm">'+esc(x.display_name||"Player")+(me?'<span class="youpill">YOU</span>':"")+'</span>'+
-      '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'% · '+(x.diff>0?"+":"")+x.diff+'</small></span></div>';
+      '<span class="lbst">'+xpOfRow(x)+' XP <small>· '+x.wins+'W · '+x.games+'G · '+Math.round(x.win_rate)+'%</small></span></div>';
   }).join("");
   const myIdx=auth? rows.findIndex(x=>x.profile_id===auth.uid) : -1;
   if(myIdx>=10){ const x=rows[myIdx];
     html+='<div class="lbprow me"><span class="lbrank">'+(myIdx+1)+'</span>'+
       '<span class="lbnm">'+esc(x.display_name||"You")+'<span class="youpill">YOU</span></span>'+
-      '<span class="lbst">'+x.wins+'W <small>· '+x.games+'G · '+Math.round(x.win_rate)+'%</small></span></div>'; }
+      '<span class="lbst">'+xpOfRow(x)+' XP <small>· '+x.wins+'W · '+x.games+'G</small></span></div>'; }
   paintAll(html);
 }
-async function adminAddRegistered(){
+async function adminAddRegistered_unused(){
   if(!S.db||!S.db.sessionId) return toast("Select your active session first");
   const u=prompt("Username of the registered player to add:"); if(!u) return;
   const r=await sFetch("/rest/v1/profiles?username=eq."+encodeURIComponent(u.trim().toLowerCase())+"&select=id,reclub_name").catch(()=>null);
@@ -2763,11 +2875,11 @@ async function adminAddRegistered(){
   importRoster(true);
 }
 async function fillRegSel(){
-  const sel=document.getElementById("regSel"); if(!sel) return;
+  const sel=document.getElementById("pmReg"); if(!sel) return;
   const r=await sFetch("/rest/v1/profiles?select=id,reclub_name,level&order=reclub_name.asc").catch(()=>null);
   if(!r||!r.ok) return;
   const rows=await r.json();
-  sel.innerHTML='<option value="">➕ add registered…</option>';
+  sel.innerHTML='<option value="">— walk-in (type a name below) —</option>';
   rows.forEach(p=>{ if(S.players.some(x=>x.id===p.id)) return;
     const o=document.createElement("option"); o.value=p.id;
     o.textContent=p.reclub_name+" · "+(p.level||""); sel.appendChild(o); });
@@ -2806,8 +2918,8 @@ async function adminLoadMatches(manual){
       '<span class="sesscode">'+m.s1+'–'+m.s2+'</span>';
     const ed=document.createElement("button"); ed.className="small ghost"; ed.textContent="✏️";
     ed.onclick=async()=>{
-      const a=prompt("Team 1 score ("+((m.t1n||[]).join("/")||"T1")+"):",m.s1); if(a===null) return;
-      const b=prompt("Team 2 score ("+((m.t2n||[]).join("/")||"T2")+"):",m.s2); if(b===null) return;
+      const a=await uiPrompt("Team 1 score ("+((m.t1n||[]).join("/")||"T1")+"):",m.s1,{title:"Edit match #"+m.match_no,type:"number"}); if(a===null) return;
+      const b=await uiPrompt("Team 2 score ("+((m.t2n||[]).join("/")||"T2")+"):",m.s2,{title:"Edit match #"+m.match_no,type:"number"}); if(b===null) return;
       const s1=+a, s2=+b;
       if(!(s1>=0&&s2>=0)||s1===s2) return alert("Scores must be non-negative and not a draw.");
       const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"PATCH",body:{s1,s2}});
@@ -2816,7 +2928,7 @@ async function adminLoadMatches(manual){
     };
     const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
     del.onclick=async()=>{
-      if(!confirm("Delete match #"+m.match_no+" ("+m.s1+"–"+m.s2+")? This removes it from history and leaderboards.")) return;
+      if(!await uiConfirm("Delete match #"+m.match_no+" ("+m.s1+"–"+m.s2+")?\nThis removes it from history and leaderboards.",{title:"Delete match",ok:"Delete"})) return;
       const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"DELETE"});
       toast(pr.ok?"Match #"+m.match_no+" deleted":"Delete failed");
       adminLoadMatches();
