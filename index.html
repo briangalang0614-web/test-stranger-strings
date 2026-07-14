@@ -2735,6 +2735,7 @@ const BADGES=[
  {id:"wall",   em:"🛡", name:"Iron Wall",              d:"10-win streak",                     f:(st,ex)=>ex.streak>=10},
  {id:"owl",    em:"🌙", name:"Night Owl",              d:"Finish a match after 10pm",         f:(st,ex)=>ex.nights>=1},
  {id:"leader", em:"⚡", name:"Leader of the Party",    d:"Battle in 5 different sessions",    f:(st,ex,ns)=>ns>=5},
+ {id:"smashpro",em:"🏸", name:"SmashPro Elite",        d:"Join 10 sessions of Stranger Strings", f:(st,ex,ns)=>ns>=10},
 ];
 const TIERS=[[13,"Mythic"],[10,"Legend"],[8,"Warden"],[5,"Knight"],[3,"Squire"],[1,"Rookie"]];
 function tierOf(lv){ for(const [min,t] of TIERS) if(lv>=min) return t; return "Rookie"; }
