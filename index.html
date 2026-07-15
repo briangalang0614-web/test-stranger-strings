@@ -599,7 +599,8 @@ window.SS_CONFIG = {
       <input type="file" id="bsFile" accept="image/*" style="display:none" onchange="bsPickLogo(this)">
       <button class="small ghost" onclick="document.getElementById('bsFile').click()">🖼 Upload logo</button>
       <img id="bsPreview" style="width:30px;height:30px;border-radius:7px;display:none">
-      <button class="small" onclick="createCustomBadge()">🏅 Create</button>
+      <button class="small" id="bsCreateBtn" onclick="createCustomBadge()">🏅 Create</button>
+      <button class="small ghost" id="bsCancelBtn" style="display:none" onclick="bsCancelEdit()">Cancel</button>
     </div>
     <div class="controls" id="bsGrantWrap" style="flex-wrap:wrap;margin-top:8px;display:none">
       <select id="bsGrantBadge" style="min-width:130px"><option value="">badge…</option></select>
@@ -3112,7 +3113,27 @@ function fileToBadgeDataUrl(file,cb){
   img.onerror=()=>{ URL.revokeObjectURL(img.src); toast("Could not read that image"); };
   img.src=URL.createObjectURL(file);
 }
-let bsImg=null;
+let bsImg=null, bsEditing=null;
+function bsCancelEdit(){
+  bsEditing=null; bsImg=null;
+  document.getElementById("bsName").value=""; document.getElementById("bsDesc").value="";
+  document.getElementById("bsCrit").value="sessions"; bsCritChanged();
+  document.getElementById("bsThresh").value="10";
+  document.getElementById("bsPreview").style.display="none";
+  document.getElementById("bsCreateBtn").textContent="🏅 Create";
+  document.getElementById("bsCancelBtn").style.display="none";
+}
+function editCustomBadge(b){
+  bsEditing=b.id; bsImg=b.img;
+  document.getElementById("bsName").value=b.name;
+  document.getElementById("bsDesc").value=b.description||"";
+  document.getElementById("bsCrit").value=b.criteria; bsCritChanged();
+  document.getElementById("bsThresh").value=b.threshold;
+  const pv=document.getElementById("bsPreview"); pv.src=b.img; pv.style.display="inline-block";
+  document.getElementById("bsCreateBtn").textContent="💾 Save changes";
+  document.getElementById("bsCancelBtn").style.display="";
+  toast("Editing “"+b.name+"”");
+}
 function bsPickLogo(input){
   const f=input.files&&input.files[0]; input.value="";
   if(!f) return;
@@ -3134,12 +3155,18 @@ async function createCustomBadge(){
   if(!name) return toast("Give the badge a name");
   if(!bsImg) return toast("Upload a logo first");
   const body={name, description:desc||critText({criteria:crit,threshold:th}),
-    img:bsImg, criteria:crit, threshold:th, created_by:auth.uid};
-  const r=await sFetch("/rest/v1/custom_badges",{method:"POST",body:[body]});
-  if(!r.ok) return toast("Could not create badge");
-  toast("\U0001F3C5 Badge created: "+name);
-  bsImg=null; document.getElementById("bsPreview").style.display="none";
-  document.getElementById("bsName").value=""; document.getElementById("bsDesc").value="";
+    img:bsImg, criteria:crit, threshold:th};
+  let r;
+  if(bsEditing){
+    r=await sFetch("/rest/v1/custom_badges?id=eq."+bsEditing,{method:"PATCH",body});
+    if(!r.ok) return toast("Could not save changes");
+    toast("💾 Badge updated: "+name);
+  }else{
+    r=await sFetch("/rest/v1/custom_badges",{method:"POST",body:[Object.assign({created_by:auth.uid},body)]});
+    if(!r.ok) return toast("Could not create badge");
+    toast("🏅 Badge created: "+name);
+  }
+  bsCancelEdit();
   loadBadgeStudio();
 }
 async function grantCustomBadge(){
@@ -3148,17 +3175,18 @@ async function grantCustomBadge(){
   if(!bid||!pid) return toast("Pick a badge and a player");
   const bnm=document.getElementById("bsGrantBadge").selectedOptions[0].textContent;
   const pnm=document.getElementById("bsGrantPlayer").selectedOptions[0].textContent;
-  if(!await uiConfirm("Grant \u201c"+bnm+"\u201d to "+pnm+"?",{title:"\U0001F3C5 Grant badge",ok:"Grant"})) return;
+  if(!await uiConfirm("Grant \u201c"+bnm+"\u201d to "+pnm+"?",{title:"🏅 Grant badge",ok:"Grant"})) return;
   const r=await sFetch("/rest/v1/custom_badge_awards?on_conflict=badge_id,profile_id",{method:"POST",
     headers:{Prefer:"resolution=merge-duplicates"},
     body:[{badge_id:bid, profile_id:pid, awarded_by:auth.uid}]});
   if(!r.ok) return toast("Grant failed");
-  toast("\U0001F3C5 "+bnm+" granted to "+pnm);
+  toast("🏅 "+bnm+" granted to "+pnm);
 }
 async function deleteCustomBadge(b){
   if(!await uiConfirm('Delete badge "'+b.name+'"?\nIt disappears from every player\u2019s wall (grants are removed too).',{title:"Delete badge",ok:"Delete"})) return;
   const r=await sFetch("/rest/v1/custom_badges?id=eq."+b.id,{method:"DELETE"});
   toast(r.ok?"Badge deleted":"Delete failed");
+  if(bsEditing===b.id) bsCancelEdit();
   loadBadgeStudio();
 }
 async function loadBadgeStudio(){
@@ -3178,9 +3206,11 @@ async function loadBadgeStudio(){
     const div=document.createElement("div"); div.className="sessrow";
     div.innerHTML='<img src="'+b.img+'" style="width:34px;height:34px;border-radius:8px;flex:none">'+
       '<div class="st"><b>'+esc(b.name)+'</b><span>'+esc(critText(b))+(b.description?" \u00b7 "+esc(b.description):"")+'</span></div>';
-    const del=document.createElement("button"); del.className="small ghost"; del.textContent="\U0001F5D1";
+    const ed=document.createElement("button"); ed.className="small ghost"; ed.textContent="✏️";
+    ed.onclick=()=>editCustomBadge(b);
+    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
     del.onclick=()=>deleteCustomBadge(b);
-    div.appendChild(del); box.appendChild(div);
+    div.append(ed,del); box.appendChild(div);
   });
 }
 async function fillGrantPlayers(){
