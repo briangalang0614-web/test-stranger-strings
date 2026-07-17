@@ -297,6 +297,39 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 #playerHome{display:none;max-width:560px;margin:0 auto}
 .phcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:16px;margin:14px 0;box-shadow:var(--shadow)}
 .phcard h3{margin:0 0 10px;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+#playerHome{padding-bottom:96px}
+.ptab{display:none}.ptab.on{display:block;animation:ptin .25s ease}
+@keyframes ptin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#pnav{position:fixed;left:0;right:0;bottom:0;z-index:180;display:flex;justify-content:space-around;align-items:flex-end;
+  background:#0d2114;border-top:2px solid var(--green);padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  box-shadow:0 -6px 22px rgba(0,0,0,.35)}
+.pnb{background:none;border:none;color:#9db8a2;font-size:10.5px;font-weight:800;letter-spacing:.04em;
+  display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 8px;min-width:58px;cursor:pointer}
+.pnb span{font-size:21px;line-height:1}
+.pnb.on{color:#eac25f}
+.pnb.gate{margin-top:-26px}
+.pnb.gate span{width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--green),#caa64e);
+  display:flex;align-items:center;justify-content:center;font-size:26px;border:3px solid #0d2114;
+  box-shadow:0 6px 18px rgba(202,166,78,.45)}
+.pnb.gate.on span{box-shadow:0 0 22px rgba(202,166,78,.85)}
+.linkbtn{display:inline-block;background:var(--green);color:#f5eedb;font-weight:800;font-size:13.5px;
+  padding:9px 16px;border-radius:12px;text-decoration:none;letter-spacing:.03em;box-shadow:var(--shadow)}
+.ptnsec{margin:16px 0 6px;font-weight:800;font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.ptngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px}
+.ptn{display:block;text-align:center;background:var(--panel2);border:1.5px solid var(--line);border-radius:14px;
+  padding:12px 8px;text-decoration:none;color:var(--ink)}
+.ptn img{width:56px;height:56px;border-radius:12px;object-fit:cover;border:2px solid var(--line)}
+.ptn b{display:block;font-size:12px;margin-top:6px;line-height:1.25}
+.ptn small{color:var(--muted);font-size:10px}
+#achModal .modal{max-width:340px;text-align:center}
+.achbig{width:120px;height:120px;margin:6px auto 4px;display:flex;align-items:center;justify-content:center;
+  font-size:74px;filter:drop-shadow(0 0 16px rgba(202,166,78,.55))}
+.achbig img{width:120px;height:120px;border-radius:22px;object-fit:cover;border:3px solid var(--green);box-shadow:0 0 20px rgba(111,191,130,.4)}
+.achbig.locked{filter:grayscale(1);opacity:.45}
+#achName{font-family:Georgia,serif;font-size:22px;color:var(--green);margin:4px 0 2px}
+#achDesc{font-size:13.5px;color:var(--muted);margin-bottom:6px}
+#achState{font-size:12px;font-weight:800;letter-spacing:.08em}
+.achbrand{margin-top:12px;font-size:10px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase}
 .phrow{display:flex;justify-content:space-between;gap:10px;margin:6px 0;font-size:14.5px}
 .phrow span:first-child{color:var(--muted)}
 .joinrow{display:flex;gap:8px}
@@ -366,13 +399,13 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 /* ================================================================
    SUPABASE CONFIG — EDIT ONLY THE TWO VALUES BELOW
    url : your Project URL      (Supabase → Settings → API)
-   anon: your "anon public" key (same page — the long eyJ... string)
+   anon: your "anon public" key (same page — the long eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdnRoaWtudmJ3YmJzdXNqbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzgwNDgsImV4cCI6MjA5OTc1NDA0OH0.PNC4-ENCZM_lMvAUlVCzR6acKNDS9HLinDw_UIN0HeQ string)
    Keep each value inside ONE pair of straight quotes "like this".
    Leave both empty to run the classic offline/standalone mode.
    ================================================================ */
 window.SS_CONFIG = {
-  url:  "https://gmishjfworkylgweecob.supabase.co",
-  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA"
+  url:  "https://novthiknvbwbbsusjmjt.supabase.co",
+  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdnRoaWtudmJ3YmJzdXNqbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzgwNDgsImV4cCI6MjA5OTc1NDA0OH0.PNC4-ENCZM_lMvAUlVCzR6acKNDS9HLinDw_UIN0HeQ"
 };
 </script>
 <header>
@@ -537,6 +570,12 @@ window.SS_CONFIG = {
   <div class="card" style="max-width:760px;margin:0 auto 14px">
     <h3>👥 Players <button class="small" style="float:right" onclick="exportPlayers()">⬇ Export Excel</button></h3>
     <p id="plStats" class="hint" style="font-size:14px;margin:4px 0 2px">Loading…</p>
+    <div id="plList" style="margin-top:10px"></div>
+    <div class="controls" id="plPager" style="justify-content:space-between;display:none">
+      <button class="small ghost" id="plPrev" onclick="plPage(-1)">◀ Prev</button>
+      <span class="hint" id="plPageLbl"></span>
+      <button class="small ghost" id="plNext" onclick="plPage(1)">Next ▶</button>
+    </div>
   </div>
   <div class="card" style="max-width:760px;margin:0 auto">
     <h3>Sessions</h3>
@@ -613,12 +652,30 @@ window.SS_CONFIG = {
     </div>
     <div id="bsList" style="margin-top:10px"><p class="hint">Loading badges…</p></div>
   </div>
+  <div class="card" style="max-width:760px;margin:14px auto 0">
+    <h3>🤝 Community Partners</h3>
+    <div class="controls" style="flex-wrap:wrap">
+      <input id="ptnName" placeholder="Partner name" style="flex:1;min-width:140px">
+      <input id="ptnUrl" placeholder="Link (IG / website)" style="flex:1;min-width:140px">
+      <select id="ptnSec">
+        <option value="gear">⚔️ Weapon &amp; Gear Upgrades</option>
+        <option value="potion">🧪 Potions &amp; Buffs</option>
+        <option value="skill">📖 Skill Upgrades</option>
+      </select>
+      <input type="file" id="ptnFile" accept="image/*" style="display:none" onchange="ptnPickLogo(this)">
+      <button class="small ghost" onclick="document.getElementById('ptnFile').click()">🖼 Logo</button>
+      <img id="ptnPrev" style="width:30px;height:30px;border-radius:7px;display:none">
+      <button class="small" onclick="addPartner()">➕ Add</button>
+    </div>
+    <div id="ptnList" style="margin-top:10px"><p class="hint">Loading partners…</p></div>
+  </div>
 
 </section>
 
 <!-- ================= PLAYER HOME (Phase 1) ================= -->
 <section id="playerHome">
-  <div class="phcard">
+<div class="ptab" id="pt-profile">
+<div class="phcard">
     <h3>🎮 Character Sheet <button class="small ghost" style="float:right" onclick="toggleProfileEdit()">✏️ Edit</button></h3>
     <div class="csheet">
       <div class="cav" id="csAv">?</div>
@@ -648,34 +705,6 @@ window.SS_CONFIG = {
     </div>
   </div>
   <div class="phcard">
-    <h3>🎟 Enter the Gate — Session Code</h3>
-    <div class="joinrow">
-      <input id="joinCode" maxlength="6" placeholder="CODE">
-      <button onclick="playerJoin()">Join</button>
-    </div>
-    <p class="autherr" id="joinMsg"></p>
-  </div>
-  <div class="phcard">
-    <h3>🏅 Achievements</h3>
-    <div class="badges" id="csBadges"><p class="soon">Play matches to start unlocking badges.</p></div>
-  </div>
-  <div class="phcard">
-    <h3>🏆 Hall of Fame <button class="small ghost" style="float:right" onclick="loadHall(true)">🔄</button></h3>
-    <div class="hallbox">
-    <div class="authtabs" style="margin-bottom:10px">
-      <button class="hfW on" onclick="hallMode('w')">Weekly</button>
-      <button class="hfM" onclick="hallMode('m')">Monthly</button>
-      <button class="hfA" onclick="hallMode('a')">All-time</button>
-    </div>
-    <div class="controls" style="justify-content:space-between;margin-bottom:6px">
-      <button class="small ghost" onclick="hallNav(-1)">◀</button>
-      <b class="hfLabel" style="font-size:13px"></b>
-      <button class="small ghost hfNext" onclick="hallNav(1)">▶</button>
-    </div>
-    <div class="hfList"><p class="soon">Summoning the champions…</p></div>
-    </div>
-  </div>
-  <div class="phcard">
     <h3>🎴 Session Stat Cards</h3>
     <div class="controls">
       <select id="scSel" style="flex:1;min-width:150px" onchange="renderSessionCard()"></select>
@@ -693,9 +722,62 @@ window.SS_CONFIG = {
     <div class="mystats" id="myStats"></div>
     <div id="myHist"><p class="soon">Your battles across every session will be recorded here once you've played.</p></div>
   </div>
+  </div>
+<div class="ptab" id="pt-hall">
+<div class="phcard">
+    <h3>🏆 Hall of Fame <button class="small ghost" style="float:right" onclick="loadHall(true)">🔄</button></h3>
+    <div class="hallbox">
+    <div class="authtabs" style="margin-bottom:10px">
+      <button class="hfW on" onclick="hallMode('w')">Weekly</button>
+      <button class="hfM" onclick="hallMode('m')">Monthly</button>
+      <button class="hfA" onclick="hallMode('a')">All-time</button>
+    </div>
+    <div class="controls" style="justify-content:space-between;margin-bottom:6px">
+      <button class="small ghost" onclick="hallNav(-1)">◀</button>
+      <b class="hfLabel" style="font-size:13px"></b>
+      <button class="small ghost hfNext" onclick="hallNav(1)">▶</button>
+    </div>
+    <div class="hfList"><p class="soon">Summoning the champions…</p></div>
+    </div>
+  </div>
+  </div>
+<div class="ptab on" id="pt-gate">
+<div class="phcard">
+    <h3>🎟 Enter the Gate — Session Code</h3>
+    <div class="joinrow">
+      <input id="joinCode" maxlength="6" placeholder="CODE">
+      <button onclick="playerJoin()">Join</button>
+    </div>
+    <p class="autherr" id="joinMsg"></p>
+  </div>
   <div class="phcard" style="padding:8px"><div id="pboardWrap">
     <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
   </div></div>
+</div>
+<div class="ptab" id="pt-ach">
+<div class="phcard">
+    <h3>🏅 Achievements</h3>
+    <div class="badges" id="csBadges"><p class="soon">Play matches to start unlocking badges.</p></div>
+  </div>
+  </div>
+<div class="ptab" id="pt-partners">
+  <div class="phcard">
+    <h3>🤝 Community Partners</h3>
+    <div class="controls" style="justify-content:center;margin-bottom:6px">
+      <a class="linkbtn" href="https://www.instagram.com/strangerstrings.badminton?igsh=MTZ0Z3ZxMXozcXowZg%3D%3D&utm_source=qr" target="_blank" rel="noopener">📸 Instagram</a>
+      <a class="linkbtn" href="https://reclub.co/clubs/@stranger-strings-2" target="_blank" rel="noopener">🏸 Reclub</a>
+    </div>
+    <p class="soon" style="text-align:center">Allies of the Party — visit them, gear up, get stronger.</p>
+    <div id="ptnWrap"><p class="soon">Summoning our allies…</p></div>
+  </div>
+</div>
+  <nav id="pnav">
+    <button class="pnb" data-pt="pt-profile" onclick="ptShow('pt-profile')"><span>🎮</span>Profile</button>
+    <button class="pnb" data-pt="pt-hall" onclick="ptShow('pt-hall')"><span>🏆</span>Hall</button>
+    <button class="pnb gate on" data-pt="pt-gate" onclick="ptShow('pt-gate')"><span>⚡</span>The Gate</button>
+    <button class="pnb" data-pt="pt-ach" onclick="ptShow('pt-ach')"><span>🏅</span>Badges</button>
+    <button class="pnb" data-pt="pt-partners" onclick="ptShow('pt-partners')"><span>🤝</span>Partners</button>
+  </nav>
 </section>
 </main>
 <footer class="app">Stranger Strings · Greenfield Badminton Club</footer>
@@ -722,6 +804,16 @@ window.SS_CONFIG = {
   </div>
 </div>
 <div id="summonBanner" onclick="hideSummon()"></div>
+<div class="overlay" id="achModal" onclick="if(event.target===this)closeModal('achModal')">
+  <div class="modal">
+    <div class="achbig" id="achFace">🏅</div>
+    <div id="achName">Badge</div>
+    <div id="achDesc"></div>
+    <div id="achState"></div>
+    <div class="achbrand">Stranger Strings · Greenfield Badminton Club</div>
+    <div class="actions"><button class="ghost" onclick="closeModal('achModal')">Close</button></div>
+  </div>
+</div>
 <div class="overlay" id="dlgModal"><div class="modal dlg" style="max-width:420px">
   <h3 id="dlgTitle">Confirm</h3>
   <div class="dlgmsg" id="dlgMsg"></div>
@@ -2381,6 +2473,7 @@ async function enterApp(){
     loadOpenSessions();
     loadHall();
     loadPlayerStats();
+    loadPartnersAdmin();
     fillQuestPlayers();
     loadQuestLog();
     loadBadgeStudio();
@@ -2396,6 +2489,7 @@ async function enterApp(){
     pingPresence(); setInterval(pingPresence,60000);
     playerAutoBoard();
     Promise.all([loadMyQuests(),loadCustomBadges()]).then(loadMyHistory);
+    loadPartners();
     loadHall();
   }
 }
@@ -2639,6 +2733,7 @@ async function loadMyHistory(manual){
   myMatches=rows;
   if(!rows.length){
     stats.innerHTML="";
+    myHistRows=[]; histPageNo=0;
     hist.innerHTML='<p class="soon">Your battles across every session will be recorded here once you\'ve played.</p>';
     renderRPG();
     return;
@@ -2652,6 +2747,7 @@ async function loadMyHistory(manual){
   const sr=await sFetch("/rest/v1/sessions?id=in.("+[...sidSet].join(",")+")&select=id,title,session_date").catch(()=>null);
   if(sr&&sr.ok) (await sr.json()).forEach(s=>sess[s.id]=s);
   const nm=(id,i,stored)=>esc(names[id]||(stored&&stored[i])||"Guest");
+  window.__histNames=names;
   // career stats
   let w=0,diff=0;
   rows.forEach(m=>{ const onT1=m.t1.includes(uid), won=onT1===(m.s1>m.s2);
@@ -2659,7 +2755,22 @@ async function loadMyHistory(manual){
   const g=rows.length;
   stats.innerHTML=[["Games",g],["Wins",w],["Win rate",Math.round(100*w/g)+"%"],["+/-",(diff>0?"+":"")+diff]]
     .map(x=>'<div class="mstat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("");
-  // grouped list
+  // grouped list \u2014 15 most-recent per page
+  myHistRows=rows;
+  histPageNo=Math.min(histPageNo, Math.max(0,Math.ceil(rows.length/HIST_PAGE)-1));
+  mySessions=sess;
+  renderHistPage();
+  histMatchCount=g;
+  renderRPG();
+}
+let myHistRows=[], histPageNo=0;
+const HIST_PAGE=15;
+function histPage(d){ histPageNo=Math.max(0,histPageNo+d); renderHistPage(); }
+function renderHistPage(){
+  const hist=document.getElementById("myHist");
+  const uid=auth.uid, sess=mySessions, names=window.__histNames||{};
+  const nm=(id,i,stored)=>esc(names[id]||(stored&&stored[i])||"Guest");
+  const rows=myHistRows.slice(histPageNo*HIST_PAGE,(histPageNo+1)*HIST_PAGE);
   let html="", lastSess=null;
   rows.forEach(m=>{
     if(m.session_id!==lastSess){
@@ -2679,10 +2790,14 @@ async function loadMyHistory(manual){
       '<span class="sc">'+(onT1? m.s1+"–"+m.s2 : m.s2+"–"+m.s1)+'</span>'+
       '<span class="dur">'+mmss(new Date(m.ended_at)-new Date(m.started_at))+'</span></div>';
   });
+  const pages=Math.max(1,Math.ceil(myHistRows.length/HIST_PAGE));
+  if(pages>1){
+    html+='<div class="controls" style="justify-content:space-between;margin-top:10px">'+
+      '<button class="small ghost" onclick="histPage(-1)"'+(histPageNo<=0?" disabled":"")+'>\u25c0 Prev</button>'+
+      '<span class="hint">Page '+(histPageNo+1)+' of '+pages+' \u00b7 '+myHistRows.length+' battles</span>'+
+      '<button class="small ghost" onclick="histPage(1)"'+(histPageNo>=pages-1?" disabled":"")+'>Next \u25b6</button></div>';
+  }
   hist.innerHTML=html;
-  histMatchCount=g;
-  mySessions=sess;
-  renderRPG();
 }
 /* ---- player live board ---- */
 function prefixCss(css,scope){
@@ -2868,6 +2983,12 @@ function renderRPG(){
     customs.forEach(b=>{ if(unlockedNow.includes("c:"+b.id) && !window.__badgeSeen.includes("c:"+b.id)) achToast("🏅",b.name); });
   }
   window.__badgeSeen=unlockedNow;
+  const tiles=[...bb.querySelectorAll(".abadge")];
+  const all=[...BADGES.map(b=>({face:b.img&&b.f(st,ex,nSessions)?b.img:(b.f(st,ex,nSessions)?b.em:"🔒"),
+      isImg:!!b.img&&b.f(st,ex,nSessions), name:b.name, d:b.d, un:b.f(st,ex,nSessions)})),
+    ...customs.map(b=>{const un=customBadgeUnlocked(b,st,ex,nSessions);
+      return {face: un? b.img : "🔒", isImg:un, name:b.name, d:b.description||critText(b), un};})];
+  tiles.forEach((t,i)=>{ if(all[i]) t.onclick=()=>showAchPopup(all[i].face,all[i].isImg,all[i].name,all[i].d,all[i].un); t.style.cursor="pointer"; });
   // session card picker
   const sel=document.getElementById("scSel");
   const seen=[]; myMatches.forEach(m=>{ if(!seen.includes(m.session_id)) seen.push(m.session_id); });
@@ -3236,6 +3357,42 @@ function pingPresence(){
     body:{last_seen:new Date().toISOString()}}).catch(()=>{});
 }
 let playerStatsTimer=null;
+let plPageNo=0, plTotal=0;
+const PL_PAGE=15;
+function plPage(d){ plPageNo=Math.max(0,plPageNo+d); loadPlayerList(); }
+async function loadPlayerList(){
+  const box=document.getElementById("plList"); if(!box) return;
+  const r=await sFetch("/rest/v1/profiles?select=id,username,reclub_name,full_name,created_at,avatar"+
+    "&order=created_at.desc&limit="+PL_PAGE+"&offset="+(plPageNo*PL_PAGE)).catch(()=>null);
+  if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load players.</p>'; return; }
+  const rows=await r.json();
+  if(plPageNo>0 && !rows.length){ plPageNo--; return loadPlayerList(); }
+  box.innerHTML= rows.length? "" : '<p class="hint">No registered players yet.</p>';
+  rows.forEach(p=>{
+    const div=document.createElement("div"); div.className="sessrow";
+    const av=p.avatar? '<img src="'+p.avatar+'" style="width:34px;height:34px;border-radius:50%;flex:none;border:2px solid var(--green)">'
+      : '<span style="width:34px;height:34px;border-radius:50%;flex:none;background:var(--panel2);border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-weight:800">'+esc((p.reclub_name||"?").slice(0,1).toUpperCase())+'</span>';
+    div.innerHTML=av+'<div class="st"><b>'+esc(p.reclub_name||"Player")+'</b>'+
+      '<span>@'+esc(p.username||"")+' \u00b7 joined '+(p.created_at||"").slice(0,10)+'</span></div>';
+    if(p.id!==auth.uid){
+      const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+      del.onclick=async()=>{
+        if(!await uiConfirm('Delete "'+(p.reclub_name||p.username)+'" and their account?\nProfile, roster spots, quest XP and badges are removed permanently. Recorded matches keep their stored name.',
+          {title:"Delete player account",ok:"Delete"})) return;
+        const pr=await sFetch("/rest/v1/profiles?id=eq."+p.id,{method:"DELETE"});
+        toast(pr.ok? "Account deleted":"Delete failed");
+        loadPlayerList(); loadPlayerStats();
+      };
+      div.appendChild(del);
+    }
+    box.appendChild(div);
+  });
+  const pages=Math.max(1,Math.ceil(plTotal/PL_PAGE));
+  document.getElementById("plPager").style.display= plTotal>PL_PAGE? "flex":"none";
+  document.getElementById("plPageLbl").textContent="Page "+(plPageNo+1)+" of "+pages+" \u00b7 "+plTotal+" players";
+  document.getElementById("plPrev").disabled=plPageNo<=0;
+  document.getElementById("plNext").disabled=plPageNo>=pages-1;
+}
 async function loadPlayerStats(){
   const el=document.getElementById("plStats"); if(!el) return;
   const cutoff=new Date(Date.now()-5*60000).toISOString();
@@ -3243,6 +3400,7 @@ async function loadPlayerStats(){
     sFetch("/rest/v1/profiles?select=id").catch(()=>null),
     sFetch("/rest/v1/profiles?select=id&last_seen=gte."+cutoff).catch(()=>null)]);
   const total=ra&&ra.ok? (await ra.json()).length : "?";
+  if(typeof total==="number"){ plTotal=total; loadPlayerList(); }
   const online=ro&&ro.ok? (await ro.json()).length : "?";
   el.innerHTML='<b style="font-size:22px">'+total+'</b> registered &nbsp;\u00b7&nbsp; '+
     '<b style="font-size:22px;color:var(--ok)">'+online+'</b> online now';
@@ -3299,6 +3457,93 @@ async function exportPlayers(){
   }
 }
 
+/* ======================= PLAYER TABS + BADGE POPUP + PARTNERS ======================= */
+function ptShow(id){
+  document.querySelectorAll(".ptab").forEach(t=>t.classList.toggle("on",t.id===id));
+  document.querySelectorAll(".pnb").forEach(b=>b.classList.toggle("on",b.dataset.pt===id));
+  window.scrollTo({top:0});
+}
+function showAchPopup(face,isImg,name,desc,unlocked){
+  const f=document.getElementById("achFace");
+  f.className="achbig"+(unlocked?"":" locked");
+  f.innerHTML= isImg? '<img src="'+face+'" alt="">' : esc(face);
+  document.getElementById("achName").textContent=name;
+  document.getElementById("achDesc").textContent=desc||"";
+  const st=document.getElementById("achState");
+  st.textContent= unlocked? "UNLOCKED ✦" : "🔒 LOCKED — keep grinding";
+  st.style.color= unlocked? "var(--green)" : "var(--muted)";
+  openModal("achModal");
+}
+/* ---- community partners (player) ---- */
+const PTN_SECTIONS=[["gear","⚔️ Weapon & Gear Upgrades"],["potion","🧪 Potions & Buffs"],["skill","📖 Skill Upgrades"]];
+async function loadPartners(){
+  const wrap=document.getElementById("ptnWrap"); if(!wrap) return;
+  const r=await sFetch("/rest/v1/partners?select=*&order=created_at.asc").catch(()=>null);
+  if(!r||!r.ok){ wrap.innerHTML='<p class="soon">Could not load partners.</p>'; return; }
+  const rows=await r.json();
+  if(!rows.length){ wrap.innerHTML='<p class="soon">Partner guilds are being recruited — watch this space.</p>'; return; }
+  wrap.innerHTML="";
+  PTN_SECTIONS.forEach(([key,label])=>{
+    const list=rows.filter(p=>p.section===key);
+    if(!list.length) return;
+    const hd=document.createElement("div"); hd.className="ptnsec"; hd.textContent=label;
+    const grid=document.createElement("div"); grid.className="ptngrid";
+    list.forEach(p=>{
+      const a=document.createElement("a"); a.className="ptn";
+      if(p.url){ a.href=p.url; a.target="_blank"; a.rel="noopener"; }
+      a.innerHTML=(p.img?'<img src="'+p.img+'" alt="">':'<span style="font-size:40px">🏸</span>')+
+        '<b>'+esc(p.name)+'</b><small>Visit ↗</small>';
+      grid.appendChild(a);
+    });
+    wrap.append(hd,grid);
+  });
+}
+/* ---- community partners (admin) ---- */
+let ptnImg=null;
+function ptnPickLogo(input){
+  const f=input.files&&input.files[0]; input.value="";
+  if(!f) return;
+  fileToBadgeDataUrl(f,url=>{ ptnImg=url;
+    const pv=document.getElementById("ptnPrev"); pv.src=url; pv.style.display="inline-block"; });
+}
+async function addPartner(){
+  const name=(document.getElementById("ptnName").value||"").trim();
+  const url=(document.getElementById("ptnUrl").value||"").trim();
+  const section=document.getElementById("ptnSec").value;
+  if(!name) return toast("Give the partner a name");
+  if(!ptnImg) return toast("Upload their logo first");
+  const r=await sFetch("/rest/v1/partners",{method:"POST",
+    body:[{name,url,section,img:ptnImg,created_by:auth.uid}]});
+  if(!r.ok) return toast("Could not add partner");
+  toast("🤝 Partner added: "+name);
+  ptnImg=null; document.getElementById("ptnPrev").style.display="none";
+  document.getElementById("ptnName").value=""; document.getElementById("ptnUrl").value="";
+  loadPartnersAdmin();
+}
+async function loadPartnersAdmin(){
+  const box=document.getElementById("ptnList"); if(!box) return;
+  const r=await sFetch("/rest/v1/partners?select=*&order=created_at.desc").catch(()=>null);
+  if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load partners.</p>'; return; }
+  const rows=await r.json();
+  const lbl={gear:"⚔️ Gear",potion:"🧪 Potions",skill:"📖 Skills"};
+  if(!rows.length){ box.innerHTML='<p class="hint">No partners yet — add your first ally above.</p>'; return; }
+  box.innerHTML="";
+  rows.forEach(p=>{
+    const div=document.createElement("div"); div.className="sessrow";
+    div.innerHTML='<img src="'+p.img+'" style="width:34px;height:34px;border-radius:8px;flex:none">'+
+      '<div class="st"><b>'+esc(p.name)+'</b><span>'+(lbl[p.section]||p.section)+
+      (p.url?' · '+esc(p.url):'')+'</span></div>';
+    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+    del.onclick=async()=>{
+      if(!await uiConfirm('Remove partner "'+p.name+'" from the Community Partners wall?',{title:"Remove partner",ok:"Remove"})) return;
+      const pr=await sFetch("/rest/v1/partners?id=eq."+p.id,{method:"DELETE"});
+      toast(pr.ok?"Partner removed":"Remove failed");
+      loadPartnersAdmin();
+    };
+    div.appendChild(del); box.appendChild(div);
+  });
+}
+
 /* ---- admin: match manager ---- */
 async function adminLoadMatches(manual){
   const box=document.getElementById("mmList"); if(!box) return;
@@ -3335,6 +3580,14 @@ async function adminLoadMatches(manual){
   });
 }
 
+/* mobile: keep the focused auth field visible above the keyboard */
+(function(){
+  const wrap=document.getElementById("authScreen");
+  if(wrap) wrap.addEventListener("focusin",e=>{
+    if(e.target && e.target.matches && e.target.matches("input,select"))
+      setTimeout(()=>{ try{ e.target.scrollIntoView({block:"center",behavior:"smooth"}); }catch(_){ e.target.scrollIntoView(); } },300);
+  });
+})();
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
 function legacyInit(){
   document.getElementById("logoTop").src=LOGO;
