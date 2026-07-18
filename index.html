@@ -75,7 +75,7 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .home-grid{align-items:start}
 .kcol{position:relative}
 @media(min-width:1060px){
-  .home-grid{grid-template-columns:minmax(320px,430px) minmax(270px,1fr) minmax(300px,1.15fr);gap:24px}
+  .home-grid{grid-template-columns:minmax(300px,400px) minmax(240px,.85fr) minmax(430px,1.6fr);gap:24px}
   .kcol{min-height:380px}
   .kcol:not(:last-child)::after{content:"➜";position:absolute;right:-22px;top:160px;
     font-size:19px;color:var(--green);opacity:.6}
@@ -124,7 +124,8 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 /* two columns while each box can keep ≥185px (queues) / ≥235px (courts); otherwise one */
 .qwrap,.cwrap{display:grid;gap:10px}
 .qwrap{grid-template-columns:repeat(auto-fill,minmax(max(185px,calc(50% - 5px)),1fr))}
-.cwrap{grid-template-columns:repeat(auto-fill,minmax(max(235px,calc(50% - 5px)),1fr))}
+.cwrap{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){.cwrap{grid-template-columns:1fr}}
 .scorerow{display:flex;align-items:center;justify-content:center;gap:9px;margin:2px 0 9px}
 .tsc{font-size:12.5px;font-weight:800;color:var(--muted)}
 .cscore{width:64px;text-align:center;font:700 22px Georgia,serif;background:var(--chipbg);
@@ -396,104 +397,25 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .lbst small{color:var(--muted);font-weight:600}
 .lbav{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none}
 
-/* ================= ADMIN SKIN — clean dark dashboard (cosmetics only) ================= */
-body.adminskin{
-  --bg:#0d1220; --panel:#161c2c; --panel2:#1e2536; --ink:#e9edf5; --muted:#98a2b8;
-  --green:#7cb08a; --green2:#639674; --green3:#69a37a; --red:#ff6b57; --gold:#e5e9f2;
-  --blue:#7aa2ff; --line:rgba(255,255,255,.07); --chipbg:#10151f;
-  --shadow:0 8px 24px rgba(0,0,0,.35);
-  --ok:#4e9a63; --warn:#f5b759; --t1bg:rgba(122,162,255,.07); --t2bg:rgba(255,107,87,.07);
-  background-image:none;
-  font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
-}
-body.adminskin h1,body.adminskin h2,body.adminskin h3,body.adminskin h4,body.adminskin .serif{
-  font-family:inherit;font-weight:700;letter-spacing:0}
-body.adminskin header{background:transparent;border-bottom:1px solid var(--line);box-shadow:none;padding:14px 22px;position:static}
-body.adminskin header .brand{color:#e9edf5;letter-spacing:.14em}
-body.adminskin nav{gap:4px}
-body.adminskin nav button{color:var(--muted);border:none;border-radius:999px;padding:8px 14px;font-weight:600}
-body.adminskin nav button.on{color:transparent;background:var(--green);color:#10241a;filter:none}
-body.adminskin button{border-radius:12px;background:var(--panel2);color:var(--ink);font-weight:600;
-  border:1px solid var(--line);padding:8px 14px}
-body.adminskin button:not(.ghost):not(.small){background:var(--green);border:none;
-  color:#10241a}
-body.adminskin button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
-body.adminskin button.small{padding:6px 11px;font-size:13px}
-body.adminskin input,body.adminskin select,body.adminskin textarea{
-  background:var(--chipbg);border:1px solid var(--line);border-radius:12px;padding:9px 12px;color:var(--ink)}
-body.adminskin input:focus,body.adminskin select:focus,body.adminskin textarea:focus{
-  outline:none;border-color:var(--green)}
-body.adminskin .card{background:var(--panel);border:1px solid var(--line);border-radius:20px;
-  padding:20px;box-shadow:var(--shadow)}
-body.adminskin .card h3{color:var(--muted);font-size:12.5px;letter-spacing:.16em;font-weight:700}
-body.adminskin .sessrow{border-bottom:1px solid var(--line);padding:12px 6px}
-body.adminskin .cwrap{grid-template-columns:repeat(2,1fr)}
-@media(max-width:900px){body.adminskin .cwrap{grid-template-columns:1fr}}
-body.adminskin .hallbox,body.adminskin .qcol,body.adminskin .courtbox{
-  background:var(--panel2);border:1px solid var(--line);border-radius:16px}
-body.adminskin .modal{background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
-body.adminskin .overlay{background:rgba(5,8,15,.7)}
-body.adminskin .userbadge{color:var(--muted)}
-body.adminskin ::placeholder{color:#5b6478}
-body.adminskin .hint{color:var(--muted)}
+
+
 /* monotone emoji/icons: flat silhouettes */
-body.adminskin nav button{color:var(--muted);filter:grayscale(1)}
-body.adminskin button.ghost{color:var(--muted);filter:grayscale(1)}
-body.adminskin button.small{color:var(--ink);filter:grayscale(1)}
-body.adminskin .card h3{color:var(--muted);filter:grayscale(1)}
-body.adminskin .card h3 b, body.adminskin .card h3 .hint{color:var(--muted);filter:grayscale(1)}
-body.adminskin .userbadge{color:var(--muted);filter:grayscale(1)}
-body.adminskin .pcard button, body.adminskin .pcard .mini{background:transparent;border:none;
-  padding:2px 5px;color:var(--ink);filter:grayscale(1)}
-body.adminskin .pcard button:hover{filter:none}
 /* --- state-honest pills: only the active tab is green --- */
-body.adminskin nav button:not(.on){background:transparent;border:none;color:var(--muted);filter:grayscale(1)}
-body.adminskin .authtabs button{border-radius:999px;font-weight:700;padding:8px 16px}
-body.adminskin .authtabs button:not(.on){background:var(--panel2);border:1px solid var(--line);color:var(--muted);filter:grayscale(1)}
-body.adminskin .authtabs button.on{background:var(--green);border:none;color:#10241a}
 /* --- demote sort filter chips --- */
-body.adminskin .sorts button:not(.on):not(.ghost){background:var(--panel2);border:1px solid var(--line);color:var(--muted);filter:grayscale(1)}
-body.adminskin .sorts button.on{background:var(--green);color:#10241a}
 /* --- native controls in dark --- */
-body.adminskin{color-scheme:dark}
 /* --- brand keeps its serif soul --- */
-body.adminskin header .brand h1{font-family:Georgia,"Iowan Old Style",serif;letter-spacing:.1em}
 /* --- two-column admin dashboard on wide screens --- */
-@media(min-width:1100px){
-  body.adminskin #tab-admin.on{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;
-    max-width:1240px;margin:0 auto;padding:0 10px}
-  body.adminskin #tab-admin>.card{max-width:none!important;margin:0!important}
-}
+
 /* --- UI evaluation fixes --- */
-body.adminskin{color-scheme:dark}
-body.adminskin{--muted:#98a2b8}
-body.adminskin header .brand h1{font-family:Georgia,"Iowan Old Style",serif;letter-spacing:.12em}
 /* nav: only the active tab is a green pill */
-body.adminskin nav button:not(.ghost):not(.small){background:transparent;border:none;
-  color:var(--muted);filter:grayscale(1)}
-body.adminskin nav button.on:not(.ghost):not(.small){background:var(--green);color:#10241a;filter:none}
 /* hall mode toggles: quiet unless selected */
-body.adminskin button.hfW:not(.small),body.adminskin button.hfM:not(.small),body.adminskin button.hfA:not(.small){
-  background:var(--panel2);border:1px solid var(--line);color:var(--muted);filter:grayscale(1)}
-body.adminskin button.hfW.on:not(.small),body.adminskin button.hfM.on:not(.small),body.adminskin button.hfA.on:not(.small){
-  background:var(--green);border:none;color:#10241a;filter:none}
 /* filter chips are toggles, not CTAs */
-body.adminskin button[data-sort]:not(.ghost):not(.small){background:var(--panel2);border:1px solid var(--line);
-  color:var(--ink);filter:grayscale(1)}
 /* selects/inputs inside card headers must not inherit the silhouette */
-body.adminskin .card h3 select,body.adminskin .card h3 input{color:var(--ink);text-shadow:none;filter:none}
 /* wide screens: two-column admin dashboard */
 
 
 
-/* admin skin — light variant (toggle via the existing sun/moon button) */
-body.adminskin:not(.dark){
-  --bg:#eef1f6; --panel:#ffffff; --panel2:#f2f4f9; --ink:#1d2432; --muted:#5f6a80;
-  --line:rgba(15,25,50,.10); --chipbg:#ffffff; --shadow:0 8px 24px rgba(20,30,60,.08);
-  --gold:#3c4658;
-}
-body.adminskin:not(.dark) nav button.on:not(.ghost):not(.small),
-body.adminskin:not(.dark) button:not(.ghost):not(.small){color:#123020}
+
 </style>
 </head>
 <body>
@@ -688,7 +610,7 @@ window.SS_CONFIG = {
   <div class="card" style="max-width:760px;margin:14px auto 0">
     <h3>♛ Hall of Fame
       <button class="small ghost" style="float:right" onclick="resetHall()" title="Wipe ALL recorded matches — clears the Hall, Quest Logs and Session Cards for everyone">↺ Reset</button>
-      <button class="small ghost" style="float:right;margin-right:6px" onclick="loadHall(true)">⟳</button></h3>
+      <button class="small ghost" style="float:right;margin-right:6px" onclick="loadHall(true)">🔄</button></h3>
     <div class="hallbox">
     <div class="authtabs" style="margin-bottom:10px">
       <button class="hfW on" onclick="hallMode('w')">Weekly</button>
@@ -713,7 +635,7 @@ window.SS_CONFIG = {
       <button class="small ghost" onclick="resetHall()">↺ Reset Hall</button></p>
   </div>
   <div class="card" style="max-width:760px;margin:14px auto 0">
-    <h3>🎞 Match Manager <button class="small ghost" style="float:right" onclick="adminLoadMatches(true)">⟳</button></h3>
+    <h3>🎞 Match Manager <button class="small ghost" style="float:right" onclick="adminLoadMatches(true)">🔄</button></h3>
     <div id="mmList"><p class="hint">Select your active session in the Home tab to manage its matches.</p></div>
   </div>
   <div class="card" style="max-width:760px;margin:14px auto 0">
@@ -2552,8 +2474,7 @@ async function authSubmit(){
   }catch(e){ err.textContent=e.message||"Something went wrong."; }
   document.getElementById("authGo").disabled=false;
 }
-function doLogout(){
-  document.body.classList.remove("adminskin"); auth=null; myProfile=null; authSave(); location.reload(); }
+function doLogout(){ auth=null; myProfile=null; authSave(); location.reload(); }
 /* ---------- routing ---------- */
 function showAuth(){
   document.getElementById("authLogo").src=LOGO;
@@ -2569,7 +2490,6 @@ async function enterApp(){
   document.getElementById("userBadge").style.display="";
   document.getElementById("userBadge").textContent=(p.reclub_name||p.name||"")+(p.is_admin?" · admin":"");
   document.getElementById("logoutBtn").style.display="";
-  document.body.classList.toggle("adminskin", !!p.is_admin);
   if(p.is_admin){
     document.getElementById("tabAdminBtn").style.display="flex";
     pingPresence(); setInterval(pingPresence,60000);
@@ -3588,7 +3508,7 @@ async function loadPartners(){
   const r=await sFetch("/rest/v1/partners?select=*&order=created_at.asc").catch(()=>null);
   if(!r||!r.ok){ wrap.innerHTML='<p class="soon">Could not load partners.</p>'; return; }
   const rows=await r.json();
-  if(!rows.length){ wrap.innerHTML='<p class="soon">Partner guilds are being recruited — watch this space.</p>'; return; }
+  if(!rows.length){ wrap.innerHTML='<p class="soon" style="text-align:center">Partner guilds are being recruited — watch this space.</p>'; return; }
   wrap.innerHTML="";
   PTN_SECTIONS.forEach(([key,label])=>{
     const list=rows.filter(p=>p.section===key);
