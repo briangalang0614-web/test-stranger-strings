@@ -75,7 +75,7 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .home-grid{align-items:start}
 .kcol{position:relative}
 @media(min-width:1060px){
-  .home-grid{grid-template-columns:minmax(300px,400px) minmax(240px,.85fr) minmax(430px,1.6fr);gap:24px}
+  .home-grid{grid-template-columns:minmax(280px,360px) minmax(430px,1fr) minmax(430px,1fr);gap:20px}
   .kcol{min-height:380px}
   .kcol:not(:last-child)::after{content:"➜";position:absolute;right:-22px;top:160px;
     font-size:19px;color:var(--green);opacity:.6}
@@ -111,7 +111,7 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .pcard.ghosting{opacity:.35}
 .dragghost{position:fixed;z-index:999;pointer-events:none;transform:translate(-50%,-55%);box-shadow:0 8px 20px rgba(0,0,0,.35)}
 .mini{padding:4px 6px 4px 10px}
-.mini .nm{font-size:14px}
+.mini .nm{font-size:13.5px;letter-spacing:-.2px}
 .mini .tl{font-size:10.5px;letter-spacing:-.01em}
 .mini .lvl{font-size:9.5px;padding:1px 6px}
 .slot{min-height:48px;border:2px dashed var(--line);border-radius:8px;padding:2px;display:flex;min-width:0;overflow:hidden}
@@ -123,7 +123,8 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 /* ---------- queues & courts ---------- */
 /* two columns while each box can keep ≥185px (queues) / ≥235px (courts); otherwise one */
 .qwrap,.cwrap{display:grid;gap:10px}
-.qwrap{grid-template-columns:repeat(auto-fill,minmax(max(185px,calc(50% - 5px)),1fr))}
+.qwrap{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:760px){.qwrap{grid-template-columns:1fr}}
 .cwrap{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media(max-width:760px){.cwrap{grid-template-columns:1fr}}
 .scorerow{display:flex;align-items:center;justify-content:center;gap:9px;margin:2px 0 9px}
@@ -151,6 +152,7 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .repflag{font-size:10px;font-weight:800;letter-spacing:.04em;color:#ff5a4e;margin-left:7px;white-space:nowrap}
 .teambox.t2 .tlab{color:var(--red)}
 .slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.slot{min-width:0}
 .slot .ph{color:var(--muted);font-size:10.5px;margin:auto;pointer-events:none;text-align:center}
 .bbar{display:flex;gap:6px;align-items:center}
 .btn-queue{background:var(--green)}
