@@ -704,7 +704,7 @@ window.SS_CONFIG = {
 <section id="playerHome">
 <div class="ptab" id="pt-profile">
 <div class="phcard">
-    <h3>🎮 Character Sheet <button class="small ghost" style="float:right" onclick="toggleProfileEdit()">✏️ Edit</button></h3>
+    <h3>🎮 Character Sheet <button class="small ghost" style="float:right" onclick="toggleProfileEdit()">✏️ Edit</button><button class="small ghost" style="float:right;margin-right:6px" onclick="shareMyCard()">📸 Share</button></h3>
     <div class="csheet">
       <div class="cav" id="csAv">?</div>
       <div class="cinfo">
@@ -777,6 +777,7 @@ window.SS_CONFIG = {
       <button onclick="playerJoin()">Join</button>
     </div>
     <p class="autherr" id="joinMsg"></p>
+    <p class="soon" id="gateHint" style="margin-top:8px;font-size:12.5px">📱 Scan the session QR at the front desk, or ask the Queue Master for tonight's 6-character code.</p>
   </div>
   <div class="phcard" style="padding:8px"><div id="pboardWrap">
     <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
@@ -1948,6 +1949,23 @@ function buildShareCard(name, st, ex, done, opts){
   };
   img.src=LOGO;
 }
+function shareMyCard(){
+  const s=window.__myShare;
+  if(!s || !s.st || !s.st.g){ toast("Play a match first — your card unlocks once you\u2019ve battled."); return; }
+  toast("Building your card\u2026");
+  buildShareCard(s.name, s.st, s.ex, c=>{
+    c.toBlob(async b=>{
+      const fname=s.name.replace(/\s+/g,"_")+"_stranger_strings_card.png";
+      try{
+        if(navigator.canShare){
+          const file=new File([b],fname,{type:"image/png"});
+          if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:"My Stranger Strings card"}); return; }
+        }
+      }catch(e){}
+      download(fname,b);   // fallback: straight download
+    });
+  });
+}
 function downloadIG(){
   const id=document.getElementById("igSelect").value;
   const p=player(id), st=statsFor(id), ex=playerExtras(id);
@@ -2918,6 +2936,7 @@ function prefixCss(css,scope){
 }
 let pbSocket=null, pbPoll=null, pbTick=null, pbAvg=15*60000, pbSession=null;
 async function mountPlayerBoard(sessionId){
+  try{ localStorage.setItem("ss_lastSession", sessionId); }catch(e){}
   pbSession=sessionId;
   const wrap=document.getElementById("pboardWrap");
   if(!document.getElementById("pboardCss")){
@@ -2954,8 +2973,10 @@ async function mountPlayerBoard(sessionId){
     if(rows[0]&&rows[0].state) paint(rows[0].state);
     else wrap.innerHTML='<main><p class="dim" style="margin-top:30px">Gate open · waiting for the queue master to start the night…</p></main>';
   };
+  window.__pbPull=pull;               // expose for pull-to-refresh gesture
   await pull();
   clearInterval(pbPoll); pbPoll=setInterval(pull,12000);
+  attachPullToRefresh();
   clearInterval(pbTick); pbTick=setInterval(()=>{
     wrap.querySelectorAll("[data-start]").forEach(el=>{
       const e=Date.now()-(+el.getAttribute("data-start"));
@@ -2969,6 +2990,34 @@ async function mountPlayerBoard(sessionId){
     pbSocket.subQueueState(sessionId);
     pbSocket.onclose=()=>setTimeout(()=>{ if(pbSession===sessionId) mountPlayerBoard(sessionId); },5000);
   }catch(e){ /* polling continues as fallback */ }
+}
+let __ptrBound=false;
+function attachPullToRefresh(){
+  const wrap=document.getElementById("pboardWrap"); if(!wrap || __ptrBound) return;
+  __ptrBound=true;
+  let y0=null, pulling=false;
+  const chip=document.createElement("div"); chip.id="ptrChip";
+  chip.style.cssText="position:absolute;left:50%;top:6px;transform:translateX(-50%) translateY(-40px);"+
+    "background:var(--green);color:#0a1a0f;font-weight:800;font-size:12px;padding:6px 14px;border-radius:999px;"+
+    "transition:transform .2s;z-index:20;pointer-events:none;box-shadow:var(--shadow)";
+  chip.textContent="↓ Pull to refresh";
+  const host=wrap.parentElement; host.style.position="relative"; host.appendChild(chip);
+  const scroller=()=>document.scrollingElement||document.documentElement;
+  wrap.addEventListener("touchstart",e=>{ if(scroller().scrollTop<=0){ y0=e.touches[0].clientY; pulling=true; } },{passive:true});
+  wrap.addEventListener("touchmove",e=>{ if(!pulling||y0==null) return;
+    const dy=e.touches[0].clientY-y0;
+    if(dy>0){ const d=Math.min(dy,80); chip.style.transform="translateX(-50%) translateY("+(d-40)+"px)";
+      chip.textContent = dy>60? "↻ Release to refresh":"↓ Pull to refresh"; }
+  },{passive:true});
+  wrap.addEventListener("touchend",async e=>{
+    if(pulling){ const dy=(e.changedTouches[0].clientY-(y0||0));
+      chip.style.transform="translateX(-50%) translateY(-40px)";
+      if(dy>60 && window.__pbPull){ chip.textContent="↻ Refreshing…"; chip.style.transform="translateX(-50%) translateY(6px)";
+        try{ await window.__pbPull(); }catch(_){}
+        if(typeof toast==="function") toast("Board refreshed 🏸");
+        setTimeout(()=>{ chip.style.transform="translateX(-50%) translateY(-40px)"; },500); } }
+    pulling=false; y0=null;
+  },{passive:true});
 }
 function myBoardName(){ return myProfile? (myProfile.reclub_name||myProfile.full_name||"") : ""; }
 function checkSummoned(state){
@@ -3019,8 +3068,11 @@ async function playerAutoBoard(){
     "&select=session_id,time_in,sessions(status)&order=time_in.desc&limit=10").catch(()=>null);
   if(!r||!r.ok) return;
   const rows=await r.json();
-  const open=rows.find(x=>x.sessions&&x.sessions.status==="open");
-  if(open) mountPlayerBoard(open.session_id);
+  // prefer the session we were last on, if it's still open (survives sleep / accidental close)
+  let remembered=null; try{ remembered=localStorage.getItem("ss_lastSession"); }catch(e){}
+  let open=rows.find(x=>x.session_id===remembered && x.sessions && x.sessions.status==="open");
+  if(!open) open=rows.find(x=>x.sessions && x.sessions.status==="open");
+  if(open){ ptShow("pt-gate"); mountPlayerBoard(open.session_id); }
 }
 
 /* ======================= RPG PLAYER VIEW ======================= */
@@ -3072,6 +3124,7 @@ function renderRPG(){
   const uid=auth.uid;
   const {st,ex}=careerStatsFrom(myMatches,uid);
   const nSessions=new Set(myMatches.map(m=>m.session_id)).size;
+  window.__myShare={st,ex,name:(myProfile.reclub_name||myProfile.full_name||"Player")};
   const _cav=document.getElementById("csAv");
   if(myProfile.avatar) _cav.innerHTML='<img src="'+myProfile.avatar+'" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
   else _cav.textContent=(myProfile.reclub_name||"?").trim().slice(0,1).toUpperCase();
