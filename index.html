@@ -425,13 +425,13 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 /* ================================================================
    SUPABASE CONFIG — EDIT ONLY THE TWO VALUES BELOW
    url : your Project URL      (Supabase → Settings → API)
-   anon: your "anon public" key (same page — the long eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA string)
+   anon: your "anon public" key (same page — the long eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdnRoaWtudmJ3YmJzdXNqbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzgwNDgsImV4cCI6MjA5OTc1NDA0OH0.PNC4-ENCZM_lMvAUlVCzR6acKNDS9HLinDw_UIN0HeQ string)
    Keep each value inside ONE pair of straight quotes "like this".
    Leave both empty to run the classic offline/standalone mode.
    ================================================================ */
 window.SS_CONFIG = {
-  url:  "https://gmishjfworkylgweecob.supabase.co",
-  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA"
+  url:  "https://novthiknvbwbbsusjmjt.supabase.co",
+  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdnRoaWtudmJ3YmJzdXNqbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzgwNDgsImV4cCI6MjA5OTc1NDA0OH0.PNC4-ENCZM_lMvAUlVCzR6acKNDS9HLinDw_UIN0HeQ"
 };
 </script>
 <header>
@@ -828,6 +828,19 @@ window.SS_CONFIG = {
   </div>
 </div>
 <div id="summonBanner" onclick="hideSummon()"></div>
+<div class="overlay" id="qrModal" onclick="if(event.target===this)closeModal('qrModal')">
+  <div class="modal" style="max-width:420px;text-align:center">
+    <h3 id="qrTitle" style="margin-bottom:4px">Session QR</h3>
+    <p class="hint" id="qrSub" style="margin-bottom:12px"></p>
+    <div id="qrHolder" style="background:#fff;padding:16px;border-radius:14px;display:inline-block"></div>
+    <p style="margin-top:12px;font-size:13px;color:var(--muted)">Players scan this to join — or enter the code
+      <b id="qrCode" style="color:var(--ink);font-family:'Courier New',monospace;letter-spacing:.15em"></b> manually.</p>
+    <div class="actions" style="justify-content:center;margin-top:8px">
+      <button class="ghost" onclick="qrDownload()">⬇ Save image</button>
+      <button class="ghost" onclick="closeModal('qrModal')">Close</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="achModal" onclick="if(event.target===this)closeModal('achModal')">
   <div class="modal">
     <div class="achbig" id="achFace">🏅</div>
@@ -2516,7 +2529,7 @@ async function enterApp(){
     ["exportBtn","clrBtn"].forEach(id=>{const b=document.getElementById(id); if(b) b.style.display="none";});
     ["igHdr","rcHdr"].forEach(id=>{const b=document.getElementById(id); if(b) b.style.display="inline-flex";});
     pingPresence(); setInterval(pingPresence,60000);
-    playerAutoBoard();
+    consumePendingJoin().then(playerAutoBoard);
     Promise.all([loadMyQuests(),loadCustomBadges()]).then(loadMyHistory);
     loadPartners();
     loadHall();
@@ -2557,16 +2570,80 @@ async function adminLoadSessions(){
       '<span class="badge '+s.status+'">'+s.status.toUpperCase()+'</span>';
     const copy=document.createElement("button"); copy.className="small ghost"; copy.textContent="Copy code";
     copy.onclick=async()=>{ try{ await navigator.clipboard.writeText(s.code); }catch(e){} toast("Code "+s.code+" copied"); };
+    const qr=document.createElement("button"); qr.className="small"; qr.textContent="📱 QR";
+    qr.title="Show join QR"; qr.onclick=()=>showSessionQR(s);
     const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
     del.title="Delete session"; del.onclick=()=>adminDeleteSession(s);
     const tog=document.createElement("button"); tog.className="small "+(s.status==="open"?"ghost":"");
     tog.textContent=s.status==="open"?"Close":"Reopen";
     tog.onclick=async()=>{ await sFetch("/rest/v1/sessions?id=eq."+s.id,{method:"PATCH",
       body:{status:s.status==="open"?"closed":"open"}}); adminLoadSessions(); };
-    div.append(copy,tog,del); box.appendChild(div);
+    div.append(qr,copy,tog,del); box.appendChild(div);
   });
 }
+
+/* Minimal QR (byte mode, MIT — Kazuhiko Arase, trimmed) */
+var QRErr={L:1,M:0,Q:3,H:2};
+function QR8bitByte(d){this.mode=4;this.data=d;this.parsedData=[];for(var i=0,l=this.data.length;i<l;i++){var b=[],c=this.data.charCodeAt(i);if(c>0x10000){b[0]=0xF0|((c&0x1C0000)>>>18);b[1]=0x80|((c&0x3F000)>>>12);b[2]=0x80|((c&0xFC0)>>>6);b[3]=0x80|(c&0x3F);}else if(c>0x800){b[0]=0xE0|((c&0xF000)>>>12);b[1]=0x80|((c&0xFC0)>>>6);b[2]=0x80|(c&0x3F);}else if(c>0x80){b[0]=0xC0|((c&0x7C0)>>>6);b[1]=0x80|(c&0x3F);}else{b[0]=c;}this.parsedData.push(b);}this.parsedData=Array.prototype.concat.apply([],this.parsedData);if(this.parsedData.length!=this.data.length){this.parsedData.unshift(191);this.parsedData.unshift(187);this.parsedData.unshift(239);}}
+QR8bitByte.prototype={getLength:function(){return this.parsedData.length;},write:function(b){for(var i=0,l=this.parsedData.length;i<l;i++){b.put(this.parsedData[i],8);}}};
+function QRCodeModel(tn,ec){this.typeNumber=tn;this.errorCorrectLevel=ec;this.modules=null;this.moduleCount=0;this.dataCache=null;this.dataList=[];}
+QRCodeModel.prototype={addData:function(d){var n=new QR8bitByte(d);this.dataList.push(n);this.dataCache=null;},isDark:function(r,c){if(r<0||this.moduleCount<=r||c<0||this.moduleCount<=c)throw new Error(r+","+c);return this.modules[r][c];},getModuleCount:function(){return this.moduleCount;},make:function(){this.makeImpl(false,this.getBestMaskPattern());},makeImpl:function(t,m){this.moduleCount=this.typeNumber*4+17;this.modules=new Array(this.moduleCount);for(var r=0;r<this.moduleCount;r++){this.modules[r]=new Array(this.moduleCount);for(var c=0;c<this.moduleCount;c++){this.modules[r][c]=null;}}this.setupPositionProbePattern(0,0);this.setupPositionProbePattern(this.moduleCount-7,0);this.setupPositionProbePattern(0,this.moduleCount-7);this.setupPositionAdjustPattern();this.setupTimingPattern();this.setupTypeInfo(t,m);if(this.typeNumber>=7)this.setupTypeNumber(t);if(this.dataCache==null)this.dataCache=QRCodeModel.createData(this.typeNumber,this.errorCorrectLevel,this.dataList);this.mapData(this.dataCache,m);},setupPositionProbePattern:function(r,c){for(var R=-1;R<=7;R++){if(r+R<=-1||this.moduleCount<=r+R)continue;for(var C=-1;C<=7;C++){if(c+C<=-1||this.moduleCount<=c+C)continue;this.modules[r+R][c+C]=(0<=R&&R<=6&&(C==0||C==6))||(0<=C&&C<=6&&(R==0||R==6))||(2<=R&&R<=4&&2<=C&&C<=4);}}},getBestMaskPattern:function(){var mn=0,p=0;for(var i=0;i<8;i++){this.makeImpl(true,i);var l=QRUtil.getLostPoint(this);if(i==0||mn>l){mn=l;p=i;}}return p;},setupTimingPattern:function(){for(var r=8;r<this.moduleCount-8;r++){if(this.modules[r][6]!=null)continue;this.modules[r][6]=r%2==0;}for(var c=8;c<this.moduleCount-8;c++){if(this.modules[6][c]!=null)continue;this.modules[6][c]=c%2==0;}},setupPositionAdjustPattern:function(){var p=QRUtil.getPatternPosition(this.typeNumber);for(var i=0;i<p.length;i++){for(var j=0;j<p.length;j++){var r=p[i],c=p[j];if(this.modules[r][c]!=null)continue;for(var R=-2;R<=2;R++){for(var C=-2;C<=2;C++){this.modules[r+R][c+C]=R==-2||R==2||C==-2||C==2||(R==0&&C==0);}}}}},setupTypeNumber:function(t){var b=QRUtil.getBCHTypeNumber(this.typeNumber);for(var i=0;i<18;i++){var m=!t&&((b>>i)&1)==1;this.modules[Math.floor(i/3)][i%3+this.moduleCount-8-3]=m;}for(var i=0;i<18;i++){var m=!t&&((b>>i)&1)==1;this.modules[i%3+this.moduleCount-8-3][Math.floor(i/3)]=m;}},setupTypeInfo:function(t,m){var data=(this.errorCorrectLevel<<3)|m;var b=QRUtil.getBCHTypeInfo(data);for(var i=0;i<15;i++){var mm=!t&&((b>>i)&1)==1;if(i<6)this.modules[i][8]=mm;else if(i<8)this.modules[i+1][8]=mm;else this.modules[this.moduleCount-15+i][8]=mm;}for(var i=0;i<15;i++){var mm=!t&&((b>>i)&1)==1;if(i<8)this.modules[8][this.moduleCount-i-1]=mm;else if(i<9)this.modules[8][15-i-1+1]=mm;else this.modules[8][15-i-1]=mm;}this.modules[this.moduleCount-8][8]=!t;},mapData:function(d,m){var inc=-1,row=this.moduleCount-1,bi=7,bidx=0;for(var col=this.moduleCount-1;col>0;col-=2){if(col==6)col--;while(true){for(var c=0;c<2;c++){if(this.modules[row][col-c]==null){var dark=false;if(bidx<d.length)dark=((d[bidx]>>>bi)&1)==1;var mask=QRUtil.getMask(m,row,col-c);if(mask)dark=!dark;this.modules[row][col-c]=dark;bi--;if(bi==-1){bidx++;bi=7;}}}row+=inc;if(row<0||this.moduleCount<=row){row-=inc;inc=-inc;break;}}}}};
+QRCodeModel.PAD0=0xEC;QRCodeModel.PAD1=0x11;
+QRCodeModel.createData=function(tn,ec,dl){var rs=QRRSBlock.getRSBlocks(tn,ec);var buf=new QRBitBuffer();for(var i=0;i<dl.length;i++){var d=dl[i];buf.put(d.mode,4);buf.put(d.getLength(),QRUtil.getLengthInBits(d.mode,tn));d.write(buf);}var tot=0;for(var i=0;i<rs.length;i++)tot+=rs[i].dataCount;if(buf.getLengthInBits()>tot*8)throw new Error("overflow");if(buf.getLengthInBits()+4<=tot*8)buf.put(0,4);while(buf.getLengthInBits()%8!=0)buf.putBit(false);while(true){if(buf.getLengthInBits()>=tot*8)break;buf.put(QRCodeModel.PAD0,8);if(buf.getLengthInBits()>=tot*8)break;buf.put(QRCodeModel.PAD1,8);}return QRCodeModel.createBytes(buf,rs);};
+QRCodeModel.createBytes=function(buf,rs){var off=0,mdc=0,mec=0,dd=new Array(rs.length),ed=new Array(rs.length);for(var r=0;r<rs.length;r++){var dc=rs[r].dataCount,ecc=rs[r].totalCount-dc;mdc=Math.max(mdc,dc);mec=Math.max(mec,ecc);dd[r]=new Array(dc);for(var i=0;i<dd[r].length;i++)dd[r][i]=0xff&buf.buffer[i+off];off+=dc;var rsPoly=QRUtil.getErrorCorrectPolynomial(ecc);var raw=new QRPolynomial(dd[r],rsPoly.getLength()-1);var mod=raw.mod(rsPoly);ed[r]=new Array(rsPoly.getLength()-1);for(var i=0;i<ed[r].length;i++){var mi=i+mod.getLength()-ed[r].length;ed[r][i]=mi>=0?mod.get(mi):0;}}var tot=0;for(var i=0;i<rs.length;i++)tot+=rs[i].totalCount;var data=new Array(tot),idx=0;for(var i=0;i<mdc;i++){for(var r=0;r<rs.length;r++){if(i<dd[r].length)data[idx++]=dd[r][i];}}for(var i=0;i<mec;i++){for(var r=0;r<rs.length;r++){if(i<ed[r].length)data[idx++]=ed[r][i];}}return data;};
+var QRUtil={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(d){var g=d<<10;while(QRUtil.getBCHDigit(g)-QRUtil.getBCHDigit(QRUtil.G15)>=0)g^=QRUtil.G15<<(QRUtil.getBCHDigit(g)-QRUtil.getBCHDigit(QRUtil.G15));return((d<<10)|g)^QRUtil.G15_MASK;},getBCHTypeNumber:function(d){var g=d<<12;while(QRUtil.getBCHDigit(g)-QRUtil.getBCHDigit(QRUtil.G18)>=0)g^=QRUtil.G18<<(QRUtil.getBCHDigit(g)-QRUtil.getBCHDigit(QRUtil.G18));return(d<<12)|g;},getBCHDigit:function(d){var n=0;while(d!=0){n++;d>>>=1;}return n;},getPatternPosition:function(t){return QRUtil.PATTERN_POSITION_TABLE[t-1];},getMask:function(m,i,j){switch(m){case 0:return(i+j)%2==0;case 1:return i%2==0;case 2:return j%3==0;case 3:return(i+j)%3==0;case 4:return(Math.floor(i/2)+Math.floor(j/3))%2==0;case 5:return(i*j)%2+(i*j)%3==0;case 6:return((i*j)%2+(i*j)%3)%2==0;case 7:return((i*j)%3+(i+j)%2)%2==0;}throw new Error("bad mask");},getErrorCorrectPolynomial:function(ec){var a=new QRPolynomial([1],0);for(var i=0;i<ec;i++)a=a.multiply(new QRPolynomial([1,QRMath.gexp(i)],0));return a;},getLengthInBits:function(m,t){if(1<=t&&t<10)return 8;else if(t<27)return 16;else return 16;},getLostPoint:function(q){var mc=q.getModuleCount(),lp=0;for(var r=0;r<mc;r++){for(var c=0;c<mc;c++){var sd=0,d=q.isDark(r,c);for(var R=-1;R<=1;R++){if(r+R<0||mc<=r+R)continue;for(var C=-1;C<=1;C++){if(c+C<0||mc<=c+C)continue;if(R==0&&C==0)continue;if(d==q.isDark(r+R,c+C))sd++;}}if(sd>5)lp+=(3+sd-5);}}for(var r=0;r<mc-1;r++){for(var c=0;c<mc-1;c++){var cnt=0;if(q.isDark(r,c))cnt++;if(q.isDark(r+1,c))cnt++;if(q.isDark(r,c+1))cnt++;if(q.isDark(r+1,c+1))cnt++;if(cnt==0||cnt==4)lp+=3;}}for(var r=0;r<mc;r++){for(var c=0;c<mc-6;c++){if(q.isDark(r,c)&&!q.isDark(r,c+1)&&q.isDark(r,c+2)&&q.isDark(r,c+3)&&q.isDark(r,c+4)&&!q.isDark(r,c+5)&&q.isDark(r,c+6))lp+=40;}}for(var c=0;c<mc;c++){for(var r=0;r<mc-6;r++){if(q.isDark(r,c)&&!q.isDark(r+1,c)&&q.isDark(r+2,c)&&q.isDark(r+3,c)&&q.isDark(r+4,c)&&!q.isDark(r+5,c)&&q.isDark(r+6,c))lp+=40;}}var dc=0;for(var c=0;c<mc;c++){for(var r=0;r<mc;r++){if(q.isDark(r,c))dc++;}}var ratio=Math.abs(100*dc/mc/mc-50)/5;lp+=ratio*10;return lp;}};
+var QRMath={glog:function(n){if(n<1)throw new Error("glog("+n+")");return QRMath.LOG_TABLE[n];},gexp:function(n){while(n<0)n+=255;while(n>=256)n-=255;return QRMath.EXP_TABLE[n];},EXP_TABLE:new Array(256),LOG_TABLE:new Array(256)};
+for(var i=0;i<8;i++)QRMath.EXP_TABLE[i]=1<<i;for(var i=8;i<256;i++)QRMath.EXP_TABLE[i]=QRMath.EXP_TABLE[i-4]^QRMath.EXP_TABLE[i-5]^QRMath.EXP_TABLE[i-6]^QRMath.EXP_TABLE[i-8];for(var i=0;i<255;i++)QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]]=i;
+function QRPolynomial(n,s){if(n.length==undefined)throw new Error(n.length+"/"+s);var o=0;while(o<n.length&&n[o]==0)o++;this.num=new Array(n.length-o+s);for(var i=0;i<n.length-o;i++)this.num[i]=n[i+o];}
+QRPolynomial.prototype={get:function(i){return this.num[i];},getLength:function(){return this.num.length;},multiply:function(e){var n=new Array(this.getLength()+e.getLength()-1);for(var i=0;i<this.getLength();i++)for(var j=0;j<e.getLength();j++)n[i+j]^=QRMath.gexp(QRMath.glog(this.get(i))+QRMath.glog(e.get(j)));return new QRPolynomial(n,0);},mod:function(e){if(this.getLength()-e.getLength()<0)return this;var r=QRMath.glog(this.get(0))-QRMath.glog(e.get(0));var n=new Array(this.getLength());for(var i=0;i<this.getLength();i++)n[i]=this.get(i);for(var i=0;i<e.getLength();i++)n[i]^=QRMath.gexp(QRMath.glog(e.get(i))+r);return new QRPolynomial(n,0).mod(e);}};
+function QRRSBlock(t,d){this.totalCount=t;this.dataCount=d;}
+QRRSBlock.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16]];
+QRRSBlock.getRSBlocks=function(tn,ec){var t=QRRSBlock.getRsBlockTable(tn,ec);var l=t.length/3,list=[];for(var i=0;i<l;i++){var c=t[i*3],tc=t[i*3+1],dc=t[i*3+2];for(var j=0;j<c;j++)list.push(new QRRSBlock(tc,dc));}return list;};
+QRRSBlock.getRsBlockTable=function(tn,ec){switch(ec){case 1:return QRRSBlock.RS_BLOCK_TABLE[(tn-1)*4+0];case 0:return QRRSBlock.RS_BLOCK_TABLE[(tn-1)*4+1];case 3:return QRRSBlock.RS_BLOCK_TABLE[(tn-1)*4+2];case 2:return QRRSBlock.RS_BLOCK_TABLE[(tn-1)*4+3];}};
+function QRBitBuffer(){this.buffer=[];this.length=0;}
+QRBitBuffer.prototype={get:function(i){return((this.buffer[Math.floor(i/8)]>>>(7-i%8))&1)==1;},put:function(n,l){for(var i=0;i<l;i++)this.putBit(((n>>>(l-i-1))&1)==1);},getLengthInBits:function(){return this.length;},putBit:function(b){var bi=Math.floor(this.length/8);if(this.buffer.length<=bi)this.buffer.push(0);if(b)this.buffer[bi]|=0x80>>>(this.length%8);this.length++;}};
+function ssMakeQR(text){for(var tn=1;tn<=10;tn++){try{var m=new QRCodeModel(tn,QRErr.M);m.addData(text);m.make();return m;}catch(e){}}return null;}
+function ssQRCanvas(text,size){var m=ssMakeQR(text);if(!m)return null;var n=m.getModuleCount();var quiet=4;var scale=Math.max(2,Math.floor(size/(n+quiet*2)));var dim=(n+quiet*2)*scale;var cv=document.createElement("canvas");cv.width=cv.height=dim;var x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,dim,dim);x.fillStyle="#000";for(var r=0;r<n;r++)for(var c=0;c<n;c++){if(m.isDark(r,c))x.fillRect((c+quiet)*scale,(r+quiet)*scale,scale,scale);}return cv;}
+/* ---------- session join QR ---------- */
+
+function joinURLFor(code){
+  const hosted = location.protocol.startsWith("http");
+  return (hosted? location.origin+location.pathname : "https://stranger-strings-prod.vercel.app/") + "#join-" + code;
+}
+async function showSessionQR(s){
+  document.getElementById("qrTitle").textContent = "📱 " + s.title;
+  document.getElementById("qrSub").textContent = "Scan to join · " + s.session_date;
+  document.getElementById("qrCode").textContent = s.code;
+  const holder=document.getElementById("qrHolder"); holder.innerHTML="";
+  openModal("qrModal");
+  const url=joinURLFor(s.code);
+  const cv=ssQRCanvas(url,300);
+  if(cv){ cv.style.width="280px"; cv.style.height="280px"; cv.style.imageRendering="pixelated"; holder.appendChild(cv); }
+  else{ holder.innerHTML='<div style="width:280px;color:#111;font:600 15px system-ui;padding:20px;word-break:break-all">Share this link:<br><b>'+url+'</b></div>'; }
+  window.__qrURL=url; window.__qrName=s.title;
+}
+function qrDownload(){
+  const img=document.querySelector("#qrHolder img")||document.querySelector("#qrHolder canvas");
+  if(!img){ toast("QR not ready"); return; }
+  const src = img.tagName==="IMG"? img.src : img.toDataURL("image/png");
+  const a=document.createElement("a"); a.href=src;
+  a.download=("stranger-strings-"+(window.__qrName||"session")+"-qr").replace(/\s+/g,"-")+".png";
+  a.click();
+}
+
 /* ---------- player: join by code ---------- */
+async function consumePendingJoin(){
+  let code=null; try{ code=sessionStorage.getItem("ss_join"); }catch(e){}
+  if(!code) return;
+  try{ sessionStorage.removeItem("ss_join"); }catch(e){}
+  const el=document.getElementById("joinCode"); if(el) el.value=code;
+  const r=await sFetch("/rest/v1/rpc/join_session",{method:"POST",body:{p_code:code}});
+  const msg=document.getElementById("joinMsg");
+  if(r.ok){ if(msg){ msg.style.color="var(--ok)"; msg.textContent="You're in! See you on court 🏸"; }
+    const sid=await r.json().catch(()=>null); if(sid) mountPlayerBoard(sid);
+    if(typeof toast==="function") toast("Joined session via QR 🏸"); }
+  else if(msg){ msg.style.color="var(--red)"; msg.textContent="That session QR is invalid or closed."; }
+}
 async function playerJoin(){
   const msg=document.getElementById("joinMsg");
   const code=document.getElementById("joinCode").value.trim().toUpperCase();
@@ -3618,6 +3695,8 @@ async function adminLoadMatches(manual){
   });
 })();
 const SPEC=location.hash.match(/^#live-([A-Za-z0-9._-]+)/);
+const JOINSPEC=location.hash.match(/^#join-([A-Za-z0-9]{4,10})/);
+if(JOINSPEC){ try{ sessionStorage.setItem("ss_join", JOINSPEC[1].toUpperCase()); }catch(e){} }
 function legacyInit(){
   document.getElementById("logoTop").src=LOGO;
   document.getElementById("igLogo").src=LOGO;
