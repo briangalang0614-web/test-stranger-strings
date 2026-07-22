@@ -425,13 +425,13 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 /* ================================================================
    SUPABASE CONFIG — EDIT ONLY THE TWO VALUES BELOW
    url : your Project URL      (Supabase → Settings → API)
-   anon: your "anon public" key (same page — the long eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdnRoaWtudmJ3YmJzdXNqbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzgwNDgsImV4cCI6MjA5OTc1NDA0OH0.PNC4-ENCZM_lMvAUlVCzR6acKNDS9HLinDw_UIN0HeQ string)
+   anon: your "anon public" key (same page — the long eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA string)
    Keep each value inside ONE pair of straight quotes "like this".
    Leave both empty to run the classic offline/standalone mode.
    ================================================================ */
 window.SS_CONFIG = {
-  url:  "https://novthiknvbwbbsusjmjt.supabase.co",
-  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdnRoaWtudmJ3YmJzdXNqbWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzgwNDgsImV4cCI6MjA5OTc1NDA0OH0.PNC4-ENCZM_lMvAUlVCzR6acKNDS9HLinDw_UIN0HeQ"
+  url:  "https://gmishjfworkylgweecob.supabase.co",
+  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdtaXNoamZ3b3JreWxnd2VlY29iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1ODU0NTAsImV4cCI6MjA5OTE2MTQ1MH0.rBCuLoR3-dalYX-xg-Wbg9y1yVroBhNuSHb1IOcQuBA"
 };
 </script>
 <header>
@@ -2985,15 +2985,35 @@ function checkSummoned(state){
       banner.textContent="⚡ You're summoned! You're up next — head to the courts.";
       banner.style.display="block";
       try{ if(navigator.vibrate) navigator.vibrate([120,60,120]); }catch(e){}
-      try{ if(window.AudioContext||window.webkitAudioContext){ const a=new (window.AudioContext||window.webkitAudioContext)();
-        const o=a.createOscillator(),g=a.createGain(); o.connect(g); g.connect(a.destination);
-        o.frequency.value=784; g.gain.value=0.06; o.start(); setTimeout(()=>{o.frequency.value=1047;},120);
-        setTimeout(()=>{o.stop();a.close();},260); } }catch(e){}
+      summonChime();
+      if(document.hidden) beginBgSummon();
     }
     window.__wasSummoned=true;
   }else{ hideSummon(); }
 }
-function hideSummon(){ const b=document.getElementById("summonBanner"); if(b) b.style.display="none"; window.__wasSummoned=false; }
+function summonChime(){
+  try{ if(window.AudioContext||window.webkitAudioContext){ const a=new (window.AudioContext||window.webkitAudioContext)();
+    const o=a.createOscillator(),g=a.createGain(); o.connect(g); g.connect(a.destination);
+    o.frequency.value=784; g.gain.value=0.06; o.start(); setTimeout(()=>{o.frequency.value=1047;},120);
+    setTimeout(()=>{o.stop();a.close();},260); } }catch(e){}
+}
+/* background-tab alert: flash the title + repeat the chime until the player returns */
+window.__ssTitle=document.title;
+function beginBgSummon(){
+  if(window.__bgFlash) return;
+  try{ if(navigator.vibrate) navigator.vibrate([120,60,120]); }catch(e){}
+  let on=false;
+  window.__bgFlash=setInterval(()=>{ document.title = on? (window.__ssTitle||"Stranger Strings") : "\u26A1 YOU'RE UP! \u26A1"; on=!on; }, 700);
+  window.__bgChime=setInterval(summonChime, 1600);
+}
+function stopBgSummon(){
+  if(window.__bgFlash){ clearInterval(window.__bgFlash); window.__bgFlash=null; }
+  if(window.__bgChime){ clearInterval(window.__bgChime); window.__bgChime=null; }
+  if(window.__ssTitle) document.title=window.__ssTitle;
+}
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) stopBgSummon(); });
+window.addEventListener("focus",stopBgSummon);
+function hideSummon(){ const b=document.getElementById("summonBanner"); if(b) b.style.display="none"; window.__wasSummoned=false; stopBgSummon(); }
 async function playerAutoBoard(){
   const r=await sFetch("/rest/v1/session_players?profile_id=eq."+auth.uid+
     "&select=session_id,time_in,sessions(status)&order=time_in.desc&limit=10").catch(()=>null);
