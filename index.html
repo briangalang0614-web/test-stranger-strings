@@ -300,7 +300,27 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 #playerHome{display:none;max-width:560px;margin:0 auto}
 .phcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:16px;margin:14px 0;box-shadow:var(--shadow)}
 .phcard h3{margin:0 0 10px;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.dxlab{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--gold);
+  border:1px solid var(--line);border-radius:10px;padding:7px 11px;cursor:pointer;white-space:nowrap}
+.dxlab input{width:15px;height:15px;accent-color:var(--gold);margin:0}
+.dxchip{background:linear-gradient(90deg,var(--green),var(--gold));color:#0a1a0f;font-weight:900;font-size:10.5px;
+  letter-spacing:.08em;border-radius:999px;padding:3px 9px;margin-left:6px;white-space:nowrap}
+#qStatus .dxbanner{margin-top:10px;font-size:12.5px;font-weight:900;letter-spacing:.06em;color:#0a1a0f;
+  background:linear-gradient(90deg,var(--green),var(--gold));border-radius:999px;padding:5px 14px;display:inline-block}
 #playerHome{padding-bottom:96px}
+#qStatus{padding:16px 18px;text-align:center}
+#qStatus .qlab{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:800}
+#qStatus .qbig{font-family:Georgia,serif;font-size:30px;line-height:1.15;margin:6px 0 2px}
+#qStatus .qsub{font-size:13.5px;color:var(--muted)}
+#qStatus .qeta{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:800;letter-spacing:.04em;
+  background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 13px;color:var(--ink)}
+#qStatus.playing{background:linear-gradient(180deg,rgba(95,174,118,.16),transparent)}
+#qStatus.playing .qbig{color:var(--green)}
+#qStatus.next{background:linear-gradient(180deg,rgba(202,166,78,.2),transparent)}
+#qStatus.next .qbig{color:var(--gold);text-shadow:0 0 16px rgba(202,166,78,.45)}
+#qStatus.queued .qbig{color:var(--ink)}
+#qStatus.queued .qnum{color:var(--gold);font-size:38px}
+#qStatus.idle .qbig{color:var(--muted);font-size:22px}
 .ptab{display:none}.ptab.on{display:block;animation:ptin .25s ease}
 @keyframes ptin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 #pnav{position:fixed;left:0;right:0;bottom:0;z-index:180;display:flex;justify-content:space-around;align-items:flex-end;
@@ -591,6 +611,7 @@ window.SS_CONFIG = {
     <div class="controls">
       <input id="asTitle" placeholder="Session title (e.g. Wednesday Night Smash)" style="flex:2;min-width:200px">
       <input id="asDate" type="date" style="width:160px">
+      <label class="dxlab" title="Every match in this session is worth double XP"><input type="checkbox" id="asDouble"> ⚡ 2× XP</label>
       <button onclick="adminCreateSession()">+ Create</button>
     </div>
     <p class="hint">A unique 6-character join code is generated automatically — share it with players.</p>
@@ -778,6 +799,9 @@ window.SS_CONFIG = {
     </div>
     <p class="autherr" id="joinMsg"></p>
     <p class="soon" id="gateHint" style="margin-top:8px;font-size:12.5px">📱 Scan the session QR at the front desk, or ask the Queue Master for tonight's 6-character code.</p>
+  </div>
+  <div class="phcard" id="qStatusCard" style="display:none;padding:0;overflow:hidden">
+    <div id="qStatus"></div>
   </div>
   <div class="phcard" style="padding:8px"><div id="pboardWrap">
     <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
@@ -1996,6 +2020,8 @@ function liveData(){
       t1:c.slots.slice(0,2).filter(Boolean).map(pl),t2:c.slots.slice(2).filter(Boolean).map(pl)})),
     next:S.queues.filter(q=>q.slots.slice(0,2).some(Boolean)&&q.slots.slice(2).some(Boolean)).slice(0,2)
       .map(q=>({name:q.name,t1:q.slots.slice(0,2).filter(Boolean).map(pl),t2:q.slots.slice(2).filter(Boolean).map(pl)})),
+    // every queue in order — lets each player find their own place in line
+    queues:S.queues.map(q=>({n:q.name,p:q.slots.filter(Boolean).map(pl)})),
     board:S.players.map(p=>({p,st:statsFor(p.id)})).filter(x=>x.st.g>0)
       .sort((a,b)=>b.st.winRate-a.st.winRate||b.st.w-a.st.w||b.st.diff-a.st.diff).slice(0,5)
       .map(x=>({n:x.p.name,pid:x.p.id,w:x.st.w,g:x.st.g,wr:Math.round(x.st.winRate),d:x.st.diff})),
@@ -2554,13 +2580,26 @@ async function enterApp(){
   }
 }
 /* ---------- admin: sessions ---------- */
+function isDoubleXp(s){ return !!(s && s.settings && s.settings.doubleXp); }
+async function toggleDoubleXp(s){
+  const on=!isDoubleXp(s);
+  if(!await uiConfirm(on? "Make \u201c"+s.title+"\u201d a 2\u00d7 XP session?\nEvery match in it counts double toward the Hall of Fame."
+                        : "Turn OFF 2\u00d7 XP for \u201c"+s.title+"\u201d?\nIts matches go back to normal XP.",
+      {title:on?"\u26A1 Double XP":"Normal XP",ok:on?"Make it 2\u00d7":"Turn off"})) return;
+  const settings=Object.assign({}, s.settings||{});
+  if(on) settings.doubleXp=true; else delete settings.doubleXp;
+  const r=await sFetch("/rest/v1/sessions?id=eq."+s.id,{method:"PATCH",body:{settings}});
+  toast(r.ok? (on?"\u26A1 2\u00d7 XP is ON for "+s.title : "2\u00d7 XP turned off") : "Could not update session");
+  adminLoadSessions();
+}
 async function adminCreateSession(){
   const title=document.getElementById("asTitle").value.trim()||
     ("Session — "+new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}));
   const date=document.getElementById("asDate").value||new Date().toISOString().slice(0,10);
   const r=await sFetch("/rest/v1/sessions",{method:"POST",
     headers:{Prefer:"return=representation"},
-    body:{title,session_date:date,created_by:auth.uid}});
+    body:{title,session_date:date,created_by:auth.uid,
+          settings:document.getElementById("asDouble").checked?{doubleXp:true}:{}}});
   if(!r.ok){
     const j=await r.json().catch(()=>({}));
     alert("Could not create session (HTTP "+r.status+").\n\n"+
@@ -2570,7 +2609,9 @@ async function adminCreateSession(){
   }
   const row=(await r.json())[0];
   document.getElementById("asTitle").value="";
-  toast("Session created — code "+row.code);
+  const wasDouble=document.getElementById("asDouble").checked;
+  document.getElementById("asDouble").checked=false;
+  toast((wasDouble?"⚡ 2× XP session created — code ":"Session created — code ")+row.code);
   adminLoadSessions();
 }
 async function adminLoadSessions(){
@@ -2585,9 +2626,14 @@ async function adminLoadSessions(){
     const div=document.createElement("div"); div.className="sessrow";
     div.innerHTML='<div class="st"><b>'+esc(s.title)+'</b><span>'+esc(s.session_date)+'</span></div>'+
       '<span class="sesscode">'+esc(s.code)+'</span>'+
-      '<span class="badge '+s.status+'">'+s.status.toUpperCase()+'</span>';
+      '<span class="badge '+s.status+'">'+s.status.toUpperCase()+'</span>'+
+      (isDoubleXp(s)?'<span class="dxchip">⚡ 2× XP</span>':'');
     const copy=document.createElement("button"); copy.className="small ghost"; copy.textContent="Copy code";
     copy.onclick=async()=>{ try{ await navigator.clipboard.writeText(s.code); }catch(e){} toast("Code "+s.code+" copied"); };
+    const dx=document.createElement("button"); dx.className="small ghost";
+    dx.textContent=isDoubleXp(s)?"⚡ 2× on":"⚡ 2× off"; dx.title="Toggle double XP for this session";
+    dx.onclick=()=>toggleDoubleXp(s);
+    div.appendChild(dx);
     const qr=document.createElement("button"); qr.className="small"; qr.textContent="📱 QR";
     qr.title="Show join QR"; qr.onclick=()=>showSessionQR(s);
     const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
@@ -2868,8 +2914,10 @@ async function loadMyHistory(manual){
   const names={}, sess={};
   const pr=await sFetch("/rest/v1/profiles?id=in.("+[...pidSet].join(",")+")&select=id,reclub_name").catch(()=>null);
   if(pr&&pr.ok) (await pr.json()).forEach(p=>names[p.id]=p.reclub_name);
-  const sr=await sFetch("/rest/v1/sessions?id=in.("+[...sidSet].join(",")+")&select=id,title,session_date").catch(()=>null);
-  if(sr&&sr.ok) (await sr.json()).forEach(s=>sess[s.id]=s);
+  const sr=await sFetch("/rest/v1/sessions?id=in.("+[...sidSet].join(",")+")&select=id,title,session_date,settings").catch(()=>null);
+  if(sr&&sr.ok){ const srows=await sr.json();
+    window.__dblSess=new Set(srows.filter(s=>s.settings&&s.settings.doubleXp).map(s=>s.id));
+    srows.forEach(s=>sess[s.id]=s); }
   const nm=(id,i,stored)=>esc(names[id]||(stored&&stored[i])||"Guest");
   window.__histNames=names;
   // career stats
@@ -2937,6 +2985,11 @@ function prefixCss(css,scope){
 let pbSocket=null, pbPoll=null, pbTick=null, pbAvg=15*60000, pbSession=null;
 async function mountPlayerBoard(sessionId){
   try{ localStorage.setItem("ss_lastSession", sessionId); }catch(e){}
+  sFetch("/rest/v1/sessions?id=eq."+sessionId+"&select=settings")
+    .then(r=>r.ok?r.json():[]).then(rows=>{
+      window.__sessionDouble=!!(rows[0]&&rows[0].settings&&rows[0].settings.doubleXp);
+      if(window.__sessionDouble && window.__lastBoardState) renderQueueStatus(window.__lastBoardState); })
+    .catch(()=>{});
   pbSession=sessionId;
   const wrap=document.getElementById("pboardWrap");
   if(!document.getElementById("pboardCss")){
@@ -2950,20 +3003,26 @@ async function mountPlayerBoard(sessionId){
   const collectPids=st=>{const ids=new Set();
     (st.live||[]).concat(st.next||[]).forEach(x=>[].concat(x.t1||[],x.t2||[]).forEach(p=>{if(p.pid)ids.add(p.pid);}));
     (st.board||[]).forEach(p=>{if(p.pid)ids.add(p.pid);});
-    return [...ids];};
+    // only registered players have UUID ids — a walk-in's local id would 400 the whole query
+    return [...ids].filter(id=>UUID_RE.test(id));};
   const paint=state=>{ if(!state||!state.summary) return;
     window.__avCache=window.__avCache||{};
     const missing=collectPids(state).filter(id=>!(id in window.__avCache));
     if(missing.length){
       missing.forEach(id=>window.__avCache[id]="");
       sFetch("/rest/v1/profiles?id=in.("+missing.join(",")+")&select=id,avatar")
-        .then(r=>r.ok?r.json():[]).then(rows=>{ let any=false;
+        .then(r=>r.ok?r.json():Promise.reject(new Error("avatar fetch failed")))
+        .then(rows=>{ let any=false;
           rows.forEach(p=>{ if(p.avatar){ window.__avCache[p.id]=p.avatar; any=true; } });
-          if(any) paint(state); }).catch(()=>{});
+          if(any) paint(state); })
+        .catch(()=>{ /* don't poison the cache — drop placeholders so the next poll retries */
+          missing.forEach(id=>{ if(!window.__avCache[id]) delete window.__avCache[id]; }); });
     }
     pbAvg=state.summary.avgMs||pbAvg;
     wrap.innerHTML='<main>'+liveBoardHTML(state)+'<p class="upd">Live from the Upside Down · updates stream in automatically</p></main>';
     if(histMatchCount>=0 && state.summary.matches>histMatchCount){ loadMyHistory(); loadHall(); }
+    window.__lastBoardState=state;
+    renderQueueStatus(state);
     checkSummoned(state);
   };
   const pull=async()=>{
@@ -3020,6 +3079,72 @@ function attachPullToRefresh(){
   },{passive:true});
 }
 function myBoardName(){ return myProfile? (myProfile.reclub_name||myProfile.full_name||"") : ""; }
+/* ---------- "where am I in line?" ---------- */
+function meMatches(p){
+  const me=(myProfile&&myProfile.id)||null;
+  const nm=myBoardName().trim().toLowerCase();
+  if(me && p.pid && p.pid===me) return true;
+  return !!nm && (p.n||"").trim().toLowerCase()===nm;
+}
+function myQueueStatus(state){
+  for(const c of (state.live||[])){
+    if([].concat(c.t1||[],c.t2||[]).some(meMatches)) return {mode:"playing",court:c.court,start:c.start};
+  }
+  const qs=state.queues||null;
+  if(qs){
+    for(let i=0;i<qs.length;i++){
+      if((qs[i].p||[]).some(meMatches)) return {mode:i===0?"next":"queued",ahead:i,qname:qs[i].n};
+    }
+  }else{ // older admin build: only the first two queues are broadcast
+    const nx=state.next||[];
+    for(let i=0;i<nx.length;i++){
+      if([].concat(nx[i].t1||[],nx[i].t2||[]).some(meMatches)) return {mode:i===0?"next":"queued",ahead:i,qname:nx[i].name};
+    }
+  }
+  return {mode:"idle"};
+}
+function etaMs(ahead,state){
+  const avg=(state.summary&&state.summary.avgMs)||15*60000;
+  const rem=(state.live||[]).map(c=>Math.max(0,avg-(Date.now()-(c.start||Date.now())))).sort((a,b)=>a-b);
+  if(!rem.length) return null;
+  if(ahead<rem.length) return rem[ahead];
+  const rounds=Math.floor(ahead/rem.length);
+  return rem[ahead%rem.length]+rounds*avg;
+}
+function fmtEta(ms){
+  if(ms==null) return "";
+  const m=Math.round(ms/60000);
+  return m<=1? "any minute now" : "\u2248 "+m+" min";
+}
+function renderQueueStatus(state){
+  const card=document.getElementById("qStatusCard"), box=document.getElementById("qStatus");
+  if(!card||!box) return;
+  const s=myQueueStatus(state);
+  card.style.display="block";
+  if(s.mode==="playing"){
+    const mins=s.start? Math.max(0,Math.round((Date.now()-s.start)/60000)) : 0;
+    box.className="playing";
+    box.innerHTML='<div class="qlab">Right now</div><div class="qbig">\uD83C\uDFF8 You\u2019re on '+esc(s.court||"court")+'</div>'+
+      '<div class="qsub">Playing for '+mins+' min \u00b7 good luck</div>';
+  }else if(s.mode==="next"){
+    box.className="next";
+    box.innerHTML='<div class="qlab">Your status</div><div class="qbig">\u26A1 You\u2019re UP NEXT</div>'+
+      '<div class="qsub">Head to the courts \u2014 you\u2019re on the moment one frees up.</div>'+
+      '<div class="qeta">'+fmtEta(etaMs(0,state))+'</div>';
+  }else if(s.mode==="queued"){
+    const n=s.ahead;
+    box.className="queued";
+    box.innerHTML='<div class="qlab">Your status</div>'+
+      '<div class="qbig"><span class="qnum">'+n+'</span> match'+(n===1?"":"es")+' ahead of you</div>'+
+      '<div class="qsub">You\u2019re queued in '+esc(s.qname||"the line")+' \u2014 stay close.</div>'+
+      '<div class="qeta">'+fmtEta(etaMs(n,state))+'</div>';
+  }else{
+    box.className="idle";
+    box.innerHTML='<div class="qlab">Your status</div><div class="qbig">Not in the queue yet</div>'+
+      '<div class="qsub">The Queue Master builds the next matches \u2014 you\u2019ll be summoned here.</div>';
+  }
+  if(window.__sessionDouble) box.innerHTML+='<div class="dxbanner">\u26A1 2\u00d7 XP TONIGHT</div>';
+}
 function checkSummoned(state){
   const me=myBoardName().trim().toLowerCase();
   if(!me || !state || !state.next) { hideSummon(); return; }
@@ -3078,7 +3203,7 @@ async function playerAutoBoard(){
 /* ======================= RPG PLAYER VIEW ======================= */
 let myMatches=[], mySessions={};
 function careerStatsFrom(rows,uid){
-  let w=0,diff=0,playMs=0,waitMin=0,waitN=0;
+  let w=0,diff=0,playMs=0,waitMin=0,waitN=0,xpTotal=0,dblGames=0;
   const ordered=[...rows].sort((a,b)=>new Date(a.ended_at)-new Date(b.ended_at));
   let streak=0,best=0,clutch=0,bestWin=null;
   ordered.forEach(m=>{
@@ -3089,19 +3214,22 @@ function careerStatsFrom(rows,uid){
     streak=won?streak+1:0; best=Math.max(best,streak);
     if(won&&margin<=2) clutch++;
     if(won&&(!bestWin||margin>Math.abs(bestWin.s1-bestWin.s2))) bestWin=m;
+    const mult=(window.__dblSess&&window.__dblSess.has(m.session_id))?2:1;
+    xpTotal+=(won?30:10)*mult;
+    if(mult===2) dblGames++;
   });
   const g=rows.length;
   let nights=0;
   rows.forEach(m=>{ const hh=new Date(new Date(m.ended_at).getTime()+8*3600e3).getUTCHours();
     if(hh>=22||hh<5) nights++; });
-  const st={g,w,l:g-w,winRate:g?100*w/g:0,diff,
+  const st={g,w,l:g-w,winRate:g?100*w/g:0,diff,xp:xpTotal,dblGames,
     avgPlay:g? (playMs/g)/60000 : 0, avgWait: waitN? waitMin/waitN : 0};
   const bestWinText=bestWin?
     ("Best W · "+bestWin.s1+"–"+bestWin.s2+" vs "+
      ((bestWin.t1.includes(uid)? bestWin.t2n : bestWin.t1n)||[]).map(n=>n||"Guest").join("/")):"";
   return {st, ex:{streak:best,clutch,bestWin,bestWinText,curStreak:streak,nights}};
 }
-function xpOf(st){ return st.w*30+(st.l)*10; }
+function xpOf(st){ return (st && st.xp!=null)? st.xp : (st.w*30+(st.l)*10); }
 function levelOf(xp){ let lv=1; while(xp>=25*lv*lv) lv++; return lv; }
 const BADGES=[
  {id:"first",  em:"🩸", name:"First Blood",            d:"Win your first match",              f:(st,ex)=>st.w>=1},
