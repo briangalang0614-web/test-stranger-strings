@@ -2998,10 +2998,31 @@ async function selectSession(id){
 let rosterTimer=null;
 async function importRoster(manual){
   if(!S.db || !S.db.sessionId) return;
-  const r=await sFetch("/rest/v1/session_players?session_id=eq."+S.db.sessionId+
-    "&select=profile_id,active,pref_partner,profiles(reclub_name,full_name,level)");
-  if(!r.ok){ if(manual) toast("Roster fetch failed"); return; }
-  const allRows=await r.json();
+  const base="/rest/v1/session_players?session_id=eq."+S.db.sessionId+"&select=profile_id,active";
+  const NAMES="profiles!session_players_profile_id_fkey(reclub_name,full_name,level)";
+  // 1) preferred: names + preferences, with the FK named so the embed is unambiguous
+  let r=await sFetch(base+",pref_partner,"+NAMES).catch(()=>null);
+  // 2) no pref_partner column yet
+  if(!r||!r.ok) r=await sFetch(base+","+NAMES).catch(()=>null);
+  // 3) very old shape (single FK) — the plain embed still works there
+  if(!r||!r.ok) r=await sFetch(base+",pref_partner,profiles(reclub_name,full_name,level)").catch(()=>null);
+  if(!r||!r.ok) r=await sFetch(base+",profiles(reclub_name,full_name,level)").catch(()=>null);
+  // 4) last resort: no embed at all — fetch the names in a second call
+  let sideNames=null;
+  if(!r||!r.ok){
+    r=await sFetch(base).catch(()=>null);
+    if(r&&r.ok){
+      const tmp=await r.clone().json().catch(()=>[]);
+      const ids=tmp.map(z=>z.profile_id).filter(Boolean);
+      if(ids.length){
+        const pr=await sFetch("/rest/v1/profiles?id=in.("+ids.join(",")+")&select=id,reclub_name,full_name,level").catch(()=>null);
+        if(pr&&pr.ok){ sideNames={}; (await pr.json()).forEach(z=>sideNames[z.id]=z); }
+      }
+    }
+  }
+  if(!r||!r.ok){ if(manual) toast("Roster fetch failed"); return; }
+  let allRows=await r.json();
+  if(sideNames) allRows=allRows.map(z=>Object.assign({},z,{profiles:sideNames[z.profile_id]||null}));
   const rows=allRows.filter(x=>x.active!==false);          // joined & available
   let added=0, benched=0, returned=0;
   window.__prefs={};
@@ -3385,19 +3406,23 @@ function renderBench(){
 async function loadBench(sessionId){
   window.__benchSession=sessionId;
   const hadPref=window.__myPref||"";
-  const r=await sFetch("/rest/v1/session_players?session_id=eq."+sessionId+"&profile_id=eq."+auth.uid+
-    "&select=active,pref_partner").catch(()=>null);
+  const q="/rest/v1/session_players?session_id=eq."+sessionId+"&profile_id=eq."+auth.uid;
+  let r=await sFetch(q+"&select=active,pref_partner").catch(()=>null);
+  let noPrefCol=false;
+  if(!r||!r.ok){ r=await sFetch(q+"&select=active").catch(()=>null); noPrefCol=true; }
   if(r&&r.ok){ const rows=await r.json();
     window.__benchOut = rows[0]? rows[0].active===false : false;
-    window.__myPref = rows[0]? (rows[0].pref_partner||"") : ""; }
+    window.__myPref = (rows[0]&&!noPrefCol)? (rows[0].pref_partner||"") : ""; }
+  window.__noPrefCol=noPrefCol;
   renderBench();
   if(hadPref && !window.__myPref){
     const nm=window.__myPrefName||"your partner";
     toast("🤝 You were paired with "+nm+" — request fulfilled. Pick someone new any time.");
   }
   // fill the partner list with everyone else in tonight's session
-  const pr=await sFetch("/rest/v1/session_players?session_id=eq."+sessionId+
-    "&select=profile_id,profiles(reclub_name,full_name)").catch(()=>null);
+  const pbase="/rest/v1/session_players?session_id=eq."+sessionId+"&select=profile_id,";
+  let pr=await sFetch(pbase+"profiles!session_players_profile_id_fkey(reclub_name,full_name)").catch(()=>null);
+  if(!pr||!pr.ok) pr=await sFetch(pbase+"profiles(reclub_name,full_name)").catch(()=>null);
   const sel=document.getElementById("prefSel"); if(!sel) return;
   sel.innerHTML='<option value="">\u2014 anyone \u2014</option>';
   if(pr&&pr.ok){
@@ -3406,6 +3431,8 @@ async function loadBench(sessionId){
       o.textContent=x.profiles.reclub_name||x.profiles.full_name||"Player";
       sel.appendChild(o); });
   }
+  const prefWrap=sel.parentElement;
+  if(prefWrap) prefWrap.style.display=window.__noPrefCol? "none":"";
   sel.value=window.__myPref||"";
   const cur=sel.selectedOptions[0];
   window.__myPrefName = (window.__myPref && cur)? cur.textContent : null;
@@ -3430,7 +3457,7 @@ async function savePref(){
   const v=document.getElementById("prefSel").value||null;
   const r=await sFetch("/rest/v1/session_players?session_id=eq."+window.__benchSession+"&profile_id=eq."+auth.uid,
     {method:"PATCH",body:{pref_partner:v}}).catch(()=>null);
-  if(!r||!r.ok){ toast("Could not save preference"); return; }
+  if(!r||!r.ok){ toast("Could not save preference — the club may need to run bench-prefs.sql"); return; }
   window.__myPref=v||"";
   const nm=v? document.getElementById("prefSel").selectedOptions[0].textContent : null;
   toast(nm? "🤝 Noted \u2014 we\u2019ll try to pair you with "+nm : "Partner preference cleared");
