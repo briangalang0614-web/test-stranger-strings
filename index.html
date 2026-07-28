@@ -98,6 +98,14 @@ main{max-width:1560px;margin:0 auto;padding:16px}
   padding:7px 9px 7px 13px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;overflow:hidden}
 .pcard:active{cursor:grabbing}
 .pcard.inactive{opacity:.45}
+.pcard.benched{opacity:.62}
+.pcard.benched::before{background:var(--gold)!important}
+.pchips{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
+.pchip{font-size:10px;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:2px 8px;
+  border:1px solid var(--line);white-space:nowrap;line-height:1.5}
+.pchip.bench{background:rgba(202,166,78,.18);border-color:rgba(202,166,78,.75);color:var(--gold);cursor:pointer}
+.pchip.pref{background:rgba(93,143,194,.16);border-color:rgba(93,143,194,.6);color:var(--blue)}
+.pchip.pref.mutual{background:rgba(124,176,138,.2);border-color:rgba(124,176,138,.8);color:var(--green)}
 .pcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--ok)}
 .pcard.wmid::before{background:var(--warn)}
 .pcard.whot::before{background:var(--red)}
@@ -307,6 +315,11 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
   letter-spacing:.08em;border-radius:999px;padding:3px 9px;margin-left:6px;white-space:nowrap}
 #qStatus .dxbanner{margin-top:10px;font-size:12.5px;font-weight:900;letter-spacing:.06em;color:#0a1a0f;
   background:linear-gradient(90deg,var(--green),var(--gold));border-radius:999px;padding:5px 14px;display:inline-block}
+.benchstate{border-radius:12px;padding:11px 13px;margin-bottom:10px;font-size:13.5px;font-weight:700;line-height:1.45}
+.benchstate.inplay{background:rgba(124,176,138,.14);border:1px solid rgba(124,176,138,.5);color:var(--ink)}
+.benchstate.benched{background:rgba(202,166,78,.14);border:1px solid rgba(202,166,78,.55);color:var(--ink)}
+#benchBtn{width:100%}
+#benchBtn.back{background:var(--green);color:#0a1a0f}
 #playerHome{padding-bottom:96px}
 #qStatus{padding:16px 18px;text-align:center}
 #qStatus .qlab{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:800}
@@ -803,6 +816,21 @@ window.SS_CONFIG = {
   <div class="phcard" id="qStatusCard" style="display:none;padding:0;overflow:hidden">
     <div id="qStatus"></div>
   </div>
+  <div class="phcard" id="benchCard" style="display:none">
+    <h3>🪑 Bench &amp; Partner</h3>
+    <div id="benchState" class="benchstate"></div>
+    <button id="benchBtn" class="wide" onclick="toggleBench()">🪑 Sit this one out</button>
+    <p class="hint" id="benchHelp" style="margin-top:8px"></p>
+    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+      <label style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800">Prefer to play with</label>
+      <select id="prefSel" style="width:100%;margin-top:6px" onchange="savePref()">
+        <option value="">— anyone —</option>
+      </select>
+      <p class="hint" style="margin-top:8px">A hint, not a reservation. You’ll still be matched fairly by games played
+        and time waited — but when it’s a close call, the Queue Master’s autofill will try to put you together.
+        If you both pick each other, it counts double.</p>
+    </div>
+  </div>
   <div class="phcard" style="padding:8px"><div id="pboardWrap">
     <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
   </div></div>
@@ -1229,7 +1257,8 @@ function cardEl(p, mini, noMeta){
   const st=statsFor(p.id);
   const wm=waitMin(p);
   const d=document.createElement("div");
-  d.className="pcard"+(mini?" mini":"")+(p.active?"":" inactive")+(!noMeta&&wm>=20?" whot":!noMeta&&wm>=10?" wmid":"");
+  d.className="pcard"+(mini?" mini":"")+(p.active?"":" inactive")+(p.benchedBySelf?" benched":"")+
+    (!noMeta&&wm>=20?" whot":!noMeta&&wm>=10?" wmid":"");
   d.draggable=true; d.dataset.pid=p.id;
   d.title=p.name+(noMeta?" · in a live match":" · drag to move");
   const top=document.createElement("div"); top.className="top";
@@ -1252,10 +1281,42 @@ function cardEl(p, mini, noMeta){
     if(!mini){ const rec=document.createElement("span"); rec.className="rec"; rec.textContent=st.w+"-"+st.l; tl.appendChild(rec); }
     d.append(tl);
   }
+  if(!mini){
+    const P=window.__prefs||{};
+    const chips=document.createElement("div"); chips.className="pchips"; let any=false;
+    if(p.benchedBySelf){
+      const b=document.createElement("span"); b.className="pchip bench";
+      b.textContent="🪑 Sat out"; b.title="This player benched themselves in the app — tap to bring them back in";
+      b.onclick=e=>{ e.stopPropagation(); adminUnbench(p); };
+      chips.appendChild(b); any=true;
+    }
+    const want=P[p.id];
+    if(want){
+      const target=S.players.find(z=>z.id===want);
+      const mutual=P[want]===p.id;
+      const c=document.createElement("span"); c.className="pchip pref"+(mutual?" mutual":"");
+      c.textContent=(mutual?"🤝 ⇄ ":"🤝 → ")+((target&&target.name)||"someone");
+      c.title=mutual? "Both requested each other — autofill will strongly try to pair them"
+                    : "Would like to partner with this player (hint only)";
+      chips.appendChild(c); any=true;
+    }
+    if(any) d.append(chips);
+  }
   d.addEventListener("dragstart",e=>{ e.dataTransfer.setData("text/plain",p.id); d.classList.add("ghosting"); });
   d.addEventListener("dragend",()=>d.classList.remove("ghosting"));
   d.addEventListener("pointerdown",e=>touchDragStart(e,p.id,d));
   return d;
+}
+async function adminUnbench(p){
+  if(!await uiConfirm("Bring "+p.name+" back into the rotation?\nThey benched themselves in the app.",
+    {title:"🏸 Back in",ok:"Bring back"})) return;
+  if(S.db&&S.db.sessionId){
+    const r=await sFetch("/rest/v1/session_players?session_id=eq."+S.db.sessionId+"&profile_id=eq."+p.id,
+      {method:"PATCH",body:{active:true}}).catch(()=>null);
+    if(!r||!r.ok){ toast("Could not update — they may need to tap “I’m back in”"); return; }
+  }
+  p.active=true; p.benchedBySelf=false; p.waitSince=now();
+  save(); renderHome(); toast("🏸 "+p.name+" is back in the rotation");
 }
 function iconBtn(txt,title,fn){ const b=document.createElement("button");
   b.className="icon"; b.textContent=txt; b.title=title; b.onclick=fn; return b; }
@@ -1284,7 +1345,14 @@ function renderPlayers(){
   else if(!list.length) pool.innerHTML='<div class="empty">'+(q?'No players match your search.':'Everyone is queued or on court. Drop a player here to rest them.')+'</div>';
   const playing=S.players.filter(p=>{const o=ownerOf(p.id);return o.kind==="c"&&o.o.start;}).length;
   document.getElementById("poolCount").textContent=
-    S.players.length+" player"+(S.players.length===1?"":"s")+" ("+(S.players.length-playing)+" waiting · "+playing+" playing)";
+    (function(){
+      const benched=S.players.filter(z=>z.benchedBySelf).length;
+      const prefs=Object.keys(window.__prefs||{}).filter(k=>S.players.some(z=>z.id===k)).length;
+      return S.players.length+" player"+(S.players.length===1?"":"s")+
+        " ("+(S.players.length-playing-benched)+" waiting · "+playing+" playing"+
+        (benched? " · "+benched+" on the bench":"")+")"+
+        (prefs? " · 🤝 "+prefs+" partner request"+(prefs===1?"":"s"):"");
+    })();
   document.querySelectorAll(".sorts [data-sort]").forEach(b=>b.classList.toggle("on",b.dataset.sort===S.ui.sort));
   document.getElementById("dirBtn").textContent=S.ui.sortDir===1?"↓":"↑";
 }
@@ -1353,11 +1421,16 @@ function famCounts(){
   });
   return {Pt,Op,key};
 }
+function prefBonus(a,b){
+  const P=window.__prefs||{}; let n=0;
+  if(P[a]===b) n++; if(P[b]===a) n++;   // mutual requests count double
+  return n;
+}
 function slotCost(slots,F){
   const t1=slots.slice(0,2).filter(Boolean), t2=slots.slice(2).filter(Boolean);
   let c=0;
-  if(t1.length===2) c+=2*(F.Pt[F.key(t1[0],t1[1])]||0);
-  if(t2.length===2) c+=2*(F.Pt[F.key(t2[0],t2[1])]||0);
+  if(t1.length===2) c+=2*(F.Pt[F.key(t1[0],t1[1])]||0) - 1.5*prefBonus(t1[0],t1[1]);
+  if(t2.length===2) c+=2*(F.Pt[F.key(t2[0],t2[1])]||0) - 1.5*prefBonus(t2[0],t2[1]);
   t1.forEach(a=>t2.forEach(b=>{ c+=(F.Op[F.key(a,b)]||0); }));
   return c;
 }
@@ -1390,6 +1463,7 @@ function autofill(q){
       [...already,...chosen].forEach(x=>{
         const k=F.key(cand.id,x);
         pen += 2*(F.Pt[k]||0) + (F.Op[k]||0);
+        pen -= 1.5*prefBonus(cand.id,x);   // requested pairings win near-ties (fairness already equal in this tier)
       });
       if(pen<bestPen){ best=cand; bestPen=pen; }   // ties keep earlier (higher-priority) candidate
     }
@@ -1486,7 +1560,7 @@ function finishInline(c){
   const _m={id:uid(),n:S.matchNo++,court:c.name,
     t1,t2,t1n:t1.map(pname),t2n:t2.map(pname),
     s1,s2,start:c.start,end:now(),waits:c.waits||{}};
-  S.matches.push(_m); dbRecordMatch(_m);
+  S.matches.push(_m); dbRecordMatch(_m); clearFulfilledPrefs(_m);
   endCourt(c);
   toast("Match #"+(S.matchNo-1)+" saved — players are back in the pool");
   renderStats(true);
@@ -1530,7 +1604,7 @@ function saveScore(){
     const _m2={id:uid(),n:S.matchNo++,court:c.name,
       t1,t2,t1n:t1.map(pname),t2n:t2.map(pname),
       s1,s2,start:c.start,end:now(),waits:c.waits||{}};
-  S.matches.push(_m2); dbRecordMatch(_m2);
+  S.matches.push(_m2); dbRecordMatch(_m2); clearFulfilledPrefs(_m2);
     endCourt(c);
     toast("Match #"+(S.matchNo-1)+" saved — players are back in the pool");
   }else{
@@ -1846,128 +1920,275 @@ function renderIG(){
   document.getElementById("igBest").textContent=ex.bestWinText||"";
   document.getElementById("igQuip").textContent=quipFor(st,ex);
 }
+/* original gaunt creature silhouette — drawn, not copied */
+function udCreature(x, bx, by, s, alpha, flip){
+  x.save(); x.translate(bx,by); if(flip) x.scale(-1,1); x.scale(s,s);
+  x.globalAlpha=alpha; x.fillStyle="#000";
+  // legs (digitigrade)
+  x.beginPath(); x.moveTo(-14,0); x.lineTo(-6,-4); x.lineTo(-9,-46); x.lineTo(-17,-44); x.closePath(); x.fill();
+  x.beginPath(); x.moveTo(12,0); x.lineTo(20,-3); x.lineTo(14,-45); x.lineTo(6,-47); x.closePath(); x.fill();
+  // torso: narrow, elongated, hunched
+  x.beginPath(); x.moveTo(-16,-44);
+  x.bezierCurveTo(-22,-78,-18,-104,-10,-122);
+  x.lineTo(12,-124);
+  x.bezierCurveTo(20,-104,22,-76,15,-44);
+  x.closePath(); x.fill();
+  // hunched shoulders
+  x.beginPath(); x.ellipse(0,-124,26,13,0,0,7); x.fill();
+  // long arms reaching low, ending in claws
+  const arm=(sx)=>{
+    x.beginPath(); x.moveTo(sx*20,-124);
+    x.bezierCurveTo(sx*40,-104, sx*44,-70, sx*33,-34);
+    x.lineTo(sx*24,-36);
+    x.bezierCurveTo(sx*33,-70, sx*30,-102, sx*13,-118);
+    x.closePath(); x.fill();
+    for(let k=-1;k<=1;k++){
+      x.beginPath(); x.moveTo(sx*30,-36);
+      x.lineTo(sx*(30+k*5)-sx*2, -14+Math.abs(k)*5);
+      x.lineTo(sx*(33+k*5), -34); x.closePath(); x.fill();
+    }
+  };
+  arm(1); arm(-1);
+  // elongated head, tilted back — no face
+  x.beginPath(); x.moveTo(-11,-126);
+  x.bezierCurveTo(-16,-146,-6,-160,4,-160);
+  x.bezierCurveTo(17,-160,21,-144,13,-127);
+  x.closePath(); x.fill();
+  // spine ridges
+  x.globalAlpha=alpha*0.85;
+  for(let k=0;k<5;k++){ x.beginPath(); x.moveTo(0,-60-k*14); x.lineTo(6,-66-k*14); x.lineTo(0,-70-k*14); x.closePath(); x.fill(); }
+  x.restore();
+}
 function buildShareCard(name, st, ex, done, opts){
   opts=opts||{};
+  const UD = opts.variant==="upside";
+  const P = UD ? {
+    ink:"#ffe6e6", mute:"#b98087", accent:"#ff2f2f", accentSoft:"rgba(255,47,47,.55)",
+    ring:"#ff3b3b", ringGlow:"rgba(255,59,59,.6)", chipBg:"rgba(255,47,47,.07)",
+    chipLine:"rgba(255,47,47,.45)", flair:"#ff7a7a", quip:"#f3d9d9", glow:"rgba(255,47,47,.85)"
+  } : {
+    ink:"#f5edd8", mute:"#8fae95", accent:"#caa64e", accentSoft:"rgba(202,166,78,.6)",
+    ring:"#7cd18f", ringGlow:"rgba(124,209,143,.55)", chipBg:"rgba(202,166,78,.08)",
+    chipLine:"rgba(202,166,78,.6)", flair:"#ffd27a", quip:"#efe4c8", glow:"rgba(202,166,78,.8)"
+  };
   const W=720,H=1280,cx=W/2;
   const c=document.createElement("canvas"); c.width=W; c.height=H;
   const x=c.getContext("2d");
-  // neon night backdrop
-  const g=x.createLinearGradient(0,0,0,H);
-  g.addColorStop(0,"#0d1a12"); g.addColorStop(.62,"#070d09"); g.addColorStop(1,"#04120b");
-  x.fillStyle=g; x.fillRect(0,0,W,H);
-  const starCols=["255,255,255","202,166,78","240,230,204","202,166,78"];
-  for(let i=0;i<90;i++){
-    x.fillStyle="rgba("+starCols[i%4]+","+(0.18+Math.random()*0.5)+")";
-    x.beginPath(); x.arc(Math.random()*W,Math.random()*H*0.5,Math.random()<0.85?1.1:2,0,7); x.fill();
+
+  if(UD){
+    /* ---------- THE UPSIDE DOWN: dead dimension ---------- */
+    const g=x.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"#12040a"); g.addColorStop(.45,"#080103"); g.addColorStop(1,"#1d0409");
+    x.fillStyle=g; x.fillRect(0,0,W,H);
+    // crimson bleed rising from below
+    const bleed=x.createRadialGradient(cx,H+120,60,cx,H+120,760);
+    bleed.addColorStop(0,"rgba(255,40,40,.42)"); bleed.addColorStop(1,"rgba(255,40,40,0)");
+    x.fillStyle=bleed; x.fillRect(0,0,W,H);
+    // drifting spores
+    for(let i=0;i<230;i++){
+      const sx=Math.random()*W, sy=Math.random()*H, r=Math.random()<0.8? 1+Math.random()*1.6 : 2.4+Math.random()*2;
+      x.save(); x.shadowColor="rgba(255,70,70,.9)"; x.shadowBlur=8;
+      x.fillStyle="rgba(255,"+(120+Math.floor(Math.random()*80))+",130,"+(0.16+Math.random()*0.5)+")";
+      x.beginPath(); x.arc(sx,sy,r,0,7); x.fill(); x.restore();
+    }
+    // INVERTED pines hanging from the ceiling
+    x.fillStyle="#22040a";
+    for(let px=-20;px<W+40;px+=64){
+      const h2=70+((px*7)%56);
+      x.beginPath(); x.moveTo(px,0); x.lineTo(px+32,h2); x.lineTo(px+64,0); x.closePath(); x.fill();
+    }
+    // creatures lurking in the murk (drawn before vines so vines overlap them)
+    udCreature(x, 96,  H-118, 1.55, 0.72, false);
+    udCreature(x, W-88, H-104, 1.32, 0.62, true);
+    udCreature(x, cx+150, 470, 0.62, 0.30, false);   // distant, watching
+    // creeping vines from the bottom
+    x.strokeStyle="rgba(120,12,22,.85)"; x.lineCap="round";
+    for(let i=0;i<9;i++){
+      const bx=40+i*80+((i*37)%25), len=90+((i*53)%150);
+      x.lineWidth=5-(i%3); x.beginPath(); x.moveTo(bx,H);
+      x.bezierCurveTo(bx-40,H-len*0.5, bx+46,H-len*0.7, bx+((i%2)?26:-26),H-len);
+      x.stroke();
+      x.lineWidth=2; x.beginPath(); x.moveTo(bx+((i%2)?26:-26),H-len);
+      x.bezierCurveTo(bx+50,H-len-30, bx-30,H-len-46, bx+8,H-len-70); x.stroke();
+    }
+    // broken fairy-light string — mostly dead bulbs
+    x.strokeStyle="rgba(255,70,70,.22)"; x.lineWidth=2;
+    x.beginPath(); x.moveTo(28,44); x.quadraticCurveTo(cx,92,W-28,44); x.stroke();
+    const dead=[0,1,0,0,1,0,1,0];
+    dead.forEach((isLit,i)=>{
+      const t=(i+1)/(dead.length+1);
+      const bx=28+(W-56)*t, by=44+2*(1-t)*t*2*(92-44);
+      x.save();
+      if(isLit){ x.shadowColor="#ff2f2f"; x.shadowBlur=20; x.fillStyle="#ff3b3b"; }
+      else { x.fillStyle="#3a0a10"; }
+      x.beginPath(); x.arc(bx,by+6,6,0,7); x.fill(); x.restore();
+    });
+  } else {
+    /* ---------- CLASSIC: neon night ---------- */
+    const g=x.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,"#0d1a12"); g.addColorStop(.62,"#070d09"); g.addColorStop(1,"#04120b");
+    x.fillStyle=g; x.fillRect(0,0,W,H);
+    const starCols=["255,255,255","202,166,78","240,230,204","202,166,78"];
+    for(let i=0;i<90;i++){
+      x.fillStyle="rgba("+starCols[i%4]+","+(0.18+Math.random()*0.5)+")";
+      x.beginPath(); x.arc(Math.random()*W,Math.random()*H*0.5,Math.random()<0.85?1.1:2,0,7); x.fill();
+    }
+    for(let i=0;i<26;i++){
+      x.fillStyle="rgba(217,69,58,"+(0.10+Math.random()*0.22)+")";
+      x.beginPath(); x.arc(Math.random()*W, H*0.55+Math.random()*H*0.4, 1.5+Math.random()*2.5,0,7); x.fill();
+    }
+    x.fillStyle="#0a2416";
+    for(let px=-20;px<W+40;px+=64){
+      const h2=66+((px*7)%52);
+      x.beginPath(); x.moveTo(px,H); x.lineTo(px+32,H-h2); x.lineTo(px+64,H); x.closePath(); x.fill();
+    }
+    x.strokeStyle="rgba(255,255,255,.30)"; x.lineWidth=2;
+    x.beginPath(); x.moveTo(28,40); x.quadraticCurveTo(cx,86,W-28,40); x.stroke();
+    const bulbCols=["#d9453a","#eac25f","#6fbf82","#f0e6cc","#d9453a","#eac25f","#6fbf82","#d9453a"];
+    bulbCols.forEach((col,i)=>{
+      const t=(i+1)/(bulbCols.length+1);
+      const bx=28+(W-56)*t, by=40+2*(1-t)*t*2*(86-40);
+      x.save(); x.shadowColor=col; x.shadowBlur=14;
+      x.fillStyle=col; x.beginPath(); x.arc(bx,by+6,6,0,7); x.fill(); x.restore();
+    });
   }
-  // floating upside-down particles (lower half)
-  for(let i=0;i<26;i++){
-    x.fillStyle="rgba(217,69,58,"+(0.10+Math.random()*0.22)+")";
-    x.beginPath(); x.arc(Math.random()*W, H*0.55+Math.random()*H*0.4, 1.5+Math.random()*2.5,0,7); x.fill();
+
+  // frame
+  x.save(); x.shadowColor=P.glow; x.shadowBlur=UD?18:14;
+  x.strokeStyle=P.accent; x.lineWidth=UD?5:3; x.strokeRect(18,18,W-36,H-36); x.restore();
+  if(UD){ // cracked second frame, offset — a dimension out of register
+    x.save(); x.globalAlpha=.5; x.strokeStyle="#7a0d16"; x.lineWidth=2;
+    x.strokeRect(24,23,W-48,H-46); x.restore();
   }
-  // purple pine silhouettes
-  x.fillStyle="#0a2416";
-  for(let px=-20;px<W+40;px+=64){
-    const h2=66+((px*7)%52);
-    x.beginPath(); x.moveTo(px,H); x.lineTo(px+32,H-h2); x.lineTo(px+64,H); x.closePath(); x.fill();
-  }
-  // fairy-light string across the top (sagging curve + glowing bulbs)
-  x.strokeStyle="rgba(255,255,255,.30)"; x.lineWidth=2;
-  x.beginPath(); x.moveTo(28,40); x.quadraticCurveTo(cx,86,W-28,40); x.stroke();
-  const bulbCols=["#d9453a","#eac25f","#6fbf82","#f0e6cc","#d9453a","#eac25f","#6fbf82","#d9453a"];
-  bulbCols.forEach((col,i)=>{
-    const t=(i+1)/(bulbCols.length+1);
-    const bx=28+(W-56)*t, by=40+2*(1-t)*t*2*(86-40); // point on the quadratic curve
-    x.save(); x.shadowColor=col; x.shadowBlur=14;
-    x.fillStyle=col; x.beginPath(); x.arc(bx,by+6,6,0,7); x.fill(); x.restore();
-  });
-  // neon frame
-  x.save(); x.shadowColor="rgba(202,166,78,.6)"; x.shadowBlur=14;
-  x.strokeStyle="#caa64e"; x.lineWidth=5; x.strokeRect(16,16,W-32,H-32); x.restore();
+
   const img=new Image();
   img.onload=()=>{
-    // logo with pink glow ring
     x.save(); x.beginPath(); x.arc(cx,168,80,0,7); x.clip(); x.drawImage(img,cx-80,88,160,160); x.restore();
-    x.save(); x.shadowColor="rgba(202,166,78,.7)"; x.shadowBlur=12;
-    x.strokeStyle="#caa64e"; x.lineWidth=4; x.beginPath(); x.arc(cx,168,80,0,7); x.stroke(); x.restore();
+    if(UD){ // desaturate + redden the logo so it belongs to this dimension
+      x.save(); x.beginPath(); x.arc(cx,168,80,0,7); x.clip();
+      x.globalCompositeOperation="color"; x.fillStyle="rgba(150,15,25,.75)"; x.fillRect(cx-80,88,160,160);
+      x.restore();
+    }
+    x.save(); x.shadowColor=P.glow; x.shadowBlur=UD?16:12;
+    x.strokeStyle=P.accent; x.lineWidth=4; x.beginPath(); x.arc(cx,168,80,0,7); x.stroke(); x.restore();
     x.textAlign="center";
-    x.fillStyle="#caa64e"; x.font="600 19px Georgia";
-    x.fillText("S T R A N G E R   S T R I N G S", cx, 292);
-    // name with pink glow (auto-fit)
+    x.fillStyle=P.accent; x.font="600 19px Georgia";
+    x.fillText(UD? "T H E   U P S I D E   D O W N" : "S T R A N G E R   S T R I N G S", cx, 292);
+
+    // name (glitched RGB-split in the Upside Down)
     let size=62; x.font="bold "+size+"px Georgia";
     while(x.measureText(name.toUpperCase()).width>W-140 && size>30){ size-=4; x.font="bold "+size+"px Georgia"; }
-    x.save(); x.shadowColor="rgba(202,166,78,.8)"; x.shadowBlur=18;
-    x.fillStyle="#f5edd8"; x.fillText(name.toUpperCase(), cx, 358); x.restore();
-    // mirrored upside-down name echo
+    const NM=name.toUpperCase();
+    if(UD){
+      x.save(); x.globalCompositeOperation="lighter";
+      x.fillStyle="rgba(255,0,40,.9)";  x.fillText(NM, cx-4, 358);
+      x.fillStyle="rgba(0,190,220,.55)";x.fillText(NM, cx+4, 358);
+      x.restore();
+      x.save(); x.shadowColor=P.glow; x.shadowBlur=22;
+      x.fillStyle="#fff0f0"; x.fillText(NM, cx, 358); x.restore();
+      // torn slice through the name
+      x.save(); x.globalCompositeOperation="destination-out";
+      x.fillRect(cx-200, 336, 400, 3); x.restore();
+    } else {
+      x.save(); x.shadowColor=P.glow; x.shadowBlur=18;
+      x.fillStyle=P.ink; x.fillText(NM, cx, 358); x.restore();
+    }
+    // mirrored echo
     x.save(); x.translate(cx,380); x.rotate(Math.PI);
-    x.globalAlpha=0.32; x.fillStyle="#caa64e"; x.font="bold "+Math.round(size*0.45)+"px Georgia";
-    x.fillText(name.toUpperCase(),0,0); x.restore();
-    // cyan glow epithet
-    x.save(); x.shadowColor="rgba(255,90,78,.9)"; x.shadowBlur=16;
-    x.fillStyle="#ff5a4e"; x.font="800 24px Georgia";
+    x.globalAlpha=UD?0.42:0.32; x.fillStyle=P.accent; x.font="bold "+Math.round(size*0.45)+"px Georgia";
+    x.fillText(NM,0,0); x.restore();
+    // epithet
+    x.save(); x.shadowColor=UD?"rgba(255,47,47,.95)":"rgba(255,90,78,.9)"; x.shadowBlur=16;
+    x.fillStyle=UD?"#ff5252":"#ff5a4e"; x.font="800 24px Georgia";
     x.fillText(epithetFor(st,ex).toUpperCase(), cx, 428); x.restore();
-    // win-rate gauge: pink→cyan gradient ring
+
+    // win-rate gauge
     const gy=592,R=110,pct=Math.max(0,Math.min(100,Math.round(st.winRate)));
     x.lineWidth=22; x.lineCap="round";
-    x.strokeStyle="rgba(255,255,255,.15)";
+    x.strokeStyle=UD?"rgba(255,255,255,.09)":"rgba(255,255,255,.15)";
     x.beginPath(); x.arc(cx,gy,R,0,7); x.stroke();
-    let ringStyle="#7cd18f";
+    let ringStyle=P.ring;
     if(x.createConicGradient){
       const cg=x.createConicGradient(-Math.PI/2,cx,gy);
-      cg.addColorStop(0,"#caa64e"); cg.addColorStop(Math.max(.02,pct/100),"#7cd18f");
+      if(UD){ cg.addColorStop(0,"#7a0d16"); cg.addColorStop(Math.max(.02,pct/100),"#ff3b3b"); }
+      else   { cg.addColorStop(0,"#caa64e"); cg.addColorStop(Math.max(.02,pct/100),"#7cd18f"); }
       ringStyle=cg;
     }
-    x.save(); x.shadowColor="rgba(124,209,143,.55)"; x.shadowBlur=12;
+    x.save(); x.shadowColor=P.ringGlow; x.shadowBlur=UD?18:12;
     x.strokeStyle=ringStyle;
     x.beginPath(); x.arc(cx,gy,R,-Math.PI/2,-Math.PI/2+Math.PI*2*pct/100); x.stroke(); x.restore();
-    x.fillStyle="#f0e6cc"; x.font="800 56px Georgia"; x.fillText(pct+"%",cx,gy+14);
-    x.fillStyle="#caa64e"; x.font="600 15px Georgia"; x.fillText("W I N   R A T E",cx,gy+46);
+    x.fillStyle=UD?"#fff0f0":"#f0e6cc"; x.font="800 56px Georgia"; x.fillText(pct+"%",cx,gy+14);
+    x.fillStyle=P.accent; x.font="600 15px Georgia"; x.fillText("W I N   R A T E",cx,gy+46);
     // record
-    x.fillStyle="#f0e6cc"; x.font="800 44px Georgia";
+    x.fillStyle=UD?"#fff0f0":"#f0e6cc"; x.font="800 44px Georgia";
     x.fillText(st.w+"W – "+st.l+"L", cx, 782);
-    x.fillStyle="#8fae95"; x.font="600 22px Georgia";
+    x.fillStyle=P.mute; x.font="600 22px Georgia";
     x.fillText((st.diff>0?"+":"")+st.diff+" point diff", cx, 816);
-    // neon stat chips
+    // stat chips
     const chips=[["GAMES",String(st.g)],["AVG PLAY",fmtMin(st.avgPlay)+"m"],["AVG WAIT",fmtMin(st.avgWait)+"m"]];
     const cw=176,ch=92,gap=18,x0=cx-(cw*3+gap*2)/2;
     chips.forEach((chp,i)=>{
       const bx=x0+i*(cw+gap),by=852;
-      x.fillStyle="rgba(202,166,78,.08)";
-      x.strokeStyle="rgba(202,166,78,.6)"; x.lineWidth=2;
+      x.fillStyle=P.chipBg; x.strokeStyle=P.chipLine; x.lineWidth=2;
       x.beginPath(); x.roundRect(bx,by,cw,ch,14); x.fill(); x.stroke();
-      x.fillStyle="#f0e6cc"; x.font="800 30px Georgia"; x.fillText(chp[1],bx+cw/2,by+42);
-      x.fillStyle="#8fae95"; x.font="600 14px Georgia"; x.fillText(chp[0],bx+cw/2,by+70);
+      x.fillStyle=UD?"#fff0f0":"#f0e6cc"; x.font="800 30px Georgia"; x.fillText(chp[1],bx+cw/2,by+42);
+      x.fillStyle=P.mute; x.font="600 14px Georgia"; x.fillText(chp[0],bx+cw/2,by+70);
     });
     // flair + best win + quip
-    x.save(); x.shadowColor="rgba(255,210,122,.55)"; x.shadowBlur=10;
-    x.fillStyle="#ffd27a"; x.font="800 27px Georgia";
+    x.save(); x.shadowColor=UD?"rgba(255,90,90,.6)":"rgba(255,210,122,.55)"; x.shadowBlur=10;
+    x.fillStyle=P.flair; x.font="800 27px Georgia";
     const flair= ex.streak>=2? "🔥 "+ex.streak+"-WIN STREAK" :
                  ex.clutch>=1? "🧠 "+ex.clutch+" CLUTCH WIN"+(ex.clutch>1?"S":"") : "⚡ FIRST SEASON WITH THE PARTY";
     x.fillText(flair, cx, 1000); x.restore();
     if(ex.bestWinText){
-      x.fillStyle="#c9d6c4"; x.font="600 21px Georgia";
+      x.fillStyle=UD?"#dcb9bd":"#c9d6c4"; x.font="600 21px Georgia";
       x.fillText(ex.bestWinText, cx, 1038); }
     let qsize=23; const quip=quipFor(st,ex);
     x.font="italic 600 "+qsize+"px Georgia";
     while(x.measureText(quip).width>W-120 && qsize>15){ qsize-=2; x.font="italic 600 "+qsize+"px Georgia"; }
-    x.fillStyle="#efe4c8"; x.fillText(quip, cx, 1086);
+    x.fillStyle=P.quip; x.fillText(quip, cx, 1086);
     // footer
-    x.fillStyle="#8fae95"; x.font="600 16px Georgia";
+    x.fillStyle=P.mute; x.font="600 16px Georgia";
     x.fillText("STRANGER STRINGS · GREENFIELD BADMINTON CLUB", cx, 1168);
     x.fillText(new Date().toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}), cx, 1196);
-    x.fillStyle="#9dc2a6"; x.font="600 15px Georgia";
+    x.fillStyle=UD?"#c98d93":"#9dc2a6"; x.font="600 15px Georgia";
     x.fillText("#StrangerStrings  #GreenfieldBadminton  #SeeYouOnCourt", cx, 1226);
-    if(opts.variant==="upside"){
-      x.save();
-      x.globalCompositeOperation="color";
-      x.fillStyle="rgba(120,10,25,.55)"; x.fillRect(0,0,W,H);
-      x.globalCompositeOperation="source-over";
-      const vg=x.createRadialGradient(cx,H/2,180,cx,H/2,760);
-      vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(30,0,5,.55)");
-      x.fillStyle=vg; x.fillRect(0,0,W,H);
-      x.shadowColor="rgba(255,60,60,.8)"; x.shadowBlur=16;
-      x.strokeStyle="#ff4444"; x.lineWidth=5; x.strokeRect(16,16,W-32,H-32);
+
+    if(UD){
+      // scanlines
+      x.save(); x.globalAlpha=.2; x.fillStyle="#000";
+      for(let sy=0; sy<H; sy+=4) x.fillRect(0,sy,W,2);
       x.restore();
+      // hairline cracks tearing across the frame
+      x.save(); x.strokeStyle="rgba(255,60,60,.5)"; x.lineWidth=1.4;
+      for(let i=0;i<7;i++){
+        let px0=Math.random()*W, py0=Math.random()*H;
+        x.beginPath(); x.moveTo(px0,py0);
+        for(let k=0;k<5;k++){ px0+=(Math.random()-0.5)*120; py0+=(Math.random()-0.5)*120; x.lineTo(px0,py0); }
+        x.stroke();
+      }
+      x.restore();
+      // heavy vignette
+      const vg=x.createRadialGradient(cx,H/2,170,cx,H/2,760);
+      vg.addColorStop(0,"rgba(0,0,0,0)"); vg.addColorStop(1,"rgba(14,0,3,.85)");
+      x.fillStyle=vg; x.fillRect(0,0,W,H);
+      // torn, displaced glitch bands (real pixel displacement)
+      try{
+        for(let i=0;i<9;i++){
+          const gy=20+Math.floor(Math.random()*(H-60));
+          const gh=3+Math.floor(Math.random()*13);
+          const dx=(Math.random()<0.5?-1:1)*(8+Math.random()*26);
+          const band=x.getImageData(0,gy,W,gh);
+          x.putImageData(band,dx,gy);
+        }
+        // a couple of channel-split bands for the broken-signal feel
+        for(let i=0;i<3;i++){
+          const gy=60+Math.floor(Math.random()*(H-160)), gh=6+Math.floor(Math.random()*10);
+          const band=x.getImageData(0,gy,W,gh);
+          x.save(); x.globalCompositeOperation="lighter"; x.globalAlpha=.5;
+          x.putImageData(band,7,gy); x.restore();
+        }
+      }catch(e){}
     }
     done(c);
   };
@@ -2533,7 +2754,8 @@ async function authSubmit(){
   }catch(e){ err.textContent=e.message||"Something went wrong."; }
   document.getElementById("authGo").disabled=false;
 }
-function doLogout(){ auth=null; myProfile=null; authSave(); location.reload(); }
+function doLogout(){
+  try{ localStorage.removeItem("ss_profile"); }catch(e){} auth=null; myProfile=null; authSave(); location.reload(); }
 /* ---------- routing ---------- */
 function showAuth(){
   document.getElementById("authLogo").src=LOGO;
@@ -2542,9 +2764,10 @@ function showAuth(){
     if(l==="Low Int")o.selected=true; sel.appendChild(o); });
   document.getElementById("authScreen").classList.add("on");
 }
-async function enterApp(){
-  const p=await fetchMyProfile();
+async function enterApp(cachedProfile){
+  const p=cachedProfile||await fetchMyProfile();
   if(!p){ throw new Error("Profile not found — did you run schema.sql?"); }
+  try{ localStorage.setItem("ss_profile",JSON.stringify(p)); }catch(e){}
   document.getElementById("authScreen").classList.remove("on");
   document.getElementById("userBadge").style.display="";
   document.getElementById("userBadge").textContent=(p.reclub_name||p.name||"")+(p.is_admin?" · admin":"");
@@ -2725,6 +2948,20 @@ async function playerJoin(){
 async function integratedBoot(){
   authLoad();
   if(auth&&auth.access_token){
+    // paint instantly from the last known profile, then confirm with the server
+    let cached=null;
+    try{ cached=JSON.parse(localStorage.getItem("ss_profile")||"null"); }catch(e){}
+    if(cached&&cached.id){
+      try{
+        await enterApp(cached);
+        fetchMyProfile().then(fresh=>{
+          if(!fresh){ auth=null; authSave(); location.reload(); return; }
+          try{ localStorage.setItem("ss_profile",JSON.stringify(fresh)); }catch(e){}
+          if(!!fresh.is_admin!==!!cached.is_admin) location.reload();   // role changed → re-render
+        }).catch(()=>{});
+        return;
+      }catch(e){ /* fall through to the slow path */ }
+    }
     try{ await enterApp(); return; }catch(e){ auth=null; authSave(); }
   }
   showAuth();
@@ -2762,19 +2999,32 @@ let rosterTimer=null;
 async function importRoster(manual){
   if(!S.db || !S.db.sessionId) return;
   const r=await sFetch("/rest/v1/session_players?session_id=eq."+S.db.sessionId+
-    "&active=is.true&select=profile_id,profiles(reclub_name,full_name,level)");
+    "&select=profile_id,active,pref_partner,profiles(reclub_name,full_name,level)");
   if(!r.ok){ if(manual) toast("Roster fetch failed"); return; }
-  const rows=await r.json();
-  let added=0;
-  rows.forEach(row=>{
+  const allRows=await r.json();
+  const rows=allRows.filter(x=>x.active!==false);          // joined & available
+  let added=0, benched=0, returned=0;
+  window.__prefs={};
+  allRows.forEach(row=>{
+    if(row.pref_partner) window.__prefs[row.profile_id]=row.pref_partner;
     if(!row.profiles) return;
-    if(!S.players.some(p=>p.id===row.profile_id)){
+    const mine=S.players.find(p=>p.id===row.profile_id);
+    if(!mine){
+      if(row.active===false) return;                        // benched before we ever saw them
       S.players.push({id:row.profile_id, name:row.profiles.reclub_name||row.profiles.full_name||"Player",
         level:row.profiles.level||"Low Int", timeIn:timeNowHM(), timeOut:"", active:true,
         waitSince:now(), addedAt:now()});
       added++;
+    }else{
+      // sync the player's own bench choice — but never yank someone off a live court
+      const onCourt=ownerOf(mine.id).kind==="c";
+      if(row.active===false && mine.active && !onCourt){ mine.active=false; mine.benchedBySelf=true; benched++; }
+      else if(row.active!==false && !mine.active && mine.benchedBySelf){
+        mine.active=true; mine.benchedBySelf=false; mine.waitSince=now(); returned++; }
     }
   });
+  if(benched||returned){ save(); renderHome();
+    toast((benched?benched+" sat out":"")+(benched&&returned?" · ":"")+(returned?returned+" back in":"")); }
   (function(){ const el=document.getElementById("sessInfo");
     el.textContent=rows.length+" joined"; el.style.cursor="pointer"; el.title="Tap to see who joined";
     el.onclick=()=>{ const names=rows.map(x=>x.profiles?(x.profiles.reclub_name||x.profiles.full_name||"Player"):"Player");
@@ -2785,6 +3035,24 @@ async function importRoster(manual){
   rosterTimer=setTimeout(()=>importRoster(false),20000);
 }
 /* ---- matches → Postgres ---- */
+/* a partner request is "spent" the moment the pairing happens */
+async function clearFulfilledPrefs(m){
+  const P=window.__prefs||{};
+  if(!S.db||!S.db.sessionId||!m) return;
+  const done=new Set();
+  [m.t1||[], m.t2||[]].forEach(team=>{
+    team.forEach(a=>team.forEach(b=>{ if(a!==b && P[a]===b) done.add(a); }));
+  });
+  if(!done.size) return;
+  for(const pid of done){
+    delete window.__prefs[pid];
+    await sFetch("/rest/v1/session_players?session_id=eq."+S.db.sessionId+"&profile_id=eq."+pid,
+      {method:"PATCH",body:{pref_partner:null}}).catch(()=>{});
+  }
+  renderHome();
+  const who=[...done].map(id=>(S.players.find(z=>z.id===id)||{}).name).filter(Boolean);
+  if(who.length) toast("🤝 Partner request fulfilled — "+who.join(" & "));
+}
 async function dbRecordMatch(m){
   if(!SUPA.url || !S.db || !S.db.sessionId) return;
   const ids=[...m.t1,...m.t2];
@@ -2985,6 +3253,9 @@ function prefixCss(css,scope){
 let pbSocket=null, pbPoll=null, pbTick=null, pbAvg=15*60000, pbSession=null;
 async function mountPlayerBoard(sessionId){
   try{ localStorage.setItem("ss_lastSession", sessionId); }catch(e){}
+  loadBench(sessionId);
+  clearInterval(window.__benchTimer);
+  window.__benchTimer=setInterval(()=>{ if(window.__benchSession) loadBench(window.__benchSession); },60000);
   sFetch("/rest/v1/sessions?id=eq."+sessionId+"&select=settings")
     .then(r=>r.ok?r.json():[]).then(rows=>{
       window.__sessionDouble=!!(rows[0]&&rows[0].settings&&rows[0].settings.doubleXp);
@@ -3058,27 +3329,112 @@ function attachPullToRefresh(){
   const chip=document.createElement("div"); chip.id="ptrChip";
   chip.style.cssText="position:absolute;left:50%;top:6px;transform:translateX(-50%) translateY(-40px);"+
     "background:var(--green);color:#0a1a0f;font-weight:800;font-size:12px;padding:6px 14px;border-radius:999px;"+
-    "transition:transform .2s;z-index:20;pointer-events:none;box-shadow:var(--shadow)";
+    "transition:transform .2s,opacity .2s;z-index:20;pointer-events:none;box-shadow:var(--shadow);"+
+    "opacity:0;visibility:hidden";
   chip.textContent="↓ Pull to refresh";
+  const chipShow=(txt,on,y)=>{ chip.textContent=txt;
+    chip.style.visibility=on?"visible":"hidden"; chip.style.opacity=on?"1":"0";
+    chip.style.transform="translateX(-50%) translateY("+(on?(y==null?6:y):-40)+"px)"; };
   const host=wrap.parentElement; host.style.position="relative"; host.appendChild(chip);
   const scroller=()=>document.scrollingElement||document.documentElement;
   wrap.addEventListener("touchstart",e=>{ if(scroller().scrollTop<=0){ y0=e.touches[0].clientY; pulling=true; } },{passive:true});
   wrap.addEventListener("touchmove",e=>{ if(!pulling||y0==null) return;
     const dy=e.touches[0].clientY-y0;
-    if(dy>0){ const d=Math.min(dy,80); chip.style.transform="translateX(-50%) translateY("+(d-40)+"px)";
-      chip.textContent = dy>60? "↻ Release to refresh":"↓ Pull to refresh"; }
+    if(dy>0){ const d=Math.min(dy,80);
+      chipShow(dy>60? "↻ Release to refresh":"↓ Pull to refresh", true, d-40); }
   },{passive:true});
   wrap.addEventListener("touchend",async e=>{
-    if(pulling){ const dy=(e.changedTouches[0].clientY-(y0||0));
-      chip.style.transform="translateX(-50%) translateY(-40px)";
-      if(dy>60 && window.__pbPull){ chip.textContent="↻ Refreshing…"; chip.style.transform="translateX(-50%) translateY(6px)";
-        try{ await window.__pbPull(); }catch(_){}
-        if(typeof toast==="function") toast("Board refreshed 🏸");
-        setTimeout(()=>{ chip.style.transform="translateX(-50%) translateY(-40px)"; },500); } }
+    const dy=pulling? (e.changedTouches[0].clientY-(y0||0)) : 0;
     pulling=false; y0=null;
+    if(!(dy>60 && window.__pbPull)){ chipShow("↓ Pull to refresh",false); return; }
+    chipShow("↻ Refreshing…",true);
+    try{
+      // never let a hung request freeze the chip
+      await Promise.race([Promise.resolve(window.__pbPull()),
+                          new Promise(res=>setTimeout(res,6000))]);
+      if(typeof toast==="function") toast("Board refreshed 🏸");
+    }catch(_){}
+    finally{ setTimeout(()=>chipShow("↓ Pull to refresh",false),400); }
   },{passive:true});
 }
 function myBoardName(){ return myProfile? (myProfile.reclub_name||myProfile.full_name||"") : ""; }
+/* ---------- bench (sitting out) + partner preference ---------- */
+let benchBusy=false;
+function renderBench(){
+  const card=document.getElementById("benchCard"); if(!card) return;
+  const sid=window.__benchSession; if(!sid){ card.style.display="none"; return; }
+  card.style.display="block";
+  const out=window.__benchOut===true;
+  const st=document.getElementById("benchState");
+  const btn=document.getElementById("benchBtn");
+  const help=document.getElementById("benchHelp");
+  if(out){
+    st.className="benchstate benched";
+    st.innerHTML="🪑 <b>You\u2019re on the bench.</b><br>You won\u2019t be called for a match until you come back in.";
+    btn.textContent="🏸 I\u2019m back in";
+    btn.classList.add("back");
+    help.textContent="Take your time. When you\u2019re ready, tap above \u2014 you rejoin the wait order fresh.";
+  }else{
+    st.className="benchstate inplay";
+    st.innerHTML="🏸 <b>You\u2019re in the rotation.</b><br>You can be called to a court at any time.";
+    btn.textContent="🪑 Sit this one out";
+    btn.classList.remove("back");
+    help.textContent="Grabbing food, resting, or heading home? Sit out so the Queue Master skips you \u2014 no need to shout across the gym.";
+  }
+}
+async function loadBench(sessionId){
+  window.__benchSession=sessionId;
+  const hadPref=window.__myPref||"";
+  const r=await sFetch("/rest/v1/session_players?session_id=eq."+sessionId+"&profile_id=eq."+auth.uid+
+    "&select=active,pref_partner").catch(()=>null);
+  if(r&&r.ok){ const rows=await r.json();
+    window.__benchOut = rows[0]? rows[0].active===false : false;
+    window.__myPref = rows[0]? (rows[0].pref_partner||"") : ""; }
+  renderBench();
+  if(hadPref && !window.__myPref){
+    const nm=window.__myPrefName||"your partner";
+    toast("🤝 You were paired with "+nm+" — request fulfilled. Pick someone new any time.");
+  }
+  // fill the partner list with everyone else in tonight's session
+  const pr=await sFetch("/rest/v1/session_players?session_id=eq."+sessionId+
+    "&select=profile_id,profiles(reclub_name,full_name)").catch(()=>null);
+  const sel=document.getElementById("prefSel"); if(!sel) return;
+  sel.innerHTML='<option value="">\u2014 anyone \u2014</option>';
+  if(pr&&pr.ok){
+    (await pr.json()).filter(x=>x.profile_id!==auth.uid && x.profiles).forEach(x=>{
+      const o=document.createElement("option"); o.value=x.profile_id;
+      o.textContent=x.profiles.reclub_name||x.profiles.full_name||"Player";
+      sel.appendChild(o); });
+  }
+  sel.value=window.__myPref||"";
+  const cur=sel.selectedOptions[0];
+  window.__myPrefName = (window.__myPref && cur)? cur.textContent : null;
+}
+async function toggleBench(){
+  if(benchBusy||!window.__benchSession) return;
+  const goingOut=!window.__benchOut;
+  if(goingOut && !await uiConfirm("Sit out the next matches?\nYou won\u2019t be called until you tap \u201cI\u2019m back in\u201d.",
+      {title:"🪑 Take a break",ok:"Sit out"})) return;
+  benchBusy=true;
+  const btn=document.getElementById("benchBtn"); const prev=btn.textContent; btn.textContent="\u2026";
+  const r=await sFetch("/rest/v1/session_players?session_id=eq."+window.__benchSession+"&profile_id=eq."+auth.uid,
+    {method:"PATCH",body:{active:!goingOut}}).catch(()=>null);
+  benchBusy=false;
+  if(!r||!r.ok){ btn.textContent=prev; toast("Could not update \u2014 try again"); return; }
+  window.__benchOut=goingOut;
+  renderBench();
+  toast(goingOut? "🪑 You\u2019re on the bench" : "🏸 Welcome back \u2014 you\u2019re in the rotation");
+}
+async function savePref(){
+  if(!window.__benchSession) return;
+  const v=document.getElementById("prefSel").value||null;
+  const r=await sFetch("/rest/v1/session_players?session_id=eq."+window.__benchSession+"&profile_id=eq."+auth.uid,
+    {method:"PATCH",body:{pref_partner:v}}).catch(()=>null);
+  if(!r||!r.ok){ toast("Could not save preference"); return; }
+  window.__myPref=v||"";
+  const nm=v? document.getElementById("prefSel").selectedOptions[0].textContent : null;
+  toast(nm? "🤝 Noted \u2014 we\u2019ll try to pair you with "+nm : "Partner preference cleared");
+}
 /* ---------- "where am I in line?" ---------- */
 function meMatches(p){
   const me=(myProfile&&myProfile.id)||null;
