@@ -4807,7 +4807,7 @@ function nightRecap(){
     scored+=mine; conceded+=th;
     const won=mine>th;
     if(won){ w++; cur++; streak=Math.max(streak,cur); } else cur=0;
-    xpTot+=matchXp(won,cur,mDate(new Date(m.ended_at).getTime()),dblR);
+    xpTot+=matchXp(won,cur,pdOf(m),dblR);
     const ids=onT1?(m.t1||[]):(m.t2||[]), names=onT1?(m.t1n||[]):(m.t2n||[]);
     ids.forEach((id,k)=>{ if(id&&id!==uid&&names[k]) partners[names[k]]=(partners[names[k]]||0)+(won?1.001:1); });
     const thN=(onT1?(m.t2n||[]):(m.t1n||[])).filter(Boolean).join(" & ");
@@ -7798,6 +7798,7 @@ async function loadMyHistory(manual){
   const sr=await sFetch("/rest/v1/sessions?id=in.("+[...sidSet].join(",")+")&select=id,title,session_date,settings").catch(()=>null);
   if(sr&&sr.ok){ const srows=await sr.json();
     window.__dblSess=new Set(srows.filter(s=>s.settings&&s.settings.doubleXp).map(s=>s.id));
+    window.__sessDate={}; srows.forEach(s=>{ window.__sessDate[s.id]=s.session_date; });
     srows.forEach(s=>sess[s.id]=s); }
   const nm=(id,i,stored)=>esc(names[id]||(stored&&stored[i])||"Guest");
   window.__histNames=names;
@@ -8715,7 +8716,7 @@ function careerStatsFrom(rows,uid){
     if(m.session_id!==lastSid){ xpStreak=0; lastSid=m.session_id; }
     xpStreak=won?xpStreak+1:0;
     const dbl=!!(window.__dblSess&&window.__dblSess.has(m.session_id));
-    xpTotal+=matchXp(won,xpStreak,mDate(new Date(m.ended_at).getTime()),dbl);
+    xpTotal+=matchXp(won,xpStreak,pdOf(m),dbl);
     if(dbl) dblGames++;
   });
   const g=rows.length;
@@ -8734,6 +8735,16 @@ function careerStatsFrom(rows,uid){
    (>=5 -> 1.5x, >=3 -> 1.25x), times the doubleXp session flag.
    Pre-epoch (or epoch unset): unchanged 30/10. Keep in lockstep with the SQL. ---- */
 function mDate(ms){ return new Date(ms+8*3600e3).toISOString().slice(0,10); }   // Manila date
+/* Epoch date for a match — MUST match the SQL, which gates on
+   play_date = coalesce(session_date, ended_at::date). So prefer the session's
+   date; only fall back to the record time when the session date is unknown. */
+function pdOf(m){
+  const sid = m && m.session_id;
+  if(sid && window.__sessDate && window.__sessDate[sid]) return window.__sessDate[sid];
+  if(m && m.session_date) return m.session_date;
+  if(m && m.ended_at) return mDate(new Date(m.ended_at).getTime());
+  return mDate(Date.now());
+}
 function matchXp(won, streak, playDate, dbl){
   const on = window.__xpEpoch && playDate && playDate >= window.__xpEpoch;
   const base = on
@@ -8760,7 +8771,7 @@ function xpAccumulate(matches, uid, opts){
       const won = (m.t1||[]).includes(uid) ? m.s1>m.s2 : m.s2>m.s1;
       streak = won ? streak+1 : 0;
       const pd  = typeof opts.playDate==='function' ? opts.playDate(m)
-                : (opts.playDate || mDate(endMs(m)));
+                : (opts.playDate || pdOf(m));
       const dbl = typeof opts.dbl==='function' ? opts.dbl(sid) : !!opts.dbl;
       total += matchXp(won, streak, pd, dbl);
     }
