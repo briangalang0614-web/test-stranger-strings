@@ -920,6 +920,11 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 #qStatusCard .brfhelp:hover{opacity:1}
 /* --- Who's in tonight: chips were emitted with no CSS, so they rendered as one run of text --- */
 #whosInBody{display:flex;flex-wrap:wrap;gap:6px}
+.wsearch{width:100%;margin:2px 0 10px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel2);color:var(--ink);font-size:14px;outline:none}
+.wsearch:focus{border-color:var(--gold)}
+.wsearch::placeholder{color:var(--muted)}
+.wchip.hidden{display:none}
 #chPrompt{margin-top:10px;display:flex;flex-direction:column;gap:7px}
 .chrow{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;
   background:rgba(207,107,88,.12);border:1.5px solid rgba(207,107,88,.4);border-radius:11px;padding:9px 11px}
@@ -934,7 +939,7 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
   font-size:12.5px;line-height:1;cursor:pointer;max-width:100%}
 .wchip.me{border-color:var(--ok);background:rgba(78,154,99,.12);cursor:default}
 .wchip.req{border-color:rgba(202,166,78,.75);background:rgba(202,166,78,.12)}
-.wchip.more{padding:6px 11px;color:var(--muted);cursor:default}
+.wchip.more{padding:6px 11px;color:var(--gold);cursor:pointer;font-weight:700}
 .wav{width:23px;height:23px;border-radius:50%;background:#1c3324;flex:none;overflow:hidden;
   border:1.5px solid rgba(202,166,78,.35);display:flex;align-items:center;justify-content:center;
   font-family:Georgia,serif;font-size:10.5px;color:var(--ink)}
@@ -1965,27 +1970,17 @@ window.SS_CONFIG = {
     <p class="soon" style="padding:10px">Enter tonight's code above and the live board appears here — courts, up next, the leaderboard podium, and match history, updating in real time.</p>
   </div></div><div class="phcard" id="whosInCard" style="display:none">
   <h3><span class="htxt">👥 Who's in tonight</span><span class="hn" id="whosInN"></span></h3>
+  <input id="whosInSearch" class="wsearch" type="text" placeholder="🔍 Find someone…" oninput="whosInFilter(this.value)" autocomplete="off">
   <div id="whosInBody"></div>
 </div>
 <div class="phcard" id="payCard" style="display:none">
     <h3>💳 Session Fee</h3>
     <div id="payBody"></div>
   </div><div class="phcard" id="benchCard" style="display:none">
-    <h3>🪑 Bench &amp; Partner</h3>
+    <h3>🪑 Bench</h3>
     <div id="benchState" class="benchstate"></div>
     <button id="benchBtn" class="wide" onclick="toggleBench()">🪑 Sit this one out</button>
     <p class="hint" id="benchHelp" style="margin-top:8px"></p>
-    <div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
-      <label style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800">Prefer to play with</label>
-      <select id="prefSel" style="width:100%;margin-top:6px" onchange="prefDirty()">
-        <option value="">— anyone —</option>
-      </select>
-      <button id="prefBtn" class="wide" style="margin-top:8px" onclick="savePref()" disabled>🤝 Confirm request</button>
-      <p class="hint" id="prefState" style="margin-top:6px"></p>
-      <p class="hint" style="margin-top:8px">A hint, not a reservation. You’ll still be matched fairly by games played
-        and time waited — but when it’s a close call, the Party Leader will try to put you together.
-        If you both pick each other, it counts double.</p>
-    </div>
   </div>
   
   
@@ -4062,15 +4057,32 @@ function sessionIsDouble(){
 }
 function liveData(){
   const avgMs=S.matches.length? S.matches.reduce((a,m)=>a+(m.end-m.start),0)/S.matches.length : 15*60000;
-  const pl=id=>{const p=player(id);return{n:p?p.name:"?",pid:p?p.id:null};};
+  // per-player current session win streak (consecutive wins up to their latest match)
+  const streakOf=(function(){
+    const ord=[...S.matches].sort((a,b)=>(a.end||a.n)-(b.end||b.n));
+    const run={};
+    ord.forEach(m=>{
+      const w1=m.s1>m.s2;
+      (m.t1||[]).forEach(id=>{ if(id) run[id]=w1? (run[id]||0)+1 : 0; });
+      (m.t2||[]).forEach(id=>{ if(id) run[id]=!w1? (run[id]||0)+1 : 0; });
+    });
+    return id=>run[id]||0;
+  })();
+  // top-5 pids by session win rate (for the "top seed" court flag)
+  const top5=(function(){
+    const all=S.players.map(p=>({p,st:statsFor(p.id)})).filter(x=>x.st.g>0)
+      .sort((a,b)=>b.st.winRate-a.st.winRate||b.st.w-a.st.w||b.st.diff-a.st.diff).slice(0,5);
+    return new Set(all.map(x=>x.p.id));
+  })();
+  const pl=id=>{const p=player(id);return{n:p?p.name:"?",pid:p?p.id:null,st:p?streakOf(p.id):0};};
+  const liveCourt=c=>{ const t1=c.slots.slice(0,2).filter(Boolean).map(pl), t2=c.slots.slice(2).filter(Boolean).map(pl);
+    const topSeed=[...t1,...t2].some(x=>x.pid&&top5.has(x.pid));
+    return {court:c.name,start:c.start,t1,t2,topSeed}; };
   return {
     v:1, generated:now(),
     sess:new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"}),
     summary:{players:S.players.length,matches:S.matches.length,avgMs:Math.round(avgMs)},
-    live:S.courts.filter(c=>c.start).map(c=>({court:c.name,start:c.start,
-      t1:c.slots.slice(0,2).filter(Boolean).map(pl),t2:c.slots.slice(2).filter(Boolean).map(pl)})),
-    // courts with players on them but the timer not yet running — otherwise those
-    // players fall through every branch and are wrongly told "not in the queue yet"
+    live:S.courts.filter(c=>c.start).map(liveCourt),
     assigned:S.courts.filter(c=>!c.start&&c.slots.some(Boolean)).map(c=>({court:c.name,
       t1:c.slots.slice(0,2).filter(Boolean).map(pl),t2:c.slots.slice(2).filter(Boolean).map(pl)})),
     next:S.queues.filter(q=>q.slots.slice(0,2).some(Boolean)&&q.slots.slice(2).some(Boolean)).slice(0,2)
@@ -4136,7 +4148,23 @@ const LIVE_CSS=
 '.pn{font-weight:700;color:#f3ecd8;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'+
 '.tmrline{margin:10px 2px 6px;font:600 18px "Courier New",monospace;color:#6fbf82}'+
 '.bar{height:6px;border-radius:4px;background:rgba(111,191,130,.18);overflow:hidden}'+
-'.fill{display:block;height:100%;width:0%;background:#6fbf82;box-shadow:0 0 8px #6fbf82;border-radius:4px;transition:width .5s}'+
+'.fill{display:block;height:100%;width:0%;background:#6fbf82;box-shadow:0 0 8px #6fbf82;border-radius:4px;transition:width .5s,background .5s}'+
+'.pstreak{font:700 11px sans-serif;color:#eac25f;flex:none;margin-left:auto;text-shadow:0 0 6px rgba(234,194,95,.5)}'+
+'.livedot{width:7px;height:7px;border-radius:50%;background:#6fbf82;display:inline-block;margin-right:7px;vertical-align:middle;box-shadow:0 0 8px #6fbf82;animation:lvpulse 1.6s ease-in-out infinite}'+
+'@keyframes lvpulse{0%,100%{opacity:1;box-shadow:0 0 8px #6fbf82}50%{opacity:.35;box-shadow:0 0 2px #6fbf82}}'+
+'.cflag{font:700 10px sans-serif;letter-spacing:.04em;border-radius:20px;padding:1px 8px;margin-left:8px;vertical-align:middle}'+
+'.cflag.seed{color:#eac25f;border:1px solid rgba(234,194,95,.4);background:rgba(234,194,95,.08)}'+
+'.tnote{font:italic 12px Georgia,serif;color:#8fae95}'+
+'.panel[data-stage="long"]{border-color:rgba(234,194,95,.5);box-shadow:0 0 16px rgba(234,194,95,.14)}'+
+'.panel[data-stage="long"] .lt,.panel[data-stage="long"] .tnote{color:#eac25f}'+
+'.panel[data-stage="long"] .fill{background:#eac25f;box-shadow:0 0 8px #eac25f}'+
+'.panel[data-stage="war"]{border-color:rgba(217,69,58,.55);box-shadow:0 0 18px rgba(217,69,58,.2)}'+
+'.panel[data-stage="war"] .lt,.panel[data-stage="war"] .tnote{color:#d9776b}'+
+'.panel[data-stage="war"] .fill{background:#d9453a;box-shadow:0 0 8px #d9453a}'+
+'.panel.golive{transition:border-color .5s,box-shadow .5s}'+
+'.myflag{margin-top:9px;padding:7px 10px;border-radius:10px;font:600 12px Georgia,serif;text-align:center}'+
+'.myflag.nem{color:#eac25f;background:rgba(217,69,58,.12);border:1px solid rgba(217,69,58,.4)}'+
+'.myflag.pref{color:#eac25f;background:rgba(234,194,95,.1);border:1px solid rgba(234,194,95,.35)}'+
 'table{width:100%;border-collapse:collapse;font-size:14.5px}'+
 'th{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8fae95;text-align:left;padding:6px}'+
 'td{padding:7px 6px;border-top:1px solid rgba(111,191,130,.15);color:#f0e6cc}.r{text-align:right}'+
@@ -4196,7 +4224,8 @@ function avFace(pid,name,cls){
   return url? '<img class="'+cls+'" src="'+url+'" alt="">'
             : '<span class="'+cls+'">'+esc((name||"?").trim().slice(0,1).toUpperCase())+'</span>';
 }
-function lbPill(p,t){return '<div class="pp '+t+'">'+avFace(p.pid,p.n,"av")+'<span class="pn">'+esc(p.n)+'</span></div>';}
+function lbPill(p,t){return '<div class="pp '+t+'">'+avFace(p.pid,p.n,"av")+'<span class="pn">'+esc(p.n)+'</span>'+
+  (p.st>=3? '<span class="pstreak">🔥'+p.st+'</span>':'')+'</div>';}
 function lbBox(t1,t2){return '<div class="cbox"><div class="trow">'+t1.map(p=>lbPill(p,"t1")).join("")+
   '</div><div class="vs"><span>VS</span></div><div class="trow">'+t2.map(p=>lbPill(p,"t2")).join("")+'</div></div>';}
 function boardQualNote(d){
@@ -4205,9 +4234,14 @@ function boardQualNote(d){
     'Qualified: '+m+'+ games played this session</p>' : '';
 }
 function liveBoardHTML(d){
-  const liveH=d.live.length? d.live.map(c=>
-    '<div class="panel golive" data-start="'+(+c.start)+'"><div class="ptitle">'+esc(c.court)+'</div>'+lbBox(c.t1,c.t2)+
-    '<div class="tmrline">⏱ <span class="lt">00:00</span></div><div class="bar"><i class="fill"></i></div></div>').join("")
+  const AVGM=d.summary.avgMs||15*60000;
+  const liveH=d.live.length? d.live.map(c=>{
+    const badge = c.topSeed? '<span class="cflag seed">👑 top seed</span>' : '';
+    return '<div class="panel golive" data-start="'+(+c.start)+'" data-avg="'+AVGM+'">'+
+      '<div class="ptitle"><span class="livedot"></span>'+esc(c.court)+badge+'</div>'+lbBox(c.t1,c.t2)+
+      '<div class="tmrline">⏱ <span class="lt">00:00</span><span class="tnote"></span></div>'+
+      '<div class="bar"><i class="fill"></i></div></div>';
+    }).join("")
     : '<p class="dim">The courts are quiet… too quiet.</p>';
   const nextH=d.next.length? d.next.map((q,i)=>
     '<div class="panel"><div class="ptitle">'+esc(q.name)+' <span class="nextb">UP NEXT '+(i+1)+'</span></div>'+lbBox(q.t1,q.t2)+'</div>').join("")
@@ -4693,26 +4727,50 @@ async function loadWhosIn(){
   const theirPref={}; rows.forEach(x=>{ if(x.pref_partner) theirPref[x.profile_id]=x.pref_partner; });
   const mutual = myPref && String(theirPref[myPref]||"")===String(me);
   await ensureAvatars(rows.slice(0,24).map(x=>x.profile_id));
+  // cache everything the chip renderer + live filter need
+  window.__whosInData={rows,nm,byId,me,myPref,mutual};
+  const searchEl=document.getElementById("whosInSearch");
+  if(searchEl) searchEl.style.display = rows.length>10 ? "" : "none";
+  document.getElementById("whosInN").textContent=rows.length+" joined";
+  renderWhosInChips(window.__whosInQuery||"");
+  card.style.display="block";
+  try{ chRenderPrompt(rows.map(x=>x.profile_id), byId); }catch(e){}
+  try{ initFolds(); }catch(e){}
+}
+/* Build the chip list from the cached roster. When a search query is active,
+   every match is shown (CAP bypassed) so people beyond the first 14 are findable. */
+function renderWhosInChips(query){
+  const d=window.__whosInData; const body=document.getElementById("whosInBody");
+  if(!d||!body) return;
+  const {rows,nm,byId,me,myPref,mutual}=d;
+  const q=String(query||"").trim().toLowerCase();
   const face=(id,name)=>{ const u=(window.__avCache||{})[id];
     return '<span class="wav">'+(u? '<img src="'+u+'">':esc((name||"?").trim().slice(0,1).toUpperCase()))+'</span>'; };
-  const SHOW=14;
-  const chips=rows.slice(0,SHOW).map(x=>{
+  const matched = q ? rows.filter(x=>nm(x).toLowerCase().includes(q)) : rows;
+  const CAP=14, showAll=!!window.__whosInShowAll || !!q, SHOW=showAll?matched.length:CAP;
+  let chips=matched.slice(0,SHOW).map(x=>{
     const isMe=x.profile_id===me, isPref=myPref&&x.profile_id===myPref;
     return '<span class="wchip'+(isMe?" me":(isPref?" req":""))+'" '+
       (isMe?'':'onclick="whosInPick(\''+x.profile_id+'\',\''+esc(nm(x)).replace(/'/g,"")+'\')"')+'>'+
       face(x.profile_id,nm(x))+esc(nm(x))+
       (isMe?'<span class="wtag">YOU</span>':(isPref?'<span class="wtag">ASKED</span>':''))+'</span>';
-  }).join("")+(rows.length>SHOW? '<span class="wchip more">+'+(rows.length-SHOW)+'</span>':'');
-  document.getElementById("whosInN").textContent=rows.length+" joined";
-  document.getElementById("whosInBody").innerHTML=chips+
+  }).join("");
+  if(!q && rows.length>CAP)
+    chips+='<span class="wchip more" onclick="whosInToggleAll()">'+(showAll?'\u2013 show less':'+'+(rows.length-CAP))+'</span>';
+  if(q && !matched.length) chips='<span class="whint">No one here matches “'+esc(query)+'”.</span>';
+  body.innerHTML=chips+
     '<div class="wpair">'+(myPref
       ? '🤝 You asked to play with <b>'+esc(byId[myPref]||"someone")+'</b>'+
         (mutual? ' · <span class="wmut">they asked for you too</span>':'')+
-        '<br><span class="whint">A hint, not a reservation — fair rotation still comes first.</span>'
+        '<br><span class="whint">A hint, not a reservation — fair rotation still comes first. Tap them again to cancel.</span>'
       : '<span class="whint">Tap anyone above to ask to play with them.</span>')+'</div>';
-  card.style.display="block";
-  try{ chRenderPrompt(rows.map(x=>x.profile_id), byId); }catch(e){}
-  try{ initFolds(); }catch(e){}
+}
+/* live filter — keystrokes just re-render chips from cache (no refetch, keeps input focus) */
+function whosInFilter(v){ window.__whosInQuery=v||""; renderWhosInChips(window.__whosInQuery); }
+/* the "+N" / "show less" chip in the who's-in list toggles the full roster */
+function whosInToggleAll(){
+  window.__whosInShowAll=!window.__whosInShowAll;
+  renderWhosInChips(window.__whosInQuery||"");
 }
 
 /* ================= Nemesis challenges =================
@@ -4781,14 +4839,14 @@ async function chResolveMatch(matchId,m){
 }
 async function whosInPick(pid,name){
   if(!window.__mySessionId||!auth) return;
-  if(!await uiConfirm("Ask to play with "+name+"?\nThe Party Leader will try when it's a close call.",
-    {title:"🤝 Partner request",ok:"Ask"})) return;
+  const cancelling = String(window.__myPref||"")===String(pid);   // tapped my current pick -> cancel
   const r=await sFetch("/rest/v1/session_players?session_id=eq."+window.__mySessionId+
-    "&profile_id=eq."+auth.uid,{method:"PATCH",body:{pref_partner:pid}}).catch(()=>null);
-  if(!r||!r.ok) return toast("Could not save that request");
-  toast("🤝 Asked to play with "+name);
+    "&profile_id=eq."+auth.uid,{method:"PATCH",body:{pref_partner: cancelling? null : pid}}).catch(()=>null);
+  if(!r||!r.ok) return toast("Could not update that request");
+  window.__myPref = cancelling? "" : pid;
+  window.__myPrefName = cancelling? null : name;
+  toast(cancelling? "Request cleared" : "🤝 Asked to play with "+name);
   loadWhosIn();
-  const sel=document.getElementById("prefSel"); if(sel) sel.value=pid;
 }
 /* ---- the night recap ---- */
 function nightRecap(){
@@ -4798,7 +4856,12 @@ function nightRecap(){
   if(!rows.length||!auth){ card.style.display="none"; return; }
   const uid=auth.uid;
   let w=0,scored=0,conceded=0,best=null,worst=null,streak=0,cur=0,xpTot=0;
-  const dblR=!!(window.__dblSess&&window.__dblSess.has(sid));
+  // Double-XP for the recap: prefer __sessionDouble (set from the session's own
+  // settings when the Gate mounts, independent of a Profile visit); fall back to
+  // the __dblSess map only if that hasn't loaded.
+  const dblR=(typeof window.__sessionDouble==="boolean")
+    ? window.__sessionDouble
+    : !!(window.__dblSess&&window.__dblSess.has(sid));
   const partners={};
   const ordered=rows.slice().sort((a,b)=>new Date(a.ended_at)-new Date(b.ended_at));
   ordered.forEach(m=>{
@@ -7907,7 +7970,8 @@ async function mountPlayerBoard(sessionId){
   sFetch("/rest/v1/sessions?id=eq."+sessionId+"&select=settings")
     .then(r=>r.ok?r.json():[]).then(rows=>{
       window.__sessionDouble=!!(rows[0]&&rows[0].settings&&rows[0].settings.doubleXp);
-      if(window.__sessionDouble && window.__lastBoardState) renderQueueStatus(window.__lastBoardState); })
+      if(window.__sessionDouble && window.__lastBoardState) renderQueueStatus(window.__lastBoardState);
+      try{ nightRecap(); }catch(e){} })   // now that the double-XP flag is known, refresh the recap
     .catch(()=>{});
   pbSession=sessionId;
   const wrap=document.getElementById("pboardWrap");
@@ -7943,6 +8007,7 @@ async function mountPlayerBoard(sessionId){
     window.__lastBoardState=state;
     renderQueueStatus(state);
     checkSummoned(state);
+    try{ flagMyCourts(state); }catch(e){}
   };
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
@@ -7965,8 +8030,18 @@ async function mountPlayerBoard(sessionId){
   clearInterval(pbTick); pbTick=setInterval(()=>{
     wrap.querySelectorAll("[data-start]").forEach(el=>{
       const e=Date.now()-(+el.getAttribute("data-start"));
+      const avg=+el.getAttribute("data-avg")||pbAvg;
       const t=el.querySelector(".lt"); if(t)t.textContent=fmtClock(e);
-      const f=el.querySelector(".fill"); if(f)f.style.width=Math.min(100,e/pbAvg*100)+"%"; });
+      const f=el.querySelector(".fill"); if(f)f.style.width=Math.min(100,e/avg*100)+"%";
+      // life: green while fresh, amber past average, coral once it's a marathon (1.5x)
+      const ratio=e/avg;
+      const stage = ratio>=1.5? "war" : (ratio>=1? "long" : "fresh");
+      if(el.getAttribute("data-stage")!==stage){
+        el.setAttribute("data-stage",stage);
+        const note=el.querySelector(".tnote");
+        if(note) note.textContent = stage==="war"? " · a war of attrition" : (stage==="long"? " · running long" : "");
+      }
+    });
   },1000);
   if(pbSocket) pbSocket.close();
   try{
@@ -8140,24 +8215,18 @@ async function loadBench(sessionId){
     const nm=window.__myPrefName||"your partner";
     toast("🤝 You were paired with "+nm+" — request fulfilled. Pick someone new any time.");
   }
-  // fill the partner list with everyone else in tonight's session
-  const pbase="/rest/v1/session_players?session_id=eq."+sessionId+"&select=profile_id,";
-  let pr=await sFetch(pbase+"profiles!session_players_profile_id_fkey(reclub_name,full_name)").catch(()=>null);
-  if(!pr||!pr.ok) pr=await sFetch(pbase+"profiles(reclub_name,full_name)").catch(()=>null);
-  const sel=document.getElementById("prefSel"); if(!sel) return;
-  sel.innerHTML='<option value="">\u2014 anyone \u2014</option>';
-  if(pr&&pr.ok){
-    (await pr.json()).filter(x=>x.profile_id!==auth.uid && x.profiles).forEach(x=>{
-      const o=document.createElement("option"); o.value=x.profile_id;
-      o.textContent=x.profiles.reclub_name||x.profiles.full_name||"Player";
-      sel.appendChild(o); });
-  }
-  const prefWrap=sel.parentElement;
-  if(prefWrap) prefWrap.style.display=window.__noPrefCol? "none":"";
-  sel.value=window.__myPref||"";
-  const cur=sel.selectedOptions[0];
-  window.__myPrefName = (window.__myPref && cur)? cur.textContent : null;
-  prefDirty(); prefState();
+  // resolve the name of my current pick (for the "you asked to play with X" line)
+  // and record whether this DB even supports partner requests
+  window.__prefSupported = !window.__noPrefCol;
+  if(window.__myPref){
+    const pbase="/rest/v1/session_players?session_id=eq."+sessionId+"&select=profile_id,";
+    let pr=await sFetch(pbase+"profiles!session_players_profile_id_fkey(reclub_name,full_name)").catch(()=>null);
+    if(!pr||!pr.ok) pr=await sFetch(pbase+"profiles(reclub_name,full_name)").catch(()=>null);
+    if(pr&&pr.ok){
+      const row=(await pr.json()).find(x=>x.profile_id===window.__myPref && x.profiles);
+      window.__myPrefName = row? (row.profiles.reclub_name||row.profiles.full_name||"Player") : window.__myPrefName;
+    }
+  } else { window.__myPrefName=null; }
 }
 async function toggleBench(){
   if(benchBusy||!window.__benchSession) return;
@@ -8173,32 +8242,6 @@ async function toggleBench(){
   window.__benchOut=goingOut;
   renderBench();
   toast(goingOut? "🪑 You\u2019re on the bench" : "🏸 Welcome back \u2014 you\u2019re in the rotation");
-}
-function prefDirty(){
-  const sel=document.getElementById("prefSel"), btn=document.getElementById("prefBtn");
-  if(!sel||!btn) return;
-  const cur=sel.value||"", saved=window.__myPref||"";
-  btn.disabled=(cur===saved);
-  btn.textContent = cur? "\uD83E\uDD1D Confirm request" : (saved? "\u2716 Clear request" : "\uD83E\uDD1D Confirm request");
-}
-function prefState(){
-  const p=document.getElementById("prefState"); if(!p) return;
-  if(!window.__myPref){ p.innerHTML="No request saved \u2014 you\u2019ll be matched with anyone."; return; }
-  const sel=document.getElementById("prefSel");
-  const nm=window.__myPrefName || (sel&&sel.selectedOptions[0]? sel.selectedOptions[0].textContent : "your pick");
-  p.innerHTML="\u2705 Request saved \u2014 we\u2019ll try to pair you with <b>"+esc(nm)+"</b>.";
-}
-async function savePref(){
-  if(!window.__benchSession) return;
-  const v=document.getElementById("prefSel").value||null;
-  const r=await sFetch("/rest/v1/session_players?session_id=eq."+window.__benchSession+"&profile_id=eq."+auth.uid,
-    {method:"PATCH",body:{pref_partner:v}}).catch(()=>null);
-  if(!r||!r.ok){ toast("Could not save preference — the club may need to run bench-prefs.sql"); return; }
-  window.__myPref=v||"";
-  const nm=v? document.getElementById("prefSel").selectedOptions[0].textContent : null;
-  window.__myPrefName=nm;
-  prefDirty(); prefState();
-  toast(nm? "🤝 Noted \u2014 we\u2019ll try to pair you with "+nm : "Partner preference cleared");
 }
 /* ---------- "where am I in line?" ---------- */
 function meMatches(p){
@@ -8375,6 +8418,26 @@ function checkSummoned(state){
     }
     window.__wasSummoned=true;
   }else{ hideSummon(); }
+}
+/* Spectator hook: flag live courts that matter to ME — my nemesis or my
+   requested partner is playing on them right now. Personal, so it runs on the
+   Gate after the shared board paints. Matches by pid (falls back to name). */
+function flagMyCourts(state){
+  if(!state || !state.live) return;
+  const nem = new Set((window.__nemeses3||[]).map(n=>n.id).filter(Boolean));
+  const pref = window.__myPref || null;
+  const panels=document.querySelectorAll("#pboardWrap .panel.golive");
+  state.live.forEach((c,i)=>{
+    const panel=panels[i]; if(!panel) return;
+    panel.querySelectorAll(".myflag").forEach(el=>el.remove());   // clear stale flags on re-paint
+    const ppl=[].concat(c.t1||[],c.t2||[]);
+    const hitNem = ppl.find(p=>p.pid && nem.has(p.pid));
+    const hitPref= pref && ppl.find(p=>String(p.pid)===String(pref));
+    let msg=null, cls="";
+    if(hitNem){ msg="😤 "+hitNem.n+" — your nemesis — is on this court"; cls=" nem"; }
+    else if(hitPref){ msg="🤝 "+hitPref.n+" (you asked to play with them) is on"; cls=" pref"; }
+    if(msg){ const d=document.createElement("div"); d.className="myflag"+cls; d.textContent=msg; panel.appendChild(d); }
+  });
 }
 function summonChime(){
   try{ if(window.AudioContext||window.webkitAudioContext){ const a=new (window.AudioContext||window.webkitAudioContext)();
