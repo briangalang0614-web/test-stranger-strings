@@ -97,6 +97,13 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .pcard{position:relative;background:var(--chipbg);border:1.5px solid var(--line);border-radius:10px;
   padding:7px 9px 7px 13px;cursor:grab;user-select:none;-webkit-user-select:none;touch-action:none;overflow:hidden}
 .pcard:active{cursor:grabbing}
+.pcard.swappable{cursor:pointer}
+.pcard.swappable:hover{outline:1.5px solid rgba(226,194,102,.5);outline-offset:1px}
+.swaplist{display:flex;flex-direction:column;gap:7px;max-height:52vh;overflow:auto}
+.swapopt{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;
+  padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--ink);cursor:pointer;text-align:left}
+.swapopt:hover{border-color:var(--gold);background:rgba(226,194,102,.06)}
+.swapopt b{font-size:15px} .swapopt span{font-size:12px;color:var(--muted)}
 .pcard.inactive{opacity:.45}
 .pcard.benched{opacity:.62}
 .pcard.benched::before{background:var(--gold)!important}
@@ -114,6 +121,7 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .icon{background:transparent;border:none;padding:0 3px;font-size:13px;color:var(--muted);line-height:1}
 .icon:hover{background:transparent;color:var(--green)}
 .pcard .nm{font-weight:700;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pcard .nm .nmdis{color:var(--gold);font-weight:600;font-size:.82em}
 .pcard .tl{font-size:12.5px;color:var(--muted);display:flex;justify-content:space-between;gap:6px;white-space:nowrap}
 .pcard .rec{font-weight:800;color:var(--ink)}
 .pcard.ghosting{opacity:.35}
@@ -309,6 +317,36 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 #playerHome{display:none;max-width:560px;margin:0 auto}
 .phcard{background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:16px;margin:14px 0;box-shadow:var(--shadow)}
 .phcard h3{margin:0 0 10px;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+/* --- "Your night" recap redesign --- */
+#recapBody{margin:-4px -4px 0}
+.rchero{background:linear-gradient(160deg,rgba(124,176,138,.10) 0%,transparent 70%);
+  border:1px solid var(--line);border-radius:14px;padding:15px 16px 14px;margin-bottom:12px}
+.rchero .hl{display:flex;align-items:flex-end;gap:6px;line-height:1}
+.rchero .hl .big{font:700 48px Georgia,serif;color:#f0e6cc;text-shadow:0 0 16px rgba(124,176,138,.30)}
+.rchero .hl .u1{font-size:17px;color:var(--muted);margin-bottom:8px}
+.rchero .hl .u2{font-size:14px;color:var(--muted);opacity:.7;margin-bottom:9px;margin-left:2px}
+.rctag{display:inline-flex;align-items:center;gap:5px;margin-top:10px;border-radius:20px;padding:4px 11px;
+  font-size:12px;background:rgba(207,107,88,.14);border:1px solid rgba(207,107,88,.4);color:var(--red)}
+.rctag.win{background:rgba(124,176,138,.14);border-color:rgba(124,176,138,.4);color:var(--green)}
+.rcstrip{display:grid;grid-template-columns:repeat(var(--n,3),1fr);gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:14px}
+.rcstrip > div{background:var(--panel2);padding:11px 6px;text-align:center}
+.rcstrip .v{font:600 21px system-ui,sans-serif;color:#f0e6cc}
+.rcstrip .v.xp{color:var(--gold)}
+.rcstrip .l{font-size:9.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+.rcmlabel{font-size:10px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin:0 2px 10px}
+.rcmom{display:flex;gap:11px;align-items:flex-start;padding:11px 12px;margin-bottom:8px;
+  background:var(--panel2);border-left:3px solid var(--muted);border-radius:0 11px 11px 0}
+.rcmom.g1{border-left-color:var(--green)} .rcmom.g2{border-left-color:var(--red)}
+.rcmom.g3{border-left-color:var(--gold)} .rcmom.g4{border-left-color:var(--muted)}
+.rcmom .em{font-size:21px;line-height:1.1;flex:none}
+.rcmom b{display:block;font-size:14px;font-weight:600;color:#f3ecd8}
+.rcmom span{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.rcmom .sc{font:700 13px system-ui,monospace;color:var(--green)}
+.rcmom.g4 .sc{color:var(--muted)}
+.rcbtn{width:100%;margin-top:6px;background:var(--green);color:#0a1a0f;border:none;border-radius:12px;
+  padding:12px;font:700 14px Georgia,serif;cursor:pointer}
+.rcbtn:active{transform:scale(.99)}
 .dxlab{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--gold);
   border:1px solid var(--line);border-radius:10px;padding:7px 11px;cursor:pointer;white-space:nowrap}
 .dxlab input{width:15px;height:15px;accent-color:var(--gold);margin:0}
@@ -343,14 +381,57 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .paydot.unpaid{background:#cf6b58;box-shadow:0 0 8px rgba(207,107,88,.55)}
 .paydot.sent{background:#e0a63c;box-shadow:0 0 8px rgba(224,166,60,.6)}
 .paydot.ok{background:#4e9a63;box-shadow:0 0 8px rgba(78,154,99,.6)}
+.paydot.waived{background:var(--gold);box-shadow:0 0 8px rgba(200,168,96,.5)}
+.waivebtn{flex:none;font-size:11px;font-weight:700;color:var(--muted);background:transparent;border:1px solid var(--line);
+  border-radius:16px;padding:5px 12px;cursor:pointer}
+.waivebtn:hover{color:var(--gold);border-color:var(--gold)}
+/* session close-out summary */
+.cobar{height:10px;border-radius:99px;background:var(--panel2);overflow:hidden;margin:2px 0 7px}
+.cobar i{display:block;height:100%;background:#7cb08a;border-radius:99px;transition:width .4s}
+.corow{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;margin-bottom:12px}
+.corow .dim,.cowaived .dim{color:var(--muted)}
+.cotiles{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.cotiles div{background:var(--panel2);padding:11px;text-align:center}
+.cotiles b{display:block;font-size:22px} .cotiles span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cowaived{font-size:12.5px;color:var(--gold);margin-bottom:10px}
+.colabel{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.cochips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.cochip{font-size:13px;background:rgba(207,107,88,.12);border:1px solid rgba(207,107,88,.35);color:#e0a08f;border-radius:20px;padding:5px 12px}
+.cobanner{font-size:12.5px;line-height:1.45;border-radius:12px;padding:12px 14px}
+.cobanner.warn{background:rgba(202,166,78,.08);border:1px solid rgba(202,166,78,.28);color:#d9c48c}
+.cobanner.ok{background:rgba(124,176,138,.1);border:1px solid rgba(124,176,138,.35);color:#9fd6a6}
+.cobanner b{color:inherit}
+.pdisamb{color:var(--gold);font-weight:600;font-size:.92em}
 .payrow{display:flex;align-items:center;gap:11px;padding:10px 4px;border-bottom:1px solid var(--line)}
 .payrow:last-child{border-bottom:none}
 .payrow .pm{flex:1;min-width:0}
 .payrow .pm b{display:block;font-size:14px}
 .payrow .pm span{font-size:11.5px;color:var(--muted)}
 .paysum{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px}
-.paysum div{flex:1;min-width:110px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.paysum b{display:block;font-size:20px}.paysum span{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cpstep{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:10px}
+.cpnav{width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:20px;cursor:pointer;line-height:1}
+.cpnav:disabled{opacity:.3;cursor:default}
+.cpmonth{font-family:Georgia,serif;font-size:17px;min-width:150px;text-align:center}
+.cphero{text-align:center;padding:6px 0 4px}
+.cphero .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cphero .big{font-size:42px;font-weight:700;line-height:1.05;margin-top:3px}
+.cphero .big.pos{color:#7cb08a}.cphero .big.neg{color:#cf6b58}
+.cphero .meta{font-size:13px;color:var(--muted);margin-top:4px}
+.cphero .meta .pos{color:#7cb08a}.cphero .meta .neg{color:#cf6b58}
+.cpdelta{display:inline-block;margin-top:9px;font-size:12.5px;border-radius:20px;padding:4px 13px}
+.cpdelta.up{background:rgba(124,176,138,.12);border:1px solid rgba(124,176,138,.35);color:#9fd6a6}
+.cpdelta.down{background:rgba(207,107,88,.12);border:1px solid rgba(207,107,88,.35);color:#e0a08f}
+.cptiles{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:14px}
+.cptiles div{background:var(--panel2);padding:12px;text-align:center}
+.cptiles b{display:block;font-size:20px} .cptiles span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cpstream{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cpstream .nm{flex:0 0 118px;font-size:14px}
+.cpstream .bar{flex:1;height:8px;border-radius:99px;background:var(--panel2);overflow:hidden}
+.cpstream .bar i{display:block;height:100%;border-radius:99px}
+.cpstream .amt{flex:0 0 76px;text-align:right;font-family:ui-monospace,monospace;font-size:13px}
+.paysum div{flex:1;min-width:110px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;text-align:center}
+.paysum b{display:block;font:600 20px system-ui,-apple-system,sans-serif;letter-spacing:-.01em;margin-bottom:0}
+.paysum b:not(.pos):not(.neg){color:#f0e6cc}.paysum span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:2px;display:block}
 #payQRimg{max-width:230px;width:100%;border-radius:14px;border:2px solid var(--line);background:#fff}
 .receipt-thumb{width:38px;height:38px;object-fit:cover;border-radius:8px;border:1px solid var(--line);cursor:pointer}
 .mrow{display:flex;align-items:center;gap:10px;padding:6px 0}
@@ -362,6 +443,12 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .mline.total b{font-size:22px}
 .pos{color:var(--ok)} .neg{color:var(--red)}
 .pdrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13.5px}
+.pdrow.attrow{cursor:pointer;border-radius:8px;transition:background .15s}
+.pdrow.attrow:hover{background:rgba(124,176,138,.06)}
+.attgrid{display:flex;flex-wrap:wrap;gap:8px}
+.attchip{font-size:13.5px;background:rgba(124,176,138,.1);border:1px solid rgba(124,176,138,.3);color:var(--ink);border-radius:20px;padding:6px 13px;cursor:pointer;transition:background .15s}
+.attchip:hover{background:rgba(124,176,138,.2)}
+.attchip.guest{color:var(--muted);background:var(--panel2);border-color:var(--line);cursor:default}
 .pdrow:last-child{border-bottom:none}
 .pdrow .pn2{flex:1;min-width:0}
 .pdrow .pn2 b{display:block;font-size:14px}
@@ -382,6 +469,24 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .duerow .dm span{font-size:11.5px;color:var(--muted)}
 .duerow .damt{font-family:"Courier New",monospace;font-weight:800;color:var(--red)}
 .balrow{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px solid var(--line)}
+.balrow.tap{cursor:pointer;border-radius:8px;padding-left:6px;padding-right:8px;transition:background .15s}
+.balrow.tap:hover{background:rgba(124,176,138,.06)}
+.balrow.tap .bval::after{content:"›";margin-left:8px;color:var(--muted);font-size:20px;line-height:1}
+/* SOA (statement of account) ledger */
+.soahead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:2px 0 12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.soahead .who{font-family:Georgia,serif;font-size:19px;color:var(--ink)}
+.soahead .bal{text-align:right}
+.soahead .bal b{font-size:22px} .soahead .bal span{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.soarow{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:1px solid var(--line)}
+.soarow:last-child{border-bottom:none}
+.soarow .dt{font-family:ui-monospace,monospace;font-size:13px;color:var(--muted);flex:none;width:96px}
+.soarow .ti{flex:1;font-size:14.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.soarow .amt{font-family:ui-monospace,monospace;font-size:14px;flex:none}
+.soarow .st{flex:none;font-size:10px;font-weight:800;letter-spacing:.06em;border-radius:20px;padding:3px 9px}
+.soarow .st.unpaid{color:var(--red);background:rgba(207,107,88,.14);border:1px solid rgba(207,107,88,.4)}
+.soarow .st.paid{color:var(--green);background:rgba(124,176,138,.14);border:1px solid rgba(124,176,138,.4)}
+.soafoot{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;justify-content:space-between;font-size:14px}
+.soafoot b{color:var(--red)}
 .balrow:last-child{border-bottom:none}
 .balrow .bm{flex:1;min-width:0}
 .balrow .bm b{display:block;font-size:14px}
@@ -487,6 +592,18 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .lkbar{max-width:340px;margin:0 auto;height:10px;border-radius:99px;background:var(--panel2);overflow:hidden}
 .lkbar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--gold))}
 .shrow{display:flex;align-items:center;gap:10px;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.shstep{display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0 8px}
+.shflow{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line)}
+.shflow .ic{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;font-size:19px}
+.shflow .tx{flex:1;min-width:0}
+.shflow .tx b{display:block;font-size:14.5px}
+.shflow .tx span{font-size:12px;color:var(--muted)}
+.shflow .amt{flex:none;font-size:14px}
+.shmargin{margin-top:14px;padding:14px;text-align:center;border-radius:14px;background:rgba(124,176,138,.1);border:1px solid rgba(124,176,138,.35)}
+.shmargin .lbl{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9fd6a6}
+.shmargin .big{font-size:30px;font-weight:700;margin-top:3px}
+.shmargin .big.pos{color:#7cb08a}.shmargin .big.neg{color:#cf6b58}
+.shmargin .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
 .shrow:last-child{border-bottom:none}
 .shrow .sn2{flex:1;min-width:0}
 .shrow .sn2 b{display:block;font-size:14px}
@@ -625,6 +742,33 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
   font-family:inherit;cursor:pointer}
 .msshare{background:linear-gradient(90deg,var(--ok),var(--gold));color:#07130b}
 .msok{background:transparent;border:1.5px solid rgba(255,255,255,.25)!important;color:var(--ink)}
+/* ===== challenge popups (reuse milestone overlay, recolored for combat) ===== */
+.chover .chrays{background:conic-gradient(from 0deg,rgba(217,69,58,.20) 0deg 8deg,transparent 8deg 30deg,
+  rgba(234,194,95,.20) 30deg 38deg,transparent 38deg 60deg,rgba(217,69,58,.20) 60deg 68deg,transparent 68deg 90deg,
+  rgba(234,194,95,.20) 90deg 98deg,transparent 98deg 120deg,rgba(217,69,58,.20) 120deg 128deg,transparent 128deg 150deg,
+  rgba(234,194,95,.20) 150deg 158deg,transparent 158deg 180deg,rgba(217,69,58,.20) 180deg 188deg,transparent 188deg 210deg,
+  rgba(234,194,95,.20) 210deg 218deg,transparent 218deg 240deg,rgba(217,69,58,.20) 240deg 248deg,transparent 248deg 270deg,
+  rgba(234,194,95,.20) 270deg 278deg,transparent 278deg 300deg,rgba(217,69,58,.20) 300deg 308deg,transparent 308deg 330deg,
+  rgba(234,194,95,.20) 330deg 338deg,transparent 338deg 360deg)}
+.chover{background:radial-gradient(circle at 50% 42%,rgba(24,14,10,.72),rgba(8,4,3,.97))}
+.chover .msconf i{border-radius:50%}     /* embers, not confetti squares */
+.chwho{font-size:20px;color:#fff;font-weight:700;margin-top:2px;font-family:Georgia,serif}
+.chstakes{margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.chstakes span{font-family:inherit;font-size:13px;font-weight:800;border-radius:999px;padding:7px 16px}
+.chstakes .win{background:rgba(124,176,138,.16);border:1px solid rgba(124,176,138,.45);color:#9fd6a6}
+.chstakes .lose{background:rgba(217,69,58,.16);border:1px solid rgba(217,69,58,.45);color:#e0a08f}
+.chstakes .gold{background:rgba(234,194,95,.14);border:1px solid rgba(234,194,95,.5);color:#e2c266}
+.chy2{background:linear-gradient(90deg,#2b7a44,#7cd18f)!important;color:#07130b!important}
+/* live challenge status strip (challenger side, in the who's-in card) */
+.chstatus{margin-top:9px;padding:10px 12px;border-radius:11px;font-size:13px;display:flex;align-items:center;gap:9px}
+.chstatus.pending{background:rgba(234,194,95,.1);border:1px solid rgba(234,194,95,.35);color:#e2c266}
+.chstatus.accepted{background:rgba(124,176,138,.12);border:1px solid rgba(124,176,138,.4);color:#9fd6a6}
+.chstatus.declined{background:rgba(139,148,140,.1);border:1px solid var(--line);color:var(--muted)}
+.chstatus .dot{width:8px;height:8px;border-radius:50%;flex:none}
+.chstatus.pending .dot{background:#eac25f;animation:chPulse 1.4s ease-in-out infinite}
+.chstatus.accepted .dot{background:#7cb08a}
+.chstatus.declined .dot{background:#8b948c}
+@keyframes chPulse{0%,100%{opacity:1}50%{opacity:.3}}
 /* ===== phone-first sizing for the player view only ===== */
 @media(max-width:640px){
   /* tap targets: nothing under 44px */
@@ -793,6 +937,12 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .predbadge b{font-family:Georgia,serif;font-size:22px;color:var(--gold);line-height:1}
 .predbadge .pu{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:800}
 .predbadge .pr{font-family:"Courier New",monospace;font-size:11px;color:var(--muted)}
+.predinputs{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:2px 0 12px}
+.predinputs label{display:flex;flex-direction:column;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);gap:3px}
+.predinputs input,.predinputs select{width:78px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);font-size:15px}
+.predinputs select{width:92px}
+.predreset{align-self:flex-end;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:9px;padding:8px 12px;cursor:pointer;font-size:12px}
+.predreset:hover{color:var(--gold);border-color:var(--gold)}
 .predbar{position:relative;height:24px;background:var(--panel2);border-radius:8px;border:1px solid var(--line);overflow:hidden;margin:8px 0 4px}
 .predbar i{position:absolute;top:0;bottom:0;background:rgba(124,209,143,.22);
   border-left:2px solid var(--ok);border-right:2px solid var(--ok)}
@@ -920,6 +1070,71 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 #qStatusCard .brfhelp:hover{opacity:1}
 /* --- Who's in tonight: chips were emitted with no CSS, so they rendered as one run of text --- */
 #whosInBody{display:flex;flex-wrap:wrap;gap:6px}
+
+/* Players search + viewer-relative snapshot */
+.pllabel{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:2px 0 8px}
+.pltag{margin-left:auto;font-size:11px;font-weight:700;border-radius:20px;padding:3px 10px;white-space:nowrap}
+.pltag.mate{color:#9fd6a6;background:rgba(124,176,138,.12);border:1px solid rgba(124,176,138,.3)}
+.pltag.opp{color:#e0a08f;background:rgba(207,107,88,.12);border:1px solid rgba(207,107,88,.3)}
+/* ---- reimagined Players portal (phone-first) ---- */
+.ppsearch{position:relative;margin-top:4px}
+.ppsearch input{width:100%;padding:14px 16px 14px 44px;border-radius:14px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:16px;outline:none}
+.ppsearch input::placeholder{color:#5f6b5c}
+.ppsearch .ppmag{position:absolute;left:15px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.7}
+.ppseg{display:flex;gap:4px;margin-top:12px;background:var(--panel2);border:1px solid var(--line);border-radius:13px;padding:4px}
+.ppseg button{flex:1;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:700;padding:9px;border-radius:10px;cursor:pointer;transition:background .12s}
+.ppseg button.on{background:linear-gradient(180deg,rgba(226,194,102,.2),rgba(226,194,102,.08));color:var(--gold);box-shadow:inset 0 0 0 1px rgba(226,194,102,.3)}
+.ppglab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:#5f6b5c;font-weight:800;margin:14px 2px 10px}
+.pprow{display:flex;align-items:center;gap:13px;padding:12px;border-radius:16px;margin-bottom:8px;background:var(--panel);border:1px solid var(--line);cursor:pointer;transition:transform .12s}
+.pprow:active{transform:scale(.98)}
+.ppav{width:46px;height:46px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;font:700 19px Georgia,serif;color:var(--gold);background:#1c2620;border:1px solid #2b362e;overflow:hidden}
+.ppav img{width:100%;height:100%;object-fit:cover}
+.ppmain{flex:1;min-width:0}
+.ppname{font-size:16px;font-weight:600;color:#f2ecd8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppname .dis{color:var(--gold);font-weight:600;font-size:13px}
+.ppsub{font-size:12.5px;color:var(--muted);margin-top:1px}
+.pptag{font-size:11px;font-weight:800;border-radius:10px;padding:5px 10px;white-space:nowrap;flex:none}
+.pptag.mate{color:#9fd6a6;background:rgba(124,176,138,.1);border:1px solid rgba(124,176,138,.28)}
+.pptag.opp{color:#e0a08f;background:rgba(207,107,88,.1);border:1px solid rgba(207,107,88,.28)}
+.ppchev{color:var(--muted);font-size:19px;flex:none}
+/* skeleton loading state */
+.ppskel{display:flex;align-items:center;gap:13px;padding:12px;border-radius:16px;margin-bottom:8px;background:var(--panel);border:1px solid var(--line)}
+.ppskel .sk{background:linear-gradient(90deg,rgba(255,255,255,.03),rgba(255,255,255,.07),rgba(255,255,255,.03));background-size:200% 100%;animation:ppsh 1.2s infinite;border-radius:8px}
+.ppskel .sk.av{width:46px;height:46px;border-radius:14px;flex:none} .ppskel .sk.l1{height:13px;width:40%} .ppskel .sk.l2{height:10px;width:24%;margin-top:6px}
+@keyframes ppsh{to{background-position:-200% 0}}
+.plrow{display:flex;align-items:center;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+.plrow:hover{background:rgba(124,176,138,.05)}
+.plav{width:36px;height:36px;border-radius:50%;flex:none;background:#20302a;color:var(--gold);display:flex;align-items:center;justify-content:center;font:700 15px Georgia,serif;overflow:hidden}
+.plav img{width:100%;height:100%;object-fit:cover}
+.plrow b{flex:1;font-size:15px;font-weight:600}
+.plgo{color:var(--muted);font-size:20px} .plme{font-size:10px;font-weight:800;color:#9fd6a6;background:rgba(124,176,138,.14);border:1px solid rgba(124,176,138,.35);border-radius:20px;padding:2px 9px}
+/* ---- reimagined player snapshot sheet ---- */
+.snapsheet{display:flex;flex-direction:column}
+.shero{position:relative;padding:44px 22px 22px;text-align:center;overflow:hidden}
+.shero::before{content:"";position:absolute;inset:0;background:radial-gradient(90% 70% at 50% 0%,color-mix(in srgb,var(--tc) 18%,transparent),transparent 62%);pointer-events:none}
+.shclose{position:absolute;top:14px;right:16px;color:var(--muted);font-size:13px;font-weight:700;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:20px;padding:6px 13px;cursor:pointer;z-index:2}
+.savatar{width:92px;height:92px;border-radius:26px;margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font:700 38px Georgia,serif;color:var(--tc);background:#1c2620;border:2px solid var(--tc);box-shadow:0 0 40px color-mix(in srgb,var(--tc) 30%,transparent);position:relative;z-index:1;overflow:hidden}
+.savatar img{width:100%;height:100%;object-fit:cover;border-radius:24px}
+.sname{font-family:Georgia,serif;font-size:29px;color:#f6efdc;position:relative;z-index:1}
+.sclass{font-size:12px;letter-spacing:.15em;text-transform:uppercase;color:var(--tc);margin-top:5px;font-weight:700;position:relative;z-index:1}
+.slv{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:12px;font-weight:800;color:color-mix(in srgb,var(--tc) 75%,#e9e7dc);background:color-mix(in srgb,var(--tc) 12%,transparent);border:1px solid color-mix(in srgb,var(--tc) 32%,transparent);border-radius:20px;padding:6px 14px;position:relative;z-index:1}
+.vsblock{margin:4px 18px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vscard{border-radius:20px;padding:20px 14px;text-align:center;border:1px solid var(--line);background:var(--panel)}
+.vscard.h2h{background:linear-gradient(180deg,rgba(207,107,88,.1),transparent);border-color:rgba(207,107,88,.3)}
+.vscard.duo{background:linear-gradient(180deg,rgba(124,176,138,.1),transparent);border-color:rgba(124,176,138,.3)}
+.vscard.empty{opacity:.6}
+.vscard .vico{font-size:21px}
+.vscard .vlab{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:6px}
+.vscard .vrec{font:800 33px ui-monospace,monospace;margin-top:7px;letter-spacing:-1px}
+.vscard .vnew{font:800 30px Georgia,serif;color:var(--muted);margin-top:7px}
+.vscard.h2h .vrec{color:#e0a08f} .vscard.duo .vrec{color:#9fd6a6}
+.vscard .vsub{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.3}
+.scross{text-align:center;font-size:13px;color:var(--muted);margin:16px 20px 0}
+.scross b{color:var(--ink)}
+.challbtn{display:block;margin:16px 18px 20px;text-align:center;padding:15px;border-radius:15px;border:none;cursor:pointer;
+  background:linear-gradient(180deg,#ecd58a,#d3b25e);color:#141207;font-weight:800;font-size:15px;box-shadow:0 6px 20px rgba(226,194,102,.2)}
+.challbtn:active{transform:translateY(1px)}
+.scta-note{text-align:center;font-size:12.5px;color:var(--muted);margin:14px 20px 22px;padding:12px;border:1px dashed var(--line);border-radius:12px}
 .wsearch{width:100%;margin:2px 0 10px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);
   background:var(--panel2);color:var(--ink);font-size:14px;outline:none}
 .wsearch:focus{border-color:var(--gold)}
@@ -964,7 +1179,9 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 #playerHome{padding-bottom:96px}
 #qStatus{padding:16px 18px;text-align:center}
 #qStatus .qlab{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:800}
-#qStatus .qbig{font-family:Georgia,serif;font-size:30px;line-height:1.15;margin:6px 0 2px}
+#qStatus .voicebtn{display:block;width:calc(100% - 24px);margin:0 12px 12px;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--muted);font-size:13px;cursor:pointer}
+.voicebtn.on{color:#9fd6a6;border-color:rgba(124,176,138,.4);background:rgba(124,176,138,.08)}
+.qbig{font-family:Georgia,serif;font-size:30px;line-height:1.15;margin:6px 0 2px}
 #qStatus .qsub{font-size:13.5px;color:var(--muted)}
 #qStatus .qeta{display:inline-block;margin-top:9px;font-size:12.5px;font-weight:800;letter-spacing:.04em;
   background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 13px;color:var(--ink)}
@@ -1016,9 +1233,10 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
 .joinrow input{flex:1;text-transform:uppercase;letter-spacing:.18em;font:700 16px "Courier New",monospace}
 .soon{color:var(--muted);font-size:13px;font-style:italic}
 .mystats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.mstat{flex:1;min-width:86px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
-.mstat b{display:block;font:800 20px Georgia,serif;color:var(--ink)}
-.mstat span{font-size:9.5px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.mstat{flex:1;min-width:86px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 6px;text-align:center}
+.mstat b{display:block;font:600 20px system-ui,-apple-system,sans-serif;letter-spacing:-.01em}
+.mstat b:not(.pos):not(.neg){color:#f0e6cc}
+.mstat span{font-size:9.5px;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;margin-top:2px;display:block}
 .histsess{margin:14px 0 4px;font-weight:800;font-size:13px;color:var(--green)}
 .histsess span{color:var(--muted);font-weight:600;font-size:11.5px;margin-left:6px}
 .histrow{display:flex;gap:8px;align-items:center;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13.5px;flex-wrap:wrap}
@@ -1253,7 +1471,7 @@ window.SS_CONFIG = {
       <select id="anRange" onchange="anRefresh()">
         <option value="30">Last 30 days</option>
         <option value="90">Last 90 days</option>
-        <option value="0">All time</option>
+        <option value="0" selected>All time</option>
       </select>
       <button class="small ghost" style="width:100%;margin-top:7px" onclick="anRefresh()">⟳ Refresh</button>
       <button class="small" style="width:100%;margin-top:7px" onclick="exportAnalytics()">⬇ Export Excel</button>
@@ -1291,8 +1509,23 @@ window.SS_CONFIG = {
      </div>
      <div class="card">
        <h3>🗓 Attendance by session</h3>
+       <div class="controls" style="flex-wrap:wrap;margin-bottom:6px">
+         <button class="small ghost" id="atW" onclick="attRange('week')">This week</button>
+         <button class="small ghost" id="atM" onclick="attRange('month')">This month</button>
+         <button class="small" id="atA" onclick="attRange('all')">All time</button>
+       </div>
+       <div id="atStepper" class="cpstep" style="display:none;margin-bottom:8px">
+         <button class="cpnav" onclick="attStepMonth(-1)" aria-label="Previous month">‹</button>
+         <div class="cpmonth" id="atMonthLbl">—</div>
+         <button class="cpnav" id="atNextBtn" onclick="attStepMonth(1)" aria-label="Next month">›</button>
+       </div>
        <div id="anAttend"></div>
-       <p class="hint">Your demand signal for booking courts.</p>
+       <div class="controls" id="atPager" style="justify-content:space-between;display:none">
+         <button class="small ghost" id="atPrev" onclick="attPage(-1)">◀ Prev</button>
+         <span class="hint" id="atPageLbl"></span>
+         <button class="small ghost" id="atNext" onclick="attPage(1)">Next ▶</button>
+       </div>
+       <p class="hint">Your demand signal for booking courts. Tap a session to see who came.</p>
      </div>
      <div class="card">
        <h3>👥 Player activity</h3>
@@ -1475,6 +1708,8 @@ window.SS_CONFIG = {
   <div class="card" id="fnCollectCard" style="max-width:820px;margin:0 auto 14px;display:none">
     <h3>💳 Collection <span class="hint" style="font-weight:400">tick each player once paid</span></h3>
     <div id="ptSummary"></div>
+    <input id="ptSearch" placeholder="🔍 Type a name to find them fast…" autocomplete="off"
+      style="width:100%;margin:8px 0 4px" oninput="ptFilter()">
     <div id="ptList"></div>
     <div class="controls" id="ptPager" style="justify-content:space-between;display:none">
       <button class="small ghost" id="ptPrev" onclick="ptPage(-1)">◀ Prev</button>
@@ -1497,6 +1732,13 @@ window.SS_CONFIG = {
     <div class="mrow"><label>Cost per tube</label><input id="exTube" type="number" min="0" step="10" oninput="calcFinance()"></div>
     <div class="mrow"><label>Tubes used</label><input id="exTubes" type="number" min="0" step="1" oninput="calcFinance()"></div>
     <p class="mline"><span>Shuttlecock fee</span><b id="exShuttleTotal">₱0</b></p>
+    <button class="small ghost" id="exBrand2Toggle" onclick="exToggleBrand2()" style="margin:2px 0 4px">＋ Add another brand</button>
+    <div id="exBrand2Wrap" style="display:none;border-top:1px dashed var(--line);padding-top:8px;margin-top:4px">
+      <div class="mrow"><label>Shuttle brand 2</label><select id="exBrand2" onchange="calcFinance()" style="max-width:210px"><option value="">— none —</option></select></div>
+      <div class="mrow"><label>Cost per tube</label><input id="exTube2" type="number" min="0" step="10" oninput="calcFinance()"></div>
+      <div class="mrow"><label>Tubes used</label><input id="exTubes2" type="number" min="0" step="1" oninput="calcFinance()"></div>
+      <p class="mline"><span>Brand 2 fee</span><b id="exShuttle2Total">₱0</b></p>
+    </div>
     <div class="mrow" style="margin-top:10px"><label id="exOtherLbl">Other</label><input id="exOtherName" placeholder="e.g. Queue master fee" oninput="calcFinance()" style="max-width:210px"></div>
     <div class="mrow"><label>Amount</label><input id="exOther" type="number" min="0" step="10" oninput="calcFinance()"></div>
     <p class="mline total"><span>Total expenses</span><b id="exTotal">₱0</b></p>
@@ -1534,6 +1776,11 @@ window.SS_CONFIG = {
         <button class="small" id="cpW" onclick="loadClubPnl('week')">This week</button>
         <button class="small ghost" id="cpM" onclick="loadClubPnl('month')">This month</button>
         <button class="small ghost" id="cpA" onclick="loadClubPnl('all')">All time</button>
+      </div>
+      <div id="cpStepper" class="cpstep" style="display:none">
+        <button class="cpnav" onclick="cpStepMonth(-1)" aria-label="Previous month">‹</button>
+        <div class="cpmonth" id="cpMonthLbl">—</div>
+        <button class="cpnav" id="cpNextBtn" onclick="cpStepMonth(1)" aria-label="Next month">›</button>
       </div>
       <div id="cpKpis" style="margin-top:10px"></div>
     </div>
@@ -1582,7 +1829,7 @@ window.SS_CONFIG = {
       <button class="small ghost" id="shTabSale"  onclick="shTab('sale')">🧾 Record sale</button>
       <button class="small ghost" id="shTabBuy"   onclick="shTab('buy')">➕ Add batch</button>
       <button class="small ghost" id="shTabPrice" onclick="shTab('price')">🏷 Prices</button>
-      <button class="small ghost" id="shTabPnl"   onclick="shTab('pnl')">💰 Channels</button>
+      <button class="small ghost" id="shTabPnl"   onclick="shTab('pnl')">📈 Monthly</button>
       <button class="small ghost" id="shTabUsed"  onclick="shTab('used')">♻️ Used</button>
       <button class="small ghost" id="shTabManage" onclick="shTab('manage')">⚙️ Manage</button>
     </div>
@@ -1683,6 +1930,15 @@ window.SS_CONFIG = {
   <div class="anbody">
     <div class="anpane on" id="ad-sess">
       <div id="adTonight"></div>
+<div class="card" style="max-width:760px;margin:0 auto 14px">
+    <h3>📱 Sessions &amp; Join QR</h3>
+    <div id="sessListSess"><p class="hint">Loading sessions…</p></div>
+    <div class="controls" id="sessPagerSess" style="justify-content:space-between;display:none">
+      <button class="small ghost" id="sessPrevSess" onclick="sessPage(-1)">◀ Prev</button>
+      <span class="hint" id="sessPageLblSess"></span>
+      <button class="small ghost" id="sessNextSess" onclick="sessPage(1)">Next ▶</button>
+    </div>
+</div>
 <div class="card" style="max-width:760px;margin:0 auto 14px">
     <h3>Create Session</h3>
     <div class="controls">
@@ -1892,6 +2148,15 @@ window.SS_CONFIG = {
       <p class="pemsg" id="peMsg"></p>
     </div>
   </div>
+  <div class="phcard ppcard">
+    <h3><span class="htxt">👥 Players</span></h3>
+    <div class="ppsearch"><span class="ppmag">🔍</span><input id="ppSearch" type="text" placeholder="Search any player…" autocomplete="off" oninput="renderPlayerSearch()"></div>
+    <div class="ppseg" id="ppSeg">
+      <button class="on" data-mode="recent" onclick="ppSegSet('recent')">Recently played</button>
+      <button data-mode="all" onclick="ppSegSet('all')">Everyone</button>
+    </div>
+    <div id="ppList"><p class="hint">Loading…</p></div>
+  </div>
   <div class="phcard">
     <h3><span class="htxt">💳 Fees &amp; Dues</span></h3>
     <div id="duesBox"><p class="soon">Your fees appear here.</p></div>
@@ -1956,6 +2221,7 @@ window.SS_CONFIG = {
     <p class="soon" id="gateHint" style="margin-top:8px;font-size:12.5px">📱 Scan the session QR at the front desk, or ask the Party Leader for tonight's 6-character code.</p>
   </div><div class="phcard" id="qStatusCard" style="display:none;padding:0;overflow:hidden">
     <div id="qStatus"></div>
+    <button id="voiceBtn" class="voicebtn" onclick="voiceToggle()">🔈 Voice off</button>
   </div><div class="phcard" id="recapCard" style="display:none">
   <h3><span class="htxt">🌙 Your night</span></h3>
   <div id="recapBody"></div>
@@ -2093,6 +2359,19 @@ window.SS_CONFIG = {
     <button class="msshare" onclick="msShare(event)">📸 Share</button>
     <button class="msok" onclick="msClose(event,true)">Nice</button>
   </div>
+</div>
+<div class="msover chover" id="chOver">
+  <div class="msrays chrays"></div>
+  <div class="msconf" id="chConf"></div>
+  <div class="mswrap">
+    <div class="mskick" id="chKick"></div>
+    <div class="msmedal"><div class="msglow" id="chGlow"></div><div class="msdisc" id="chDisc"><span id="chEmoji">⚔️</span></div></div>
+    <div class="mshead" id="chHead"></div>
+    <div class="chwho" id="chWho"></div>
+    <div class="mssub" id="chSub"></div>
+    <div class="chstakes" id="chStakes"></div>
+  </div>
+  <div class="msbtns" id="chBtns"></div>
 </div>
 <div class="overlay" id="qrModal" onclick="if(event.target===this)closeModal('qrModal')">
   <div class="modal" style="max-width:420px;text-align:center">
@@ -2495,6 +2774,14 @@ async function deletePlayer(id, fromModal){
   const own=ownerOf(id);
   if(own.kind==="c"&&own.o.start) return alert(p.name+" is mid-match — finish or cancel the game first.");
   if(!await uiConfirm("Delete "+p.name+"? Their finished matches stay in the results.",{title:"Delete player",ok:"Delete"})) return;
+  // Remove their session_players row FIRST — otherwise the importRoster timer
+  // re-pulls it from the DB and re-adds them ("joined from the app") in a loop.
+  // Walk-ins (local id, no DB row) simply affect zero rows and return cleanly.
+  if(S.db&&S.db.sessionId){
+    const r=await sFetch("/rest/v1/session_players?session_id=eq."+S.db.sessionId+"&profile_id=eq."+id,
+      {method:"DELETE"}).catch(()=>null);
+    if(!r||!r.ok){ toast("Couldn’t remove "+p.name+" — check the connection and try again"); return; }
+  }
   removeEverywhere(id);
   S.players=S.players.filter(x=>x.id!==id);
   save(); if(fromModal) closeModal("playerModal"); renderHome();
@@ -2529,7 +2816,8 @@ function cardEl(p, mini, noMeta){
     (!noMeta&&wm>=20?" whot":!noMeta&&wm>=10?" wmid":"");
   d.draggable=true; d.dataset.pid=p.id;
   d._skill=true;
-  d.title=p.name+(noMeta?" · in a live match":" · drag to move");
+  d.title=p.name+(noMeta?" · tap to swap out of this match":" · drag to move");
+  if(noMeta){ d.classList.add("swappable"); d.onclick=(e)=>{ e.stopPropagation(); swapCourtPlayer(p.id); }; }
   const top=document.createElement("div"); top.className="top";
   const lv=document.createElement("span"); lv.className="lvl";
   lv.style.background=LEVEL_COLORS[LEVELS.indexOf(p.level)]||"#666"; lv.textContent=p.level;
@@ -2540,7 +2828,17 @@ function cardEl(p, mini, noMeta){
   if(!mini){
     top.append(iconBtn("🗑","Delete player",e=>{e.stopPropagation();deletePlayer(p.id);}));
   }
-  const nm=document.createElement("div"); nm.className="nm"; nm.textContent=p.name;
+  const nm=document.createElement("div"); nm.className="nm";
+  nm.textContent=p.name;
+  // Disambiguate: if this nickname appears more than once in the roster, show the
+  // distinguishing part of their full name (e.g. two "Mark"s -> "Mark · Donkor").
+  if(p.full){
+    const same=(S.players||[]).filter(x=>x.name&&x.name.toLowerCase()===p.name.toLowerCase());
+    if(same.length>1){
+      const extra=p.full.replace(new RegExp("^\\s*"+p.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*","i"),"").trim();
+      if(extra){ const ds=document.createElement("span"); ds.className="nmdis"; ds.textContent=" · "+extra; nm.append(ds); }
+    }
+  }
   d.append(top,nm);
   if(!noMeta){
     const tl=document.createElement("div"); tl.className="tl";
@@ -2803,6 +3101,39 @@ function sendQueueToCourt(q){
 
 /* ======================= COURTS ======================= */
 function addCourt(){ S.courts.push({id:uid(),name:"Court "+(S.courts.length+1),slots:[null,null,null,null],start:null}); save(); renderCourts(); }
+/* Mid-match swap: tap a player on a LIVE court to replace them with an available
+   player. Replaced player just leaves the slot (re-queue manually). No layout change. */
+function swapCourtPlayer(pid){
+  const loc=ownerOf(pid); if(!loc||loc.kind!=="c"||!loc.o.start) return;   // only live courts
+  const court=loc.o, slot=loc.i, outP=player(pid); if(!outP) return;
+  // available = active players not already on any court or queue slot
+  const onCourtOrQ=new Set();
+  S.courts.forEach(c=>c.slots.forEach(x=>x&&onCourtOrQ.add(x)));
+  S.queues.forEach(q=>q.slots.forEach(x=>x&&onCourtOrQ.add(x)));
+  const avail=S.players.filter(p=>p.active && !onCourtOrQ.has(p.id))
+    .sort((a,b)=>(b.waitSince||0)-(a.waitSince||0) || a.name.localeCompare(b.name));
+  let ov=document.getElementById("swapModal");
+  if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="swapModal";
+    ov.innerHTML='<div class="modal" style="max-width:420px"><h3 id="swapTitle" style="margin:0 0 4px"></h3>'+
+      '<div class="hint" id="swapSub" style="margin-bottom:10px"></div><div id="swapBody"></div>'+
+      '<button class="wide" style="margin-top:12px" onclick="closeModal(\'swapModal\')">Cancel</button></div>';
+    document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("swapModal"); }); }
+  document.getElementById("swapTitle").textContent="Swap out "+outP.name;
+  document.getElementById("swapSub").textContent="On "+court.name+" · tap who takes their place";
+  document.getElementById("swapBody").innerHTML= avail.length
+    ? '<div class="swaplist">'+avail.slice(0,60).map(p=>'<button class="swapopt" onclick="doSwapCourt(\''+court.id+'\','+slot+',\''+p.id+'\')">'+
+        '<b>'+esc(p.name)+'</b><span>'+(waitMin(p)>0?waitMin(p)+"m waiting":"available")+'</span></button>').join("")+'</div>'
+    : '<p class="hint">No available players — everyone is on a court or in the queue.</p>';
+  openModal("swapModal");
+}
+function doSwapCourt(courtId,slot,inId){
+  const court=S.courts.find(c=>c.id===courtId); if(!court) return;
+  const outId=court.slots[slot]; const outP=player(outId);
+  court.slots[slot]=inId;
+  if(outP) outP.waitSince=now();       // replaced player becomes re-queueable
+  save(); renderCourts(); closeModal("swapModal");
+  toast("Swapped in "+(player(inId)||{}).name+(outP?" for "+outP.name:""));
+}
 function renderCourts(){
   setTimeout(()=>{try{predRender();}catch(e){}},0);
   const w=document.getElementById("courts"); w.innerHTML="";
@@ -3014,7 +3345,7 @@ async function loadAnalytics(){
   kpi.innerHTML='<p class="hint">Loading…</p>';
   const days=+document.getElementById("anRange").value||0;
   let from=null;
-  if(days){ const d=new Date(); d.setDate(d.getDate()-days); from=d.toISOString().slice(0,10); }
+  if(days){ const d=new Date(); d.setDate(d.getDate()-days); from=localYMD(d); }
   const sq="/rest/v1/sessions?select=id,title,session_date,status,settings&order=session_date.desc"+
     (from? "&session_date=gte."+from : "");
   const sr=await sFetch(sq).catch(()=>null);
@@ -3024,12 +3355,12 @@ async function loadAnalytics(){
     ["anAttend","anPlayers","anCourts"].forEach(i=>document.getElementById(i).innerHTML=""); return; }
   const ids=sess.map(s=>s.id);
   const [rr,mr]=await Promise.all([
-    sFetch("/rest/v1/session_players?session_id=in.("+ids.join(",")+
-      ")&select=session_id,profile_id,profiles!session_players_profile_id_fkey(reclub_name,full_name)").catch(()=>null),
-    sFetch("/rest/v1/matches?session_id=in.("+ids.join(",")+
-      ")&select=session_id,t1,t2,s1,s2,started_at,ended_at&limit=4000").catch(()=>null)]);
-  const roster=(rr&&rr.ok)? await rr.json():[];
-  const matches=(mr&&mr.ok)? await mr.json():[];
+    sFetchAll("/rest/v1/session_players?session_id=in.("+ids.join(",")+
+      ")&select=session_id,profile_id,profiles!session_players_profile_id_fkey(reclub_name,full_name)"),
+    sFetchAll("/rest/v1/matches?session_id=in.("+ids.join(",")+
+      ")&select=session_id,t1,t2,s1,s2,started_at,ended_at")]);
+  const roster=rr.ok? rr.rows:[];
+  const matches=mr.ok? mr.rows:[];
   const byDate={}; sess.forEach(s=>byDate[s.id]=s.session_date);
   // per-session attendance + matches
   const att={}; roster.forEach(r=>{ att[r.session_id]=(att[r.session_id]||0)+1; });
@@ -3052,7 +3383,8 @@ async function loadAnalytics(){
   const today=new Date().toISOString().slice(0,10);
   const dayGap=(a,b)=>Math.round((new Date(b)-new Date(a))/86400000);
   Object.values(who).forEach(p=>{ p.absent=p.last? dayGap(p.last,today):999; });
-  window.__an={sess,att,mps,matches,who,from};
+  window.__an={sess,att,mps,matches,who,from,roster};
+  window.__attByDate=byDate;
   // KPIs
   const totalMatches=matches.length;
   const uniquePlayers=Object.keys(who).length;
@@ -3071,15 +3403,71 @@ async function loadAnalytics(){
     '<div><b>'+avgLen+'m</b><span>avg match</span></div></div>';
   document.getElementById("anHint").textContent=
     sess.length+" sessions"+(from? " since "+from : " (all time)")+" · "+totalMatches+" matches recorded";
-  // attendance bars
-  const maxA=Math.max(1,...Object.values(att));
-  document.getElementById("anAttend").innerHTML=sess.slice(0,14).map(s=>{
+  // attendance (filterable + paginated + clickable) — see renderAttendance()
+  attPageNo=0; renderAttendance();
+}
+let attPageNo=0;
+function attRange(r){ window.__attRange=r; if(r==="month" && !window.__attMonth) window.__attMonth=localYMD(new Date()).slice(0,7); attPageNo=0; renderAttendance(); }
+function attPage(d){ attPageNo=Math.max(0,attPageNo+d); renderAttendance(); }
+function attStepMonth(dir){
+  const ym=window.__attMonth||localYMD(new Date()).slice(0,7); const [Y,M]=ym.split("-").map(Number);
+  const next=new Date(Date.UTC(Y,M-1+dir,1)).toISOString().slice(0,7);
+  if(next>localYMD(new Date()).slice(0,7)) return;
+  window.__attMonth=next; window.__attRange="month"; attPageNo=0; renderAttendance();
+}
+const ATT_PAGE=12;
+function renderAttendance(){
+  const box=document.getElementById("anAttend"); if(!box||!window.__an) return;
+  const {sess,att}=window.__an; const rg=window.__attRange||"all";
+  ["W","M","A"].forEach(k=>{ const b=document.getElementById("at"+k);
+    if(b) b.className="small"+((k==="W"&&rg==="week")||(k==="M"&&rg==="month")||(k==="A"&&rg==="all")?"":" ghost"); });
+  // window
+  let from=null,to=null; const step=document.getElementById("atStepper");
+  if(rg==="week"){ const d=new Date(); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); from=localYMD(d); if(step) step.style.display="none"; }
+  else if(rg==="month"){
+    if(step) step.style.display="flex";
+    const ym=window.__attMonth||localYMD(new Date()).slice(0,7); const [Y,M]=ym.split("-").map(Number);
+    from=ym+"-01"; to=new Date(Date.UTC(Y,M,1)).toISOString().slice(0,10);
+    const lbl=document.getElementById("atMonthLbl"); if(lbl) lbl.textContent=new Date(Date.UTC(Y,M-1,1)).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+    const nb=document.getElementById("atNextBtn"); if(nb) nb.disabled = ym>=localYMD(new Date()).slice(0,7);
+  } else if(step) step.style.display="none";
+  let rows=sess.filter(s=> (!from||s.session_date>=from) && (!to||s.session_date<to));
+  const maxA=Math.max(1,...rows.map(s=>att[s.id]||0));
+  const pages=Math.max(1,Math.ceil(rows.length/ATT_PAGE));
+  if(attPageNo>=pages) attPageNo=pages-1;
+  const pg=document.getElementById("atPager");
+  if(pg){ pg.style.display= rows.length>ATT_PAGE?"flex":"none";
+    document.getElementById("atPageLbl").textContent="Page "+(attPageNo+1)+" of "+pages+" · "+rows.length+" sessions";
+    document.getElementById("atPrev").disabled=attPageNo<=0; document.getElementById("atNext").disabled=attPageNo>=pages-1; }
+  const shown=rows.slice(attPageNo*ATT_PAGE,(attPageNo+1)*ATT_PAGE);
+  box.innerHTML= shown.length? shown.map(s=>{
     const n=att[s.id]||0, pct=Math.round(100*n/maxA);
-    return '<div class="pdrow"><div class="pn2" style="flex:0 0 190px"><b>'+esc(s.title)+'</b><span>'+s.session_date+'</span></div>'+
+    return '<div class="pdrow attrow" onclick="openAttendees(\''+s.id+'\')"><div class="pn2" style="flex:0 0 190px"><b>'+esc(s.title)+'</b><span>'+s.session_date+'</span></div>'+
       '<div style="flex:1;background:var(--panel2);border-radius:8px;height:16px;overflow:hidden;margin:0 10px">'+
       '<div style="width:'+pct+'%;height:100%;background:linear-gradient(90deg,var(--green),var(--gold))"></div></div>'+
-      '<b style="min-width:78px;text-align:right">'+n+' players</b></div>';
-  }).join("");
+      '<b style="min-width:88px;text-align:right">'+n+' players ›</b></div>';
+  }).join("") : '<p class="hint">No sessions in this period.</p>';
+}
+function openAttendees(sid){
+  const an=window.__an; if(!an) return;
+  const s=an.sess.find(x=>x.id===sid); if(!s) return;
+  const people=(an.roster||[]).filter(r=>r.session_id===sid).map(r=>({
+    id:r.profile_id, name:(r.profiles&&(r.profiles.reclub_name||r.profiles.full_name))||"Walk-in", guest:!r.profile_id }))
+    .sort((a,b)=>a.name.localeCompare(b.name));
+  let ov=document.getElementById("attModal");
+  if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="attModal";
+    ov.innerHTML='<div class="modal" style="max-width:460px"><h3 id="attTitle" style="margin:0 0 2px"></h3>'+
+      '<div class="hint" id="attSub" style="margin-bottom:10px"></div><div id="attBody"></div>'+
+      '<button class="wide" style="margin-top:14px" onclick="closeModal(\'attModal\')">Close</button></div>';
+    document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("attModal"); }); }
+  document.getElementById("attTitle").textContent=s.title;
+  document.getElementById("attSub").textContent=s.session_date+" · "+people.length+" attended";
+  document.getElementById("attBody").innerHTML= people.length
+    ? '<div class="attgrid">'+people.map(p=> p.guest
+        ? '<span class="attchip guest">'+esc(p.name)+'</span>'
+        : '<span class="attchip" onclick="closeModal(\'attModal\');openPlayerCard(\''+p.id+'\')">'+esc(p.name)+'</span>').join("")+'</div>'
+    : '<p class="hint">No attendees recorded.</p>';
+  openModal("attModal");
   // court utilisation
   const perSess=sess.map(s=>mps[s.id]||0);
   const avgMps=perSess.length? Math.round(perSess.reduce((a,b)=>a+b,0)/perSess.length*10)/10 : 0;
@@ -4578,7 +4966,7 @@ function briefShow(step,sessionTitle){
       '</div>'+
       '<p class="brfnote"><b>You earn XP even when you lose.</b> Showing up and playing is what levels you \u2014 winning just gets you there faster.</p>'+
       '<div class="brftier">'+
-        [["Rookie",1],["Squire",3],["Knight",5],["Warden",8],["Legend",10],["Mythic",13]]
+        [["Rookie",1],["Squire",3],["Knight",5],["Warden",8],["Legend",10],["Mythic",13],["Demogorgon",17],["Ascendant",21],["Primordial",25]]
           .map(t=>'<div><b>'+t[0]+'</b><span>LV '+t[1]+'</span></div>').join("")+
       '</div>'+
       '<p class="brfnote">Trainings sharpen your game but earn <b>no XP</b> \u2014 only queue matches do.</p>'+
@@ -4787,12 +5175,69 @@ async function chIssue(pid){
   }catch(e){ toast("\u26A0\uFE0F Could not send challenge"); }
 }
 async function chRespond(id,accept){
+  chDismiss();   // close the takeover popup once they act
   try{
     const r=await sFetch("/rest/v1/challenges?id=eq."+id,{method:"PATCH",
       body:{status:accept?"accepted":"declined", accepted_at:accept?new Date().toISOString():null}});
     if(r&&r.ok){ toast(accept?"\u2694\uFE0F Challenge accepted":"Declined"); loadWhosIn(); }
   }catch(e){}
 }
+/* ---- challenge popups (reuse the milestone overlay treatment) ---- */
+function chEmbers(el){
+  const cols=["#ff7a3c","#ff5a1c","#eac25f","#ff9a4c"];
+  el.innerHTML=Array.from({length:34},()=>{
+    const l=Math.random()*100, d=(2.4+Math.random()*2.4).toFixed(2), dl=(Math.random()*1.2).toFixed(2);
+    return '<i style="left:'+l.toFixed(1)+'%;top:104%;width:'+(4+Math.round(Math.random()*4))+
+      'px;height:'+(4+Math.round(Math.random()*4))+'px;background:'+cols[Math.floor(Math.random()*4)]+
+      ';box-shadow:0 0 10px currentColor;animation:msFall '+d+'s linear '+dl+'s forwards"></i>';
+  }).join("");
+}
+/* the CHALLENGED player: full takeover, re-shows until they respond */
+function chShowIncoming(c, challengerName){
+  if(!document.getElementById("chOver")) return;
+  if(window.__chCurId===c.id && document.getElementById("chOver").classList.contains("on")) return; // already up
+  window.__chCurId=c.id;
+  document.getElementById("chKick").textContent="\u2694\uFE0F A CHALLENGE APPEARS";
+  document.getElementById("chKick").style.color="#e0857a";
+  document.getElementById("chGlow").style.background="radial-gradient(circle,rgba(217,69,58,.6),transparent 62%)";
+  document.getElementById("chDisc").style.cssText="background:linear-gradient(160deg,#e8776a,#b0402f 46%,#6e2418);border:5px solid #ffd9cf;box-shadow:0 0 48px rgba(217,69,58,.8),inset 0 -12px 26px rgba(0,0,0,.35)";
+  document.getElementById("chEmoji").textContent="\u2694\uFE0F";
+  document.getElementById("chHead").innerHTML="You've been<br>challenged!";
+  document.getElementById("chWho").textContent=(challengerName||"A rival")+" wants a grudge match";
+  document.getElementById("chSub").innerHTML="Your rival is calling you out. Accept, and the Party Leader sets it up on a court.";
+  document.getElementById("chStakes").innerHTML='<span class="win">\uD83C\uDFC6 Win +20 XP</span><span class="lose">\uD83D\uDC80 Lose \u221210 XP</span>';
+  document.getElementById("chBtns").innerHTML=
+    '<button class="msshare chy2" onclick="chRespond(\''+c.id+'\',true)">\u2694\uFE0F Accept the duel</button>'+
+    '<button class="msok" onclick="chRespond(\''+c.id+'\',false)">Not tonight</button>';
+  chEmbers(document.getElementById("chConf"));
+  document.getElementById("chOver").classList.add("on");
+  try{ if(navigator.vibrate) navigator.vibrate([25,70,25,70,25]); }catch(e){}
+}
+/* the CHALLENGER: verdict popup when their challenge is accepted / declined */
+function chShowVerdict(accepted, targetName){
+  if(!document.getElementById("chOver")) return;
+  window.__chCurId=null;
+  const green=accepted;
+  document.getElementById("chKick").textContent=green?"\uD83D\uDD25 CHALLENGE ACCEPTED":"CHALLENGE DECLINED";
+  document.getElementById("chKick").style.color=green?"#8fd6a0":"#8b948c";
+  document.getElementById("chGlow").style.background=green?"radial-gradient(circle,rgba(234,194,95,.55),transparent 62%)":"radial-gradient(circle,rgba(139,148,140,.4),transparent 62%)";
+  document.getElementById("chDisc").style.cssText=green
+    ?"background:linear-gradient(160deg,#f7dc8a,#caa64e 46%,#8a6b25);border:5px solid #fff4cf;box-shadow:0 0 46px rgba(234,194,95,.78),inset 0 -12px 26px rgba(0,0,0,.32)"
+    :"background:linear-gradient(160deg,#5a5f5a,#3a3f3a);border:5px solid #6b6b66;box-shadow:inset 0 -12px 26px rgba(0,0,0,.4)";
+  document.getElementById("chEmoji").textContent=green?"\u2694\uFE0F":"\uD83D\uDEE1\uFE0F";
+  document.getElementById("chHead").innerHTML=green?"It's on.":"Not this time.";
+  document.getElementById("chWho").textContent=(targetName||"They")+(green?" accepted your challenge":" declined for now");
+  document.getElementById("chSub").innerHTML=green
+    ?"The grudge match is locked in. The Party Leader will call you both to a court. <b>Bring it.</b> \uD83D\uDD25"
+    :"No duel tonight \u2014 catch them another session.";
+  document.getElementById("chStakes").innerHTML=green
+    ?'<span class="gold">vs '+esc(targetName||"them")+' \u00b7 winner takes +20</span>':"";
+  document.getElementById("chBtns").innerHTML='<button class="msshare '+(green?"chy2":"msok")+'" onclick="chDismiss()">'+(green?"Let's go \u2694\uFE0F":"Okay")+'</button>';
+  if(green) chEmbers(document.getElementById("chConf")); else document.getElementById("chConf").innerHTML="";
+  document.getElementById("chOver").classList.add("on");
+  try{ if(navigator.vibrate) navigator.vibrate(green?[25,70,25]:[40]); }catch(e){}
+}
+function chDismiss(){ const o=document.getElementById("chOver"); if(o) o.classList.remove("on"); }
 async function chRenderPrompt(rosterIds, byId){
   const card=document.getElementById("whosInCard"); if(!card) return;
   let box=document.getElementById("chPrompt");
@@ -4808,6 +5253,23 @@ async function chRenderPrompt(rosterIds, byId){
   const nmeHere=(window.__nemeses3||[]).filter(n=>rosterIds.indexOf(n.id)>=0
      && !mine.some(c=>(c.target===n.id||c.challenger===n.id)&&active(c)));
   const incoming=mine.filter(c=>c.target===auth.uid&&c.status==="pending");
+
+  // ---- POPUPS ----
+  // (a) challenged player: a pending challenge aimed at me → full takeover (re-shows until answered)
+  if(incoming.length){ chShowIncoming(incoming[0], byId[incoming[0].challenger]); }
+  else if(window.__chCurId){ chDismiss(); window.__chCurId=null; }   // it was answered/withdrawn
+  // (b) challenger: my own challenge changed status since last poll → verdict popup (once)
+  const prev=window.__chPrevStatus||{};
+  const now={};
+  mine.filter(c=>c.challenger===auth.uid).forEach(c=>{
+    now[c.id]=c.status;
+    const was=prev[c.id];
+    if(was==="pending" && (c.status==="accepted"||c.status==="declined")){
+      chShowVerdict(c.status==="accepted", byId[c.target]);
+    }
+  });
+  window.__chPrevStatus=now;
+
   let html="";
   incoming.forEach(c=>{ html+='<div class="chrow chin"><span>\uD83D\uDE24 <b>'+esc(byId[c.challenger]||"A rival")+
     '</b> challenged you</span><span class="chbtns">'+
@@ -4815,9 +5277,13 @@ async function chRenderPrompt(rosterIds, byId){
     '<button class="chn" onclick="chRespond(\''+c.id+'\',false)">Decline</button></span></div>'; });
   nmeHere.forEach(n=>{ html+='<div class="chrow"><span>\uD83D\uDE24 Nemesis <b>'+esc(byId[n.id]||n.n)+
     '</b> is in tonight</span><button class="chy" onclick="chIssue(\''+n.id+'\')">Challenge</button></div>'; });
-  const acc=mine.filter(c=>c.status==="accepted"||c.status==="placed");
-  if(acc.length) html+='<div class="chnote">\u2694\uFE0F '+acc.length+' challenge'+(acc.length>1?"s":"")+
-    ' locked in \u00b7 the Party Leader sets it up \u00b7 +20 to win, \u221210 to lose</div>';
+  // ---- live status strip for challenges I SENT ----
+  mine.filter(c=>c.challenger===auth.uid && ["pending","accepted","declined","placed"].includes(c.status)).forEach(c=>{
+    const nm=esc(byId[c.target]||"your rival");
+    if(c.status==="pending") html+='<div class="chstatus pending"><span class="dot"></span>\u2694\uFE0F Challenge to <b>'+nm+'</b> \u00b7 waiting for them to accept\u2026</div>';
+    else if(c.status==="declined") html+='<div class="chstatus declined"><span class="dot"></span>'+nm+' declined your challenge</div>';
+    else html+='<div class="chstatus accepted"><span class="dot"></span>\uD83D\uDD25 <b>'+nm+'</b> accepted \u00b7 the Party Leader will set it up</div>';
+  });
   box.innerHTML=html;
 }
 /* auto-resolve any accepted challenge whose two principals met (opposite sides) in this match */
@@ -4883,26 +5349,35 @@ function nightRecap(){
   const topN=top? Math.floor(partners[top]) : 0;
   const topW=top? Math.round((partners[top]-topN)*1000) : 0;
   const xp=xpTot;
+  const wr=g? Math.round(100*w/g) : 0;
   const waits=[]; rows.forEach(m=>{ const v=(m.waits||{})[uid]; if(v!=null) waits.push(+v); });
   const avgWait=waits.length? Math.round(waits.reduce((a,b)=>a+b,0)/waits.length) : null;
+  // moment = [emoji, title, subtitle-html, colorClass]; color belongs to the type,
+  // not the index, so a missing moment doesn't shift the others' colors.
   const mom=[];
-  if(best) mom.push(['⚔️','Best win',best.s+' with '+esc(best.with)+' over '+esc(best.vs)]);
-  if(streak>=2) mom.push(['🔥',streak+'-game win streak','Your longest run of the night']);
-  if(top&&topN>=2) mom.push(['🤝','Played most with '+esc(top),topN+' games together · '+topW+' of them won']);
-  if(worst&&worst.d<=4) mom.push(['😤','Toughest game',worst.s+' against '+esc(worst.vs)+' — that one was close']);
+  if(best) mom.push(['⚔️','Best win <span class="sc">'+esc(best.s)+'</span>','with '+esc(best.with)+' over '+esc(best.vs),'g1']);
+  if(streak>=2) mom.push(['🔥',streak+'-game win streak','Your longest run of the night','g2']);
+  if(top&&topN>=2) mom.push(['🤝','Played most with '+esc(top),topN+' games together · <span style="color:var(--green)">'+topW+' of them won</span>','g3']);
+  if(worst&&worst.d<=4) mom.push(['😤','Toughest game <span class="sc">'+esc(worst.s)+'</span>','against '+esc(worst.vs)+' — so close','g4']);
+  const tag = (w===g&&g>1)? {c:'win',t:'⭐ unbeaten tonight'}
+    : (streak>=3? {c:'',t:'🔥 closed on a '+streak+'-game run'}
+    : (g>=6? {c:'win',t:'🏸 a busy night on court'} : null));
   document.getElementById("recapBody").innerHTML=
-    '<div class="rcbig">'+g+' game'+(g===1?"":"s")+'. '+w+' win'+(w===1?"":"s")+'.</div>'+
-    '<p class="hint" style="margin:2px 0 0">'+
-      (w===g&&g>1? 'Unbeaten tonight.' : (streak>=3? 'You closed on a '+streak+'-game run.' :
-       (g>=6? 'A busy night on court.' : 'Thanks for coming out.')))+'</p>'+
-    '<div class="rcsum"><div><b>'+g+'</b><span>games</span></div>'+
-      '<div><b>'+w+'</b><span>wins</span></div>'+
-      '<div><b>+'+xp+'</b><span>xp</span></div>'+
-      (avgWait!=null? '<div><b>'+avgWait+'m</b><span>avg wait</span></div>':'')+'</div>'+
-    mom.map(m=>'<div class="rcmom"><div class="em">'+m[0]+'</div><div><b>'+m[1]+'</b>'+
-      '<span>'+m[2]+'</span></div></div>').join("")+
+    '<div class="rchero">'+
+      '<div class="hl"><span class="big">'+w+'</span><span class="u1">win'+(w===1?"":"s")+'</span>'+
+        '<span class="u2">/ '+g+' game'+(g===1?"":"s")+'</span></div>'+
+      (tag? '<div class="rctag '+tag.c+'">'+tag.t+'</div>':'')+
+    '</div>'+
+    '<div class="rcstrip" style="--n:'+(avgWait!=null?3:2)+'">'+
+      '<div><div class="v xp">+'+xp+'</div><div class="l">XP</div></div>'+
+      '<div><div class="v">'+wr+'%</div><div class="l">win rate</div></div>'+
+      (avgWait!=null? '<div><div class="v">'+avgWait+'m</div><div class="l">avg wait</div></div>':'')+
+    '</div>'+
+    (mom.length? '<div class="rcmlabel">Moments</div>':'')+
+    mom.map(m=>'<div class="rcmom '+m[3]+'"><div class="em">'+m[0]+'</div>'+
+      '<div><b>'+m[1]+'</b><span>'+m[2]+'</span></div></div>').join("")+
     '<button class="rcbtn" onclick="downloadSessionCard()">📸 Share your night</button>'+
-    '<p class="hint" style="margin-top:8px">Full trends live on your <b>Profile</b>.</p>';
+    '<p class="hint" style="margin-top:8px;text-align:center">Full trends live on your <b>Profile</b>.</p>';
   card.style.display="block";
 }
 /* ---- Gate collapse rules: keep it near one screen ---- */
@@ -5047,12 +5522,12 @@ async function predStats(force){
   if(!sess.length){ window.__pred=out; return out; }
   const ids=sess.map(s=>s.id);
   const [mr,rr]=await Promise.all([
-    sFetch("/rest/v1/matches?session_id=in.("+ids.join(",")+
-      ")&select=session_id,court_name,started_at,ended_at&limit=4000").catch(()=>null),
-    sFetch("/rest/v1/session_players?session_id=in.("+ids.join(",")+
-      ")&select=session_id,profile_id").catch(()=>null)]);
-  const ms=(mr&&mr.ok)? await mr.json():[];
-  const roster=(rr&&rr.ok)? await rr.json():[];
+    sFetchAll("/rest/v1/matches?session_id=in.("+ids.join(",")+
+      ")&select=session_id,court_name,started_at,ended_at"),
+    sFetchAll("/rest/v1/session_players?session_id=in.("+ids.join(",")+
+      ")&select=session_id,profile_id")]);
+  const ms=mr.ok? mr.rows:[];
+  const roster=rr.ok? rr.rows:[];
   if(!ms.length){ window.__pred=out; return out; }
   const heads={}; roster.forEach(r=>heads[r.session_id]=(heads[r.session_id]||0)+1);
   const bySess={};
@@ -5100,6 +5575,27 @@ function predCalc(P,players,courts,hours,util){
   const m=Math.max(0,Math.round(theo*(util==null?P.util:util)));
   return {matches:m, gpp:m*4/players};
 }
+/* Apply admin overrides to the calibrated model:
+   - scoring format: games to 31 run longer than to 21 (~1.4x match time)
+   - live recalibration: blend tonight's actual match durations into P.dur as
+     the night progresses (more completed matches -> more weight to tonight). */
+function predEffective(P){
+  const ov=window.__predOv||{};
+  let dur=P.dur;
+  const live=[];
+  (S.matches||[]).forEach(m=>{ if(m.start&&m.end&&m.end>m.start){ const mins=(m.end-m.start)/60000; if(mins>1&&mins<60) live.push(mins); }});
+  let liveNote="";
+  if(live.length>=2){
+    const liveAvg=live.reduce((a,b)=>a+b,0)/live.length;
+    const w=Math.min(0.7, live.length/(live.length+6));
+    dur=Math.round((dur*(1-w)+liveAvg*w)*10)/10;
+    liveNote=" \u00b7 live-tuned on "+live.length+" match"+(live.length===1?"":"es")+" tonight";
+  }
+  const fmt=+ov.format||21;
+  if(fmt===31) dur=Math.round(dur*1.4*10)/10;
+  const cycle=dur+P.idle;
+  return Object.assign({},P,{dur,cycle,format:fmt,liveNote});
+}
 /* live headcount: typed value until the roster is in, then the real count */
 function predHeadcount(){
   const live=(S.players||[]).filter(p=>p.active!==false).length;
@@ -5133,20 +5629,27 @@ async function predRender(){
   r.innerHTML=(Math.round(lo.gpp*10)/10)+"–"+(Math.round(hi.gpp*10)/10)+
     "<br>"+mid.matches+" matches"+(hc.live?"":" · est "+hc.n);
 }
+function predSet(k,v){ (window.__predOv=window.__predOv||{})[k]= (k==='format')? +v : (+v||0); predOpen(); }
+function predReset(){ window.__predOv={}; predOpen(); }
 async function predOpen(){
-  const P=await predStats(); const box=document.getElementById("predBody");
+  const Praw=await predStats(); const box=document.getElementById("predBody");
   const modal=document.getElementById("predModal");
   if(!box||!modal) return;
   openModal("predModal");
-  if(!P.ok){ box.innerHTML='<p class="hint">The projection needs <b>'+PRED_MIN_SESSIONS+
-    ' completed sessions</b> with court hours recorded. You have <b>'+P.n+'</b>.</p>'+
+  if(!Praw.ok){ box.innerHTML='<p class="hint">The projection needs <b>'+PRED_MIN_SESSIONS+
+    ' completed sessions</b> with court hours recorded. You have <b>'+Praw.n+'</b>.</p>'+
     '<p class="hint">Set court rate, hours and courts in Money → Session Finances for each night, '+
     'and this fills in on its own.</p>'; return; }
-  const hc=predHeadcount();
-  const courts=(S.courts||[]).length||4;
-  const s=(window.__sessRows||[]).find(x=>x.id===(S.db&&S.db.sessionId));
-  const hours=(s? expensesOf(s).hours:0)||3;
-  const players=hc.n||20;
+  const P=predEffective(Praw);
+  const hcRaw=predHeadcount();
+  const ov=window.__predOv||(window.__predOv={});
+  const sRow=(window.__sessRows||[]).find(x=>x.id===(S.db&&S.db.sessionId));
+  const derivedCourts=(S.courts||[]).length||4;
+  const derivedHours=(sRow? expensesOf(sRow).hours:0)||3;
+  const courts=+ov.courts||derivedCourts;
+  const hours=+ov.hours||derivedHours;
+  const players=+ov.players||hcRaw.n||20;
+  const hc={n:players, live:hcRaw.live && !ov.players};
   const mid=predCalc(P,players,courts,hours);
   const lo=predCalc(P,players,courts,hours,P.utilLo);
   const hi=predCalc(P,players,courts,hours,P.utilHi);
@@ -5168,9 +5671,18 @@ async function predOpen(){
     }
   const cap=Math.floor(mid.matches*4/6);
   box.innerHTML=
+    '<div class="predinputs">'+
+      '<label>Courts<input type="number" min="1" step="1" value="'+courts+'" oninput="predSet(\'courts\',this.value)"></label>'+
+      '<label>Hours<input type="number" min="0.5" step="0.5" value="'+hours+'" oninput="predSet(\'hours\',this.value)"></label>'+
+      '<label>Players<input type="number" min="1" step="1" value="'+players+'" oninput="predSet(\'players\',this.value)"></label>'+
+      '<label>To<select oninput="predSet(\'format\',this.value)" onchange="predSet(\'format\',this.value)">'+
+        '<option value="21"'+(P.format===21?" selected":"")+'>21 pts</option>'+
+        '<option value="31"'+(P.format===31?" selected":"")+'>31 pts</option></select></label>'+
+      ((ov.courts||ov.hours||ov.players||ov.format)? '<button class="predreset" onclick="predReset()">↺ reset</button>':'')+
+    '</div>'+
     '<p class="hint">'+players+' player'+(players===1?"":"s")+(hc.live?" (live roster)":" (your estimate)")+
-    ' · '+courts+' courts · '+hours+'h. Calibrated on your last '+P.n+' sessions — '+
-    'match '+P.dur+'min, changeover '+P.idle+'min, '+Math.round(P.util*100)+'% utilisation.</p>'+
+    ' · '+courts+' courts · '+hours+'h · to '+P.format+'. Calibrated on your last '+P.n+' sessions — '+
+    'match '+P.dur+'min, changeover '+P.idle+'min, '+Math.round(P.util*100)+'% utilisation'+(P.liveNote||"")+'.</p>'+
     '<div class="predbar"><i style="left:'+pos(lo.gpp)+'%;width:'+Math.max(2,pos(hi.gpp)-pos(lo.gpp))+'%"></i>'+
       '<s style="left:'+pos(mid.gpp)+'%"></s></div>'+
     '<div class="predscale"><span>slow '+(Math.round(lo.gpp*10)/10)+'</span>'+
@@ -5265,16 +5777,22 @@ async function loadShuttles(){
   window.__usedSales=(us&&us.ok)? await us.json():[];
   // queue usage comes from session expenses — one source of truth
   if(!window.__allSessions) await fillFinanceSessions();
-  SH.queue=(window.__allSessions||[]).map(s=>{ const e=expensesOf(s);
-    return (e.tubes>0)? {session:s.title,date:s.session_date,brand:e.brand||"",
-      tubes:e.tubes,price:e.tube} : null; }).filter(Boolean);
-  // fill the expense brand dropdown
-  const eb=document.getElementById("exBrand");
-  if(eb){ const cur=eb.value;
-    eb.innerHTML='<option value="">— none —</option>'+
-      SH.brands.map(b=>'<option value="'+esc(b.name)+'">'+esc(b.name)+'</option>').join("");
-    eb.value=cur; }
+  SH.queue=[];
+  (window.__allSessions||[]).forEach(s=>{ const e=expensesOf(s);
+    if(e.tubes>0) SH.queue.push({session:s.title,date:s.session_date,brand:e.brand||"",tubes:e.tubes,price:e.tube});
+    if(e.tubes2>0) SH.queue.push({session:s.title,date:s.session_date,brand:e.brand2||"",tubes:e.tubes2,price:e.tube2});
+  });
+  // fill the expense brand dropdowns (both slots share the same brand list)
+  ["exBrand","exBrand2"].forEach(gid=>{ const eb=document.getElementById(gid);
+    if(eb){ const cur=eb.value;
+      eb.innerHTML='<option value="">— none —</option>'+
+        SH.brands.map(b=>'<option value="'+esc(b.name)+'">'+esc(b.name)+'</option>').join("");
+      eb.value=cur; } });
   renderShuttles();
+}
+function exToggleBrand2(){
+  const w=document.getElementById("exBrand2Wrap"), t=document.getElementById("exBrand2Toggle");
+  if(w) w.style.display="block"; if(t) t.style.display="none";
 }
 const SH={brands:[],channels:[],prices:[],batches:[],sales:[],queue:[]};
 function shOnHand(b){
@@ -5437,107 +5955,146 @@ async function shSaleDel(id){
   toast("Sale removed"); loadShuttles();
 }
 /* ---------- consolidated club P&L: accrual first, cash as a sub-module ---------- */
-async function loadClubPnl(range){
-  if(range) window.__cpRange=range;
-  const rg=window.__cpRange||"month";
-  ["W","M","A"].forEach(k=>{ const b=document.getElementById("cp"+k);
-    if(b) b.className="small"+((k==="W"&&rg==="week")||(k==="M"&&rg==="month")||(k==="A"&&rg==="all")?"":" ghost"); });
-  const K=document.getElementById("cpKpis"); if(!K) return;
-  K.innerHTML='<p class="hint">Loading\u2026</p>';
-  let from=null;
-  if(rg!=="all"){ const d=new Date();
-    if(rg==="week"){ const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); } else d.setDate(1);
-    from=d.toISOString().slice(0,10); }
-  if(!window.__allSessions) await fillFinanceSessions();
-  if(!window.__shMissing && !SH.brands.length) await loadShuttles();
-  const sess=(window.__allSessions||[]).filter(s=>!from||s.session_date>=from);
-  const sids=sess.map(s=>s.id);
-  // ---- queue ----
+/* Local Y-M-D — never use toISOString() for a window boundary: in UTC+8 that
+   shifts local midnight back into the previous day, dragging the wrong sessions in. */
+function localYMD(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+/* Pure P&L computation for a date window [from,to) (ISO dates or null=open).
+   Returns all the figures both the summary and the detail panes need. */
+function computePnl(from,to){
+  const inRange=d=> (!from||d>=from) && (!to||d<to);
+  const sess=(window.__allSessions||[]).filter(s=>inRange(s.session_date));
   let qFees=0,qCourt=0,qShutSell=0,qOther=0,qTubes=0,qCogs=0;
   sess.forEach(s=>{ const e=expensesOf(s);
-    qCourt+=e.rate*e.hours*e.courts; qShutSell+=e.tube*e.tubes; qOther+=e.other; qTubes+=e.tubes;
+    qCourt+=e.rate*e.hours*e.courts; qShutSell+=e.tube*e.tubes + (e.tube2||0)*(e.tubes2||0);
+    qOther+=e.other; qTubes+=e.tubes + (e.tubes2||0);
     const b=(SH.brands||[]).find(y=>y.name===e.brand);
-    qCogs+=e.tubes*(b? +b.wac||0 : 0); });
-  if(sids.length){
-    const pr=await sFetch("/rest/v1/payments?session_id=in.("+sids.join(",")+")&select=amount,verified").catch(()=>null);
-    if(pr&&pr.ok) (await pr.json()).forEach(p=>{ if(p.verified!==false) qFees+=+p.amount||0; });
-  }
-  // ---- shuttles ----
+    const b2=(e.brand2)?(SH.brands||[]).find(y=>y.name===e.brand2):null;
+    qCogs+=e.tubes*(b? +b.wac||0 : 0) + (e.tubes2||0)*(b2? +b2.wac||0 : 0); });
+  qFees = (window.__cpPayByS||{}) && sess.reduce((a,s)=>a+((window.__cpPayByS||{})[s.id]||0),0);
   let shOutRev=0,shOutCogs=0,shOutTubes=0,shBuy=0,usedRev=0,usedTubes=0;
   if(!window.__shMissing){
-    (SH.sales||[]).forEach(x=>{ if(from&&x.sold_on&&x.sold_on<from) return;
+    (SH.sales||[]).forEach(x=>{ if(!inRange(x.sold_on)) return;
       shOutRev+=x.tubes*(+x.price_per_tube); shOutCogs+=x.tubes*(+x.cost_per_tube||0); shOutTubes+=x.tubes; });
-    (SH.batches||[]).forEach(x=>{ if(from&&x.received_on&&x.received_on<from) return;
-      shBuy+=x.tubes_in*(+x.cost_per_tube); });
-    (window.__usedSales||[]).forEach(x=>{ if(from&&x.sold_on&&x.sold_on<from) return;
-      usedRev+=x.tubes*(+x.price_per_tube); usedTubes+=x.tubes; });
+    (SH.batches||[]).forEach(x=>{ if(!inRange(x.received_on)) return; shBuy+=x.tubes_in*(+x.cost_per_tube); });
+    (window.__usedSales||[]).forEach(x=>{ if(!inRange(x.sold_on)) return; usedRev+=x.tubes*(+x.price_per_tube); usedTubes+=x.tubes; });
   }
-  // ---- trainings ----
   let trRev=0,trCoach=0,trCourt=0,trOther=0,trCount=0;
   if(!window.__trMissing){
-    if(!window.__trLoaded) await loadTrainings();
-    (TR.list||[]).forEach(t=>{ if(from&&t.training_date<from) return;
-      trCount++; trRev+=+t.collected||0; trCoach+=+t.coach_total||0;
-      trCourt+=+t.court_total||0; trOther+=+t.other_cost||0; });
+    (TR.list||[]).forEach(t=>{ if(!inRange(t.training_date)) return;
+      trCount++; trRev+=+t.collected||0; trCoach+=+t.coach_total||0; trCourt+=+t.court_total||0; trOther+=+t.other_cost||0; });
   }
-  // ---- P&L (accrual). The queue's shuttle charge is an internal transfer and cancels. ----
   const REV=[["Queue session fees",qFees],["Shuttle sales (outside)",shOutRev],
              ["Used shuttle sales",usedRev],["Training fees",trRev]].filter(x=>x[1]>0);
   const COGS=[["Tubes burned by queue"+(qTubes?" ("+qTubes+")":""),qCogs],
               ["Tubes sold outside"+(shOutTubes?" ("+shOutTubes+")":""),shOutCogs],
               ["Used tubes"+(usedTubes?" ("+usedTubes+")":"")+" \u2014 no cost",0]].filter(x=>x[1]>0||x[0].indexOf("no cost")>=0);
   const OPEX=[["Court rental (queue)",qCourt],["Other (queue)",qOther],
-              ["Coach fees",trCoach],["Court rental (training)",trCourt],
-              ["Other (training)",trOther]].filter(x=>x[1]>0);
-  const rev=REV.reduce((a,b)=>a+b[1],0);
-  const cogs=qCogs+shOutCogs;
-  const opex=OPEX.reduce((a,b)=>a+b[1],0);
+              ["Coach fees",trCoach],["Court rental (training)",trCourt],["Other (training)",trOther]].filter(x=>x[1]>0);
+  const rev=REV.reduce((a,b)=>a+b[1],0), cogs=qCogs+shOutCogs, opex=OPEX.reduce((a,b)=>a+b[1],0);
   const gross=rev-cogs, net=gross-opex;
-  K.innerHTML='<div class="paysum">'+
-    '<div><b class="pos">'+pesos(rev)+'</b><span>revenue</span></div>'+
-    '<div><b class="neg">'+pesos(cogs)+'</b><span>cost of goods sold</span></div>'+
-    '<div><b class="'+(gross>=0?"pos":"neg")+'">'+pesos(gross)+'</b><span>gross profit</span></div>'+
-    '<div><b class="neg">'+pesos(opex)+'</b><span>operating expenses</span></div>'+
-    '<div><b class="'+(net>=0?"pos":"neg")+'">'+pesos(net)+'</b><span>net profit</span></div></div>'+
-    '<p class="hint" style="margin-top:6px">'+sess.length+' session'+(sess.length===1?"":"s")+
-    ' \u00b7 '+trCount+' training'+(trCount===1?"":"s")+
-    (rev?' \u00b7 margin '+Math.round(1000*net/rev)/10+'%':'')+'</p>';
-  const line=(k,v,tot,col)=>'<div class="shrow"><div class="sn2" style="flex:1"><b>'+esc(k)+'</b></div>'+
-    '<span class="shbar" style="flex:0 0 100px"><i style="width:'+
-      Math.min(100,Math.max(2,Math.round(100*v/Math.max(1,tot))))+'%;background:'+col+'"></i></span>'+
-    '<b class="mono" style="min-width:84px;text-align:right;color:'+col+'">'+pesos(v)+'</b></div>';
-  const tail=(label,v,col)=>'<div class="shrow" style="border-top:2px solid var(--line)">'+
-    '<div class="sn2" style="flex:1"><b>'+label+'</b></div>'+
-    '<b class="mono" style="min-width:84px;text-align:right;color:'+col+'">'+pesos(v)+'</b></div>';
-  document.getElementById("cpRev").innerHTML= REV.length
-    ? REV.sort((a,b)=>b[1]-a[1]).map(x=>line(x[0],x[1],rev,"var(--ok)")).join("")+tail("Total revenue",rev,"var(--ok)")
-    : '<p class="hint">No revenue in this period.</p>';
-  document.getElementById("cpCogs").innerHTML= cogs
-    ? COGS.map(x=>line(x[0],x[1],cogs,"var(--red)")).join("")+tail("Total COGS",cogs,"var(--red)")
-    : '<p class="hint">No tubes consumed in this period.</p>';
-  document.getElementById("cpOpex").innerHTML= OPEX.length
-    ? OPEX.sort((a,b)=>b[1]-a[1]).map(x=>line(x[0],x[1],opex,"var(--red)")).join("")+tail("Total opex",opex,"var(--red)")
-    : '<p class="hint">No operating costs in this period.</p>';
-  // ---- profit by stream ----
-  const qNet=qFees-qCourt-qShutSell-qOther;
-  const trNet=trRev-trCoach-trCourt-trOther;
+  const qNet=qFees-qCourt-qShutSell-qOther, trNet=trRev-trCoach-trCourt-trOther;
   const shNet=(qShutSell-qCogs)+(shOutRev-shOutCogs)+usedRev;
-  renderClubWaterfall([["Queue sessions",qNet],["Shuttle business",shNet],["Trainings",trNet]]);
-  // ---- funds flow (cash) ----
-  const cashIn=rev;
-  const cashOut=shBuy+opex;
-  const cash=cashIn-cashOut;
-  const stockDelta=shBuy-cogs;
+  return {sess:sess.length,trCount,REV,COGS,OPEX,rev,cogs,opex,gross,net,
+    streams:[["Queue sessions",qNet],["Trainings",trNet],["Shuttle business",shNet]],
+    shBuy,opexTot:opex};
+}
+async function loadClubPnl(range){
+  if(range){ window.__cpRange=range; if(range==="month" && !window.__cpMonth) window.__cpMonth=localYMD(new Date()).slice(0,7); }
+  const rg=window.__cpRange||"month";
+  ["W","M","A"].forEach(k=>{ const b=document.getElementById("cp"+k);
+    if(b) b.className="small"+((k==="W"&&rg==="week")||(k==="M"&&rg==="month")||(k==="A"&&rg==="all")?"":" ghost"); });
+  const K=document.getElementById("cpKpis"); if(!K) return;
+  K.innerHTML='<p class="hint">Loading\u2026</p>';
+  if(!window.__allSessions) await fillFinanceSessions();
+  if(!window.__shMissing && !SH.brands.length) await loadShuttles();
+  if(!window.__trMissing && !window.__trLoaded) await loadTrainings();
+  // cache verified payments per session once (so month-stepping doesn't refetch)
+  if(!window.__cpPayByS){
+    const sids=(window.__allSessions||[]).map(s=>s.id);
+    const map={};
+    if(sids.length){ const pr=await sFetchAll("/rest/v1/payments?session_id=in.("+sids.join(",")+")&select=session_id,amount,verified");
+      if(pr.ok) pr.rows.forEach(p=>{ if(p.verified!==false) map[p.session_id]=(map[p.session_id]||0)+(+p.amount||0); }); }
+    window.__cpPayByS=map;
+  }
+  // resolve the window + optional prior window for the delta
+  const step=document.getElementById("cpStepper");
+  let from=null,to=null,prevFrom=null,prevTo=null,label="All time";
+  if(rg==="week"){ const d=new Date(); const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day);
+    from=localYMD(d); label="This week"; if(step) step.style.display="none"; }
+  else if(rg==="month"){
+    if(step) step.style.display="flex";
+    const ym=window.__cpMonth||localYMD(new Date()).slice(0,7);
+    const [Y,M]=ym.split("-").map(Number);
+    from=ym+"-01"; to=new Date(Date.UTC(Y,M,1)).toISOString().slice(0,10);
+    const pf=new Date(Date.UTC(Y,M-2,1)); prevFrom=pf.toISOString().slice(0,10); prevTo=from;
+    label=new Date(Date.UTC(Y,M-1,1)).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+    const lbl=document.getElementById("cpMonthLbl"); if(lbl) lbl.textContent=label;
+    const nb=document.getElementById("cpNextBtn"); if(nb) nb.disabled = ym>=localYMD(new Date()).slice(0,7);
+  } else { if(step) step.style.display="none"; }
+  const P=computePnl(from,to);
+  const prev = (rg==="month" && prevFrom)? computePnl(prevFrom,prevTo) : null;
+  // ---- headline ----
+  const margin = P.rev? Math.round(1000*P.net/P.rev)/10 : 0;
+  let deltaHtml="";
+  if(prev){ const d=P.net-prev.net; const up=d>=0;
+    deltaHtml='<div class="cpdelta '+(up?"up":"down")+'">'+(up?"▲":"▼")+' '+pesos(Math.abs(d))+
+      ' vs '+new Date(prevFrom+"T00:00:00").toLocaleDateString(undefined,{month:"long"})+'</div>'; }
+  K.innerHTML=
+    '<div class="cphero">'+
+      '<div class="lbl">Net profit'+(rg==="all"?" · all time":rg==="week"?" · this week":"")+'</div>'+
+      '<div class="big '+(P.net>=0?"pos":"neg")+'">'+pesos(P.net)+'</div>'+
+      '<div class="meta"><span class="'+(P.net>=0?"pos":"neg")+'">'+(margin>=0?"▲":"▼")+' '+Math.abs(margin)+'% margin</span>'+
+        ' · '+P.sess+' session'+(P.sess===1?"":"s")+(P.trCount?' · '+P.trCount+' training'+(P.trCount===1?"":"s"):"")+'</div>'+
+      deltaHtml+
+    '</div>'+
+    '<div class="cptiles">'+
+      '<div><b class="pos">'+pesos(P.rev)+'</b><span>revenue</span></div>'+
+      '<div><b class="neg">'+pesos(P.cogs+P.opex)+'</b><span>total costs</span></div></div>';
+  // ---- where profit came from ----
+  const streams=P.streams.filter(x=>Math.abs(x[1])>0.5).sort((a,b)=>b[1]-a[1]);
+  const emoji={"Queue sessions":"🏸","Trainings":"🎓","Shuttle business":"🪶"};
+  const maxAbs=Math.max(1,...streams.map(x=>Math.abs(x[1])));
+  document.getElementById("clubWaterfall").innerHTML= streams.length
+    ? streams.map(x=>{ const pos=x[1]>=0; const col=pos?"#7cb08a":"#cf6b58";
+        return '<div class="cpstream"><span class="nm">'+(emoji[x[0]]||"")+' '+esc(x[0])+'</span>'+
+          '<span class="bar"><i style="width:'+Math.round(100*Math.abs(x[1])/maxAbs)+'%;background:'+col+'"></i></span>'+
+          '<span class="amt" style="color:'+col+'">'+pesos(x[1])+'</span></div>'; }).join("")
+    : '<p class="hint">No activity in this period.</p>';
+  // ---- detail panes (revenue / COGS / opex) ----
+  const line=(k,v,tot,col)=>'<div class="shrow"><div class="sn2" style="flex:1"><b>'+esc(k)+'</b></div>'+
+    '<span class="shbar" style="flex:0 0 100px"><i style="width:'+Math.min(100,Math.max(2,Math.round(100*v/Math.max(1,tot))))+'%;background:'+col+'"></i></span>'+
+    '<b class="mono" style="min-width:84px;text-align:right;color:'+col+'">'+pesos(v)+'</b></div>';
+  const tail=(label,v,col)=>'<div class="shrow" style="border-top:2px solid var(--line)"><div class="sn2" style="flex:1"><b>'+label+'</b></div>'+
+    '<b class="mono" style="min-width:84px;text-align:right;color:'+col+'">'+pesos(v)+'</b></div>';
+  document.getElementById("cpRev").innerHTML= P.REV.length
+    ? P.REV.sort((a,b)=>b[1]-a[1]).map(x=>line(x[0],x[1],P.rev,"var(--ok)")).join("")+tail("Total revenue",P.rev,"var(--ok)")
+    : '<p class="hint">No revenue in this period.</p>';
+  document.getElementById("cpCogs").innerHTML= P.cogs
+    ? P.COGS.map(x=>line(x[0],x[1],P.cogs,"var(--red)")).join("")+tail("Total COGS",P.cogs,"var(--red)")
+    : '<p class="hint">No tubes consumed in this period.</p>';
+  document.getElementById("cpOpex").innerHTML= P.OPEX.length
+    ? P.OPEX.sort((a,b)=>b[1]-a[1]).map(x=>line(x[0],x[1],P.opex,"var(--red)")).join("")+tail("Total opex",P.opex,"var(--red)")
+    : '<p class="hint">No operating costs in this period.</p>';
+  // ---- funds flow ----
+  const cashIn=P.rev, cashOut=P.shBuy+P.opex, cash=cashIn-cashOut, stockDelta=P.shBuy-P.cogs;
   document.getElementById("cpCash").innerHTML=
     '<div class="paysum"><div><b class="pos">'+pesos(cashIn)+'</b><span>money in</span></div>'+
     '<div><b class="neg">'+pesos(cashOut)+'</b><span>money out</span></div>'+
     '<div><b class="'+(cash>=0?"pos":"neg")+'">'+pesos(cash)+'</b><span>net cash</span></div></div>'+
-    line("Stock purchased",shBuy,Math.max(1,cashOut),"var(--red)")+
-    line("Operating expenses",opex,Math.max(1,cashOut),"var(--red)")+
-    '<p class="hint" style="margin-top:8px">Net cash of <b>'+pesos(cash)+'</b> against net profit of <b>'+pesos(net)+
+    line("Stock purchased",P.shBuy,Math.max(1,cashOut),"var(--red)")+
+    line("Operating expenses",P.opex,Math.max(1,cashOut),"var(--red)")+
+    '<p class="hint" style="margin-top:8px">Net cash of <b>'+pesos(cash)+'</b> against net profit of <b>'+pesos(P.net)+
     '</b>. The '+pesos(Math.abs(stockDelta))+' difference is stock '+
     (stockDelta>=0? 'bought but not yet sold \u2014 it sits on the shelf as value, not a loss.'
                   : 'sold from earlier purchases, so profit lands without cash going out.')+'</p>';
+}
+function cpStepMonth(dir){
+  const ym=window.__cpMonth||localYMD(new Date()).slice(0,7);
+  const [Y,M]=ym.split("-").map(Number);
+  const d=new Date(Date.UTC(Y,M-1+dir,1));
+  const next=d.toISOString().slice(0,7);
+  if(next>localYMD(new Date()).slice(0,7)) return;   // don't go past current month
+  window.__cpMonth=next; window.__cpRange="month"; loadClubPnl();
 }
 /* ================= TRAININGS ================= */
 const TR={list:[],cur:null,att:[]};
@@ -5571,7 +6128,7 @@ async function loadTrainingMetrics(range){
   let from=null;
   if(rg!=="all"){ const d=new Date();
     if(rg==="week"){ const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); } else d.setDate(1);
-    from=d.toISOString().slice(0,10); }
+    from=localYMD(d); }
   const rows=(TR.list||[]).filter(t=>!from||t.training_date>=from);
   if(!rows.length){ K.innerHTML='<p class="hint">No trainings in this period.</p>';
     document.getElementById("tmList").innerHTML=""; renderTrainingQR(); return; }
@@ -5850,7 +6407,7 @@ async function loadShuttlePnl(range){
   let from=null;
   if(rg!=="all"){ const d=new Date();
     if(rg==="week"){ const day=(d.getDay()+6)%7; d.setDate(d.getDate()-day); } else d.setDate(1);
-    from=d.toISOString().slice(0,10); }
+    from=localYMD(d); }
   const wacOf=id=>{ const b=SH.brands.find(x=>x.brand_id===id); return b? +b.wac||0 : 0; };
   const nameOf=id=>{ const b=SH.brands.find(x=>x.brand_id===id); return b? b.name : "?"; };
   const per={};                       // brand -> {tubes,rev,cogs}
@@ -5860,11 +6417,15 @@ async function loadShuttlePnl(range){
   // queue burn, from session expenses
   (window.__allSessions||[]).forEach(s=>{
     if(from && s.session_date < from) return;
-    const e=expensesOf(s); if(!e.tubes) return;
-    const b=SH.brands.find(y=>y.name===e.brand);
-    const cogs=e.tubes*(b? +b.wac||0 : 0);
-    add(per, e.brand||"(unassigned)", e.tubes, e.tubes*e.tube, cogs);
-    add(chan,"Queue sessions", e.tubes, e.tubes*e.tube, cogs);
+    const e=expensesOf(s); if(!e.tubes && !e.tubes2) return;
+    if(e.tubes){ const b=SH.brands.find(y=>y.name===e.brand);
+      const cogs=e.tubes*(b? +b.wac||0 : 0);
+      add(per, e.brand||"(unassigned)", e.tubes, e.tubes*e.tube, cogs);
+      add(chan,"Queue sessions", e.tubes, e.tubes*e.tube, cogs); }
+    if(e.tubes2){ const b2=SH.brands.find(y=>y.name===e.brand2);
+      const cogs2=e.tubes2*(b2? +b2.wac||0 : 0);
+      add(per, e.brand2||"(unassigned)", e.tubes2, e.tubes2*e.tube2, cogs2);
+      add(chan,"Queue sessions", e.tubes2, e.tubes2*e.tube2, cogs2); }
   });
   // outside sales
   SH.sales.forEach(x=>{
@@ -6044,49 +6605,58 @@ async function shAddChan(){
 }
 /* ---------- P&L + waterfall ---------- */
 function shPnl(box){
+  if(!window.__shMonth) window.__shMonth=localYMD(new Date()).slice(0,7);
+  const ym=window.__shMonth;
+  const [Y,M]=ym.split("-").map(Number);
+  const from=ym+"-01", to=new Date(Date.UTC(Y,M,1)).toISOString().slice(0,10);
+  const inM=d=> d && d>=from && d<to;
   const wacOf=id=>{ const b=SH.brands.find(x=>x.brand_id===id); return b? +b.wac||0 : 0; };
-  const rows=[];
-  SH.channels.filter(c=>c.is_internal).forEach(c=>{
-    const t=SH.queue.reduce((a,x)=>a+x.tubes,0);
-    const rev=SH.queue.reduce((a,x)=>a+x.tubes*x.price,0);
-    const cost=SH.queue.reduce((a,x)=>{ const b=SH.brands.find(y=>y.name===x.brand);
-      return a+x.tubes*(b? +b.wac||0 : 0); },0);
-    if(t) rows.push({n:c.name,internal:true,t,rev,margin:rev-cost});
-  });
-  SH.channels.filter(c=>!c.is_internal).forEach(c=>{
-    const s=SH.sales.filter(x=>x.channel_id===c.id);
-    if(!s.length) return;
-    const t=s.reduce((a,x)=>a+x.tubes,0);
-    const rev=s.reduce((a,x)=>a+x.tubes*(+x.price_per_tube),0);
-    const cost=s.reduce((a,x)=>a+x.tubes*(+x.cost_per_tube||wacOf(x.brand_id)),0);
-    rows.push({n:c.name,internal:false,t,rev,margin:rev-cost});
-  });
-  if(!rows.length){ box.innerHTML='<p class="hint">No shuttle movement yet.</p>'; return; }
-  const rev=rows.reduce((a,b)=>a+b.rev,0), marg=rows.reduce((a,b)=>a+b.margin,0);
-  const intM=rows.filter(r=>r.internal).reduce((a,b)=>a+b.margin,0), extM=marg-intM;
-  // club waterfall from real session figures
-  const sess=(window.__allSessions||[]);
-  let fees=0,court=0,shut=0,other=0;
-  sess.forEach(s=>{ const e=expensesOf(s);
-    court+=e.rate*e.hours*e.courts; shut+=e.tube*e.tubes; other+=e.other; });
-  fees=window.__fnFeesAll||0;
-  const steps=[["Fees",fees,"var(--ok)"],["Court",-court,"var(--red)"],["Shuttles",-shut,"var(--red)"],
-               ["Other",-other,"var(--red)"],["Shuttle margin (queue)",intM,"var(--ok)"],
-               ["Shuttle margin (outside)",extM,"var(--ok)"]];
-  let run=0; const bars=[];
-  steps.forEach(([l,v,c])=>{ bars.push([l,v,c,Math.min(run,run+v),Math.max(run,run+v)]); run+=v; });
-  const lo=Math.min(0,...bars.map(b=>b[3])), hi=Math.max(run,...bars.map(b=>b[4]));
-  const span=(hi-lo)||1, px=v=>Math.round(120*v/span);
-  box.innerHTML='<div class="paysum">'+
-    '<div><b>'+pesos(rev)+'</b><span>revenue</span></div>'+
-    '<div><b class="pos">'+pesos(marg)+'</b><span>gross margin</span></div>'+
-    '<div><b class="'+(rev&&marg/rev>=0.1?"pos":"")+'">'+(rev?Math.round(1000*marg/rev)/10:0)+'%</b><span>margin</span></div>'+
-    '<div><b>'+rows.reduce((a,b)=>a+b.t,0)+'</b><span>tubes moved</span></div></div>'+
-    rows.map(r=>'<div class="shrow"><div class="sn2"><b>'+esc(r.n)+'</b><span>'+r.t+' tubes · '+
-      pesos(r.rev)+'</span></div><b class="mono pos">'+pesos(r.margin)+'</b>'+
-      '<span class="shpill '+(r.internal?"int":"ok")+'">'+(r.internal?"queue":"outside")+'</span></div>').join("")+
-    '<p class="hint" style="margin-top:8px">Sessions carry shuttles as a cost; the club earns the margin back. '+
-    'Netting it out here is what stops the same money being counted twice.</p>';
+  const label=new Date(Date.UTC(Y,M-1,1)).toLocaleDateString(undefined,{month:"long",year:"numeric"});
+  const isCur = ym>=localYMD(new Date()).slice(0,7);
+  // ---- monthly flows ----
+  // bought: batches received this month (cash out)
+  const boughtRows=(SH.batches||[]).filter(b=>inM(b.received_on));
+  const boughtTubes=boughtRows.reduce((a,x)=>a+x.tubes_in,0);
+  const boughtCost =boughtRows.reduce((a,x)=>a+x.tubes_in*(+x.cost_per_tube||0),0);
+  // sold outside: sales this month (revenue realized). Margin follows the SALE month.
+  const soldRows=(SH.sales||[]).filter(s=>inM(s.sold_on));
+  const soldTubes=soldRows.reduce((a,x)=>a+x.tubes,0);
+  const soldRev  =soldRows.reduce((a,x)=>a+x.tubes*(+x.price_per_tube),0);
+  const soldCost =soldRows.reduce((a,x)=>a+x.tubes*(+x.cost_per_tube||wacOf(x.brand_id)),0);
+  // burned by queue: sessions dated this month (internal transfer — a quantity + cost basis)
+  const burnRows=(SH.queue||[]).filter(q=>inM(q.date));
+  const burnTubes=burnRows.reduce((a,x)=>a+x.tubes,0);
+  const burnRev  =burnRows.reduce((a,x)=>a+x.tubes*(+x.price||0),0);
+  const burnCost =burnRows.reduce((a,x)=>{ const b=SH.brands.find(y=>y.name===x.brand); return a+x.tubes*(b? +b.wac||0 : 0); },0);
+  // shuttle margin this month = (outside sale margin) + (queue shuttle-fee margin)
+  const margin=(soldRev-soldCost)+(burnRev-burnCost);
+  const marginTubes=soldTubes+burnTubes;
+  const avgCost = marginTubes? Math.round((soldCost+burnCost)/marginTubes) : 0;
+  const anyActivity = boughtTubes||soldTubes||burnTubes;
+  const flow=(ic,bg,ttl,sub,amt,col)=>'<div class="shflow"><span class="ic" style="background:'+bg+'">'+ic+'</span>'+
+    '<div class="tx"><b>'+ttl+'</b><span>'+sub+'</span></div><b class="amt mono" style="color:'+col+'">'+amt+'</b></div>';
+  box.innerHTML=
+    '<div class="shstep"><button class="cpnav" onclick="shStepMonth(-1)" aria-label="Previous month">‹</button>'+
+      '<div class="cpmonth">'+label+'</div>'+
+      '<button class="cpnav" onclick="shStepMonth(1)" aria-label="Next month"'+(isCur?" disabled":"")+'>›</button></div>'+
+    (anyActivity?
+      flow("➕","rgba(207,107,88,.14)","Bought in",boughtTubes+" tubes added to stock",(boughtCost?"−"+pesos(boughtCost):"—"),"#cf6b58")+
+      flow("🧾","rgba(124,176,138,.14)","Sold outside",soldTubes+" tubes sold",(soldRev?"+"+pesos(soldRev):"—"),"#7cb08a")+
+      flow("🏸","rgba(139,148,140,.14)","Burned by queue",burnTubes+" tubes used in sessions",burnTubes+" tubes","#8b948c")
+      : '<p class="hint" style="text-align:center;padding:14px 0">No shuttle activity in '+label+'.</p>')+
+    (marginTubes?
+      '<div class="shmargin"><div class="lbl">Shuttle margin · '+label.split(" ")[0]+'</div>'+
+        '<div class="big '+(margin>=0?"pos":"neg")+'">'+(margin>=0?"+":"")+pesos(margin)+'</div>'+
+        '<div class="sub">on '+soldTubes+' sold + '+burnTubes+' burned'+(avgCost?" · avg cost "+pesos(avgCost)+"/tube":"")+'</div></div>'
+      : '')+
+    '<p class="hint" style="margin-top:10px">Margin follows the month a tube is <b>sold or burned</b> — not when it was bought. Buying stock is cash out, shown separately.</p>';
+}
+function shStepMonth(dir){
+  const ym=window.__shMonth||localYMD(new Date()).slice(0,7);
+  const [Y,M]=ym.split("-").map(Number);
+  const next=new Date(Date.UTC(Y,M-1+dir,1)).toISOString().slice(0,7);
+  if(next>localYMD(new Date()).slice(0,7)) return;
+  window.__shMonth=next; renderShuttles();
 }
 /* ---------- per-player balances ---------- */
 async function loadBalances(keepPage){
@@ -6098,24 +6668,36 @@ async function loadBalances(keepPage){
     document.getElementById("balSummary").innerHTML=""; return; }
   const ids=feeSess.map(s=>s.id);
   const [rr,pp]=await Promise.all([
-    sFetch("/rest/v1/session_players?session_id=in.("+ids.join(",")+
-      ")&select=session_id,profile_id,profiles!session_players_profile_id_fkey(reclub_name,full_name)").catch(()=>null),
-    sFetch("/rest/v1/payments?session_id=in.("+ids.join(",")+")&select=session_id,profile_id,guest_name,amount,verified").catch(()=>null)]);
-  const roster=(rr&&rr.ok)? await rr.json():[];
-  const pays=(pp&&pp.ok)? await pp.json():[];
+    sFetchAll("/rest/v1/session_players?session_id=in.("+ids.join(",")+
+      ")&select=session_id,profile_id,profiles!session_players_profile_id_fkey(reclub_name,full_name)"),
+    sFetchAll("/rest/v1/payments?session_id=in.("+ids.join(",")+")&select=session_id,profile_id,guest_name,amount,verified")]);
+  const roster=rr.ok? rr.rows:[];
+  const pays=pp.ok? pp.rows:[];
   const feeBy={}; feeSess.forEach(s=>feeBy[s.id]=feeOf(s));
+  const dateBy={}, titleBy={}; feeSess.forEach(s=>{ dateBy[s.id]=s.session_date; titleBy[s.id]=s.title||"Session"; });
+  // Classify each profile's fee-sessions: a VERIFIED payment > 0 = paid,
+  // a verified ₱0 payment = waived (comped — not owed, not collected).
+  const paidSess={}, waivedSess={};
+  pays.forEach(p=>{ if(p.verified && p.profile_id){
+    const m = Number(p.amount)>0 ? paidSess : waivedSess;
+    (m[p.profile_id]=m[p.profile_id]||new Set()).add(p.session_id);
+  }});
   const who={};
   roster.forEach(r=>{
     if(!r.profile_id) return;
     const nm=(r.profiles&&(r.profiles.reclub_name||r.profiles.full_name))||"Player";
-    who[r.profile_id]=who[r.profile_id]||{name:nm,owed:0,spent:0,sessions:0,unpaid:0};
-    who[r.profile_id].owed+=feeBy[r.session_id]||0;
+    who[r.profile_id]=who[r.profile_id]||{name:nm,owed:0,spent:0,sessions:0,unpaid:0,ledger:[]};
+    const fee=feeBy[r.session_id]||0;
+    const waived=waivedSess[r.profile_id] && waivedSess[r.profile_id].has(r.session_id);
+    if(!waived) who[r.profile_id].owed+=fee;   // waived players don't owe this session
     who[r.profile_id].sessions++;
+    const covered=paidSess[r.profile_id] && paidSess[r.profile_id].has(r.session_id);
+    who[r.profile_id].ledger.push({sid:r.session_id, date:dateBy[r.session_id]||"", title:titleBy[r.session_id]||"Session", fee, paid:!!covered, waived:!!waived});
   });
   pays.forEach(p=>{
     if(!p.verified) return;
     const key=p.profile_id||("guest:"+(p.guest_name||"Walk-in"));
-    who[key]=who[key]||{name:p.guest_name||"Walk-in",owed:0,spent:0,sessions:0,unpaid:0,guest:!p.profile_id};
+    who[key]=who[key]||{name:p.guest_name||"Walk-in",owed:0,spent:0,sessions:0,unpaid:0,guest:!p.profile_id,ledger:[]};
     who[key].spent+=Number(p.amount||0);
   });
   Object.values(who).forEach(x=>{ x.balance=Math.max(0,x.owed-x.spent);
@@ -6124,6 +6706,41 @@ async function loadBalances(keepPage){
   renderBalances(keepPage!==false);
 }
 const LIST_PAGE=15;
+/* Statement of Account: tap a player in Balances -> dated ledger of their
+   fee-sessions, unpaid on top, newest first. Reads x.ledger built in loadBalances. */
+function openSOA(x){
+  let ov=document.getElementById("soaModal");
+  if(!ov){
+    ov=document.createElement("div"); ov.className="overlay"; ov.id="soaModal";
+    ov.innerHTML='<div class="modal" style="max-width:500px">'+
+      '<h3 style="margin:0 0 4px">📄 Statement of Account</h3>'+
+      '<div id="soaBody"></div>'+
+      '<button class="wide" style="margin-top:14px" onclick="closeModal(\'soaModal\')">Close</button></div>';
+    document.body.appendChild(ov);
+    ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("soaModal"); });
+  }
+  const rows=[...(x.ledger||[])].sort((a,b)=>
+    (a.paid||a.waived?1:0)-(b.paid||b.waived?1:0) ||   // unpaid first
+    String(b.date).localeCompare(String(a.date))       // then newest first
+  );
+  const due=rows.filter(r=>!r.paid && !r.waived).reduce((a,r)=>a+r.fee,0);
+  const fmt=d=>{ if(!d) return "—"; const dt=new Date(d+"T00:00:00");
+    return isNaN(dt)? d : dt.toLocaleDateString(undefined,{year:"numeric",month:"short",day:"numeric"}); };
+  const stLabel=r=> r.waived?"WAIVED" : r.paid?"PAID":"UNPAID";
+  const stCls=r=> r.waived?"waived" : r.paid?"paid":"unpaid";
+  document.getElementById("soaBody").innerHTML=
+    '<div class="soahead"><span class="who">'+esc(x.name)+'</span>'+
+      '<span class="bal"><b class="'+(due>0?"neg":"pos")+'">'+(due>0?pesos(due):"Settled")+'</b>'+
+      '<span>outstanding</span></span></div>'+
+    (rows.length? rows.map(r=>
+      '<div class="soarow"><span class="dt">'+fmt(r.date)+'</span>'+
+      '<span class="ti">'+esc(r.title)+'</span>'+
+      '<span class="amt '+(r.paid&&!r.waived?"":"neg")+'">'+(r.waived?"₱0":pesos(r.fee))+'</span>'+
+      '<span class="st '+stCls(r)+'">'+stLabel(r)+'</span></div>').join("")
+      : '<p class="hint">No fee sessions on record.</p>')+
+    (due>0? '<div class="soafoot"><span>Total unpaid ('+rows.filter(r=>!r.paid&&!r.waived).length+' session'+(rows.filter(r=>!r.paid&&!r.waived).length===1?"":"s")+')</span><b>'+pesos(due)+'</b></div>':'');
+  openModal("soaModal");
+}
 let balPageNo=0;
 function balPage(d){ balPageNo=Math.max(0,balPageNo+d); renderBalances(true); }
 function renderBalances(keepPage){
@@ -6157,6 +6774,10 @@ function renderBalances(keepPage){
   list.innerHTML="";
   all.slice(balPageNo*LIST_PAGE,(balPageNo+1)*LIST_PAGE).forEach(x=>{
     const d=document.createElement("div"); d.className="balrow";
+    if(!x.guest && x.ledger && x.ledger.length){
+      d.classList.add("tap");
+      d.onclick=()=>openSOA(x);
+    }
     const dot=document.createElement("span");
     dot.className="paydot "+(x.balance>0?"unpaid":"ok"); dot.style.cursor="default";
     dot.title=x.balance>0? "Has an outstanding balance":"All settled";
@@ -6193,7 +6814,7 @@ function anBars(vals,labels,colFn){
 function anRange(){
   const days=+((document.getElementById("anRange")||{}).value)||0;
   if(!days) return null;
-  const d=new Date(); d.setDate(d.getDate()-days); return d.toISOString().slice(0,10);
+  const d=new Date(); d.setDate(d.getDate()-days); return localYMD(d);
 }
 async function anCore(){                       // sessions + matches + roster, cached per refresh
   const from=anRange();
@@ -6205,11 +6826,11 @@ async function anCore(){                       // sessions + matches + roster, c
   if(!sess.length) return {sess:[],ms:[],roster:[]};
   const ids=sess.map(s=>s.id);
   const [mr,rr]=await Promise.all([
-    sFetch("/rest/v1/matches?session_id=in.("+ids.join(",")+
-      ")&select=id,session_id,match_no,court_name,t1,t2,t1n,t2n,s1,s2,started_at,ended_at,waits&limit=4000").catch(()=>null),
-    sFetch("/rest/v1/session_players?session_id=in.("+ids.join(",")+
-      ")&select=session_id,profile_id,time_in,profiles!session_players_profile_id_fkey(reclub_name,full_name)").catch(()=>null)]);
-  return {sess, ms:(mr&&mr.ok)?await mr.json():[], roster:(rr&&rr.ok)?await rr.json():[]};
+    sFetchAll("/rest/v1/matches?session_id=in.("+ids.join(",")+
+      ")&select=id,session_id,match_no,court_name,t1,t2,t1n,t2n,s1,s2,started_at,ended_at,waits"),
+    sFetchAll("/rest/v1/session_players?session_id=in.("+ids.join(",")+
+      ")&select=session_id,profile_id,time_in,profiles!session_players_profile_id_fkey(reclub_name,full_name)")]);
+  return {sess, ms:mr.ok?mr.rows:[], roster:rr.ok?rr.rows:[]};
 }
 /* ---------- OPERATIONS ---------- */
 async function loadOps(){
@@ -6367,8 +6988,8 @@ async function loadRetention(){
   }
   lock.style.display="none"; body.style.display="block";
   const dateOf={}; all.forEach(s=>dateOf[s.id]=s.session_date);
-  const rr=await sFetch("/rest/v1/session_players?select=session_id,profile_id&limit=8000").catch(()=>null);
-  const roster=(rr&&rr.ok)? await rr.json():[];
+  const rr=await sFetchAll("/rest/v1/session_players?select=session_id,profile_id");
+  const roster=rr.ok? rr.rows:[];
   const byP={};
   roster.forEach(r=>{ if(!r.profile_id) return;
     (byP[r.profile_id]=byP[r.profile_id]||[]).push(dateOf[r.session_id]); });
@@ -6383,8 +7004,8 @@ async function loadRetention(){
     '<div class="aaxis"><span>1st</span><span>2nd</span><span>3rd</span><span>4th</span><span>5th</span><span>6th</span></div>'+
     '<p class="hint">'+base+' players played a first session. The steepest drop is where a bad first night costs you a member.</p>';
   // quality vs retention
-  const qr=await sFetch("/rest/v1/match_quality?select=session_id,t1,t2,quality&limit=4000").catch(()=>null);
-  const mq=(qr&&qr.ok)? await qr.json():[];
+  const qr=await sFetchAll("/rest/v1/match_quality?select=session_id,t1,t2,quality");
+  const mq=qr.ok? qr.rows:[];
   const early={};
   mq.forEach(m=>{ [...(m.t1||[]),...(m.t2||[])].forEach(id=>{ if(!id) return;
     const dates=byP[id]; if(!dates) return;
@@ -6447,12 +7068,16 @@ async function loadPlayerInsights(){
   list.innerHTML='<p class="hint">Loading…</p>';
   const days=+((document.getElementById("anRange")||{}).value)||0;
   let from=null;
-  if(days){ const d=new Date(); d.setDate(d.getDate()-days); from=d.toISOString().slice(0,10); }
-  const r=await sFetch("/rest/v1/match_quality?select=*&order=play_date.desc,match_no.desc&limit=1500"+
-    (from?"&play_date=gte."+from:"")).catch(()=>null);
-  if(!r||!r.ok){ list.innerHTML='<p class="hint">Run skill-model.sql to enable player insights.</p>';
+  if(days){ const d=new Date(); d.setDate(d.getDate()-days); from=localYMD(d); }
+  // Season-consistent: gate to hof_epoch so player counts here match the nemesis
+  // card, skill rating, and Hall of Fame (all read the epoch-gated data).
+  const ep=await loadEpoch();
+  if(ep && (!from || ep>from)) from=ep;
+  const r=await sFetchAll("/rest/v1/match_quality?select=*&order=play_date.desc,match_no.desc"+
+    (from?"&play_date=gte."+from:""));
+  if(!r.ok){ list.innerHTML='<p class="hint">Run skill-model.sql to enable player insights.</p>';
     document.getElementById("piAttention").innerHTML=""; return; }
-  const ms=await r.json();
+  const ms=r.rows;
   if(!ms.length){ list.innerHTML='<p class="hint">No scored matches in this range.</p>';
     document.getElementById("piAttention").innerHTML=""; return; }
   // aggregate per player
@@ -6530,9 +7155,24 @@ function renderPiList(keep){
     '<div style="text-align:right"><b style="color:'+qColor(p.avgQ)+'">'+p.avgQ+'</b>'+
     '<div class="hint" style="font-size:10px">match quality</div></div></div>').join("");
 }
-function openPlayerCard(id){
-  const p=(window.__pi||{})[id]; const box=document.getElementById("piDetail");
-  if(!p||!box) return;
+async function openPlayerCard(id){
+  // __pi is built by the Player Insights pane; if we're opening from elsewhere
+  // (e.g. an attendee chip in Club & Demand) it may be empty — load it first.
+  if(!window.__pi || !window.__pi[id]){
+    try{ await loadPlayerInsights(); }catch(e){}
+  }
+  const p=(window.__pi||{})[id];
+  if(!p){ toast("No scored matches for this player yet"); return; }
+  const html=playerCardHTML(p,id);
+  let ov=document.getElementById("pcModal");
+  if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="pcModal";
+    ov.innerHTML='<div class="modal" style="max-width:640px"><div id="pcBody"></div>'+
+      '<button class="wide" style="margin-top:12px" onclick="closeModal(\'pcModal\')">Close</button></div>';
+    document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("pcModal"); }); }
+  document.getElementById("pcBody").innerHTML=html;
+  openModal("pcModal");
+}
+function playerCardHTML(p,id){
   const best=Object.values(p.partners).filter(x=>x.g>=3).sort((a,b)=>(b.w/b.g)-(a.w/a.g))[0];
   const most=Object.values(p.partners).sort((a,b)=>b.g-a.g)[0];
   const nem=Object.values(p.rivals).filter(x=>x.g>=3).sort((a,b)=>(a.w/a.g)-(b.w/b.g))[0];
@@ -6541,8 +7181,7 @@ function openPlayerCard(id){
   const line=(ico,t,s,v,col)=>'<div class="crow"><div class="cico">'+ico+'</div><div class="cmain"><b>'+
     esc(t)+'</b><span>'+esc(s)+'</span></div><div class="cval"'+(col?' style="color:'+col+'"':'')+'>'+esc(v)+'</div></div>';
   let html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">'+
-    '<h3 style="margin:0;flex:1">'+esc(p.name)+'</h3>'+
-    '<button class="piback" onclick="document.getElementById(\'piDetail\').style.display=\'none\'">✕ Close</button></div>'+
+    '<h3 style="margin:0;flex:1">'+esc(p.name)+'</h3></div>'+
     '<p class="hint">'+p.g+' games across '+p.nSess+' session'+(p.nSess===1?"":"s")+
     (r&&r.games?' · skill '+(r.mu>=0?"+":"")+r.mu.toFixed(2)+' ('+(r.sigma<=0.35?"settled":r.sigma<=0.55?"learning":"new")+')':'')+'</p>';
   if(p.lopPct>=40) html+='<div class="piflag">⚠️ <b>'+p.lopPct+'% of their matches ended lopsided.</b> '+
@@ -6572,8 +7211,7 @@ function openPlayerCard(id){
       '<td class="hint">'+esc(m.vs||"—")+'</td>'+
       '<td class="mono">'+m.s1+'–'+m.s2+'</td><td class="mono">'+(m.wait||0)+'m</td>'+
       '<td class="mono" style="color:'+qColor(m.q)+'">'+m.q+'</td></tr>').join("")+'</table>';
-  box.innerHTML=html; box.style.display="block";
-  box.scrollIntoView({behavior:"smooth",block:"start"});
+  return html;
 }
 /* ---------- Session Analytics ---------- */
 async function fillSessionAnalytics(){
@@ -6670,12 +7308,12 @@ async function loadQuality(){
   k.innerHTML='<p class="hint">Loading…</p>';
   const days=+((document.getElementById("anRange")||{}).value)||0;
   let from=null;
-  if(days){ const d=new Date(); d.setDate(d.getDate()-days); from=d.toISOString().slice(0,10); }
-  const r=await sFetch("/rest/v1/match_quality?select=*&order=play_date.desc,match_no.desc&limit=800"+
-    (from?"&play_date=gte."+from:"")).catch(()=>null);
-  if(!r||!r.ok){ k.innerHTML='<p class="hint">Run skill-model.sql to enable match quality.</p>';
+  if(days){ const d=new Date(); d.setDate(d.getDate()-days); from=localYMD(d); }
+  const r=await sFetchAll("/rest/v1/match_quality?select=*&order=play_date.desc,match_no.desc"+
+    (from?"&play_date=gte."+from:""));
+  if(!r.ok){ k.innerHTML='<p class="hint">Run skill-model.sql to enable match quality.</p>';
     document.getElementById("qlBars").innerHTML=""; document.getElementById("qlLists").innerHTML=""; return; }
-  const rows=await r.json();
+  const rows=r.rows;
   if(!rows.length){ k.innerHTML='<p class="hint">No scored matches in this range yet.</p>'; return; }
   const avg=Math.round(rows.reduce((a,b)=>a+b.quality,0)/rows.length);
   const great=rows.filter(x=>x.quality>=70).length, poor=rows.filter(x=>x.quality<45).length;
@@ -6798,8 +7436,8 @@ function rtUpdate(t1,t2,win1,playDate,matchId,out){
   return rows;
 }
 async function rtLoad(){
-  const r=await sFetch("/rest/v1/player_rating?select=profile_id,mu,sigma,games,last_played&limit=2000").catch(()=>null);
-  if(!r||!r.ok){
+  const r=await sFetchAll("/rest/v1/player_rating?select=profile_id,mu,sigma,games,last_played");
+  if(!r.ok){
     window.__rtMissing=true;
     if(r){ const j=await r.json().catch(()=>({})); window.__rtLastError=j.message||("HTTP "+r.status); }
     return false; }
@@ -6865,9 +7503,9 @@ async function rtBackfill(){
   if(!await uiConfirm("Rebuild every player's rating from match history?\nThis replays all recorded matches in order. Nothing is deleted.",
     {title:"\uD83E\uDDE0 Rebuild skill model",ok:"Rebuild"})) return;
   toast("Reading match history\u2026");
-  const r=await sFetch("/rest/v1/matches?select=id,session_id,t1,t2,s1,s2,ended_at&order=ended_at.asc&limit=5000").catch(()=>null);
-  if(!r||!r.ok) return toast("Could not read matches");
-  const ms=await r.json();
+  const r=await sFetchAll("/rest/v1/matches?select=id,session_id,t1,t2,s1,s2,ended_at&order=ended_at.asc");
+  if(!r.ok) return toast("Could not read matches");
+  const ms=r.rows;
   const sr=await sFetch("/rest/v1/sessions?select=id,session_date").catch(()=>null);
   const sd={}; if(sr&&sr.ok) (await sr.json()).forEach(s=>sd[s.id]=s.session_date);
   window.__RT={}; const rows=[]; let used=0;
@@ -6927,50 +7565,98 @@ async function loadPaymentTracker(){
   window.__ptFee=fee; window.__ptSid=sid;
   // everyone who joined the session is charged — scanning the QR is the check-in
   const rows=roster.map(r=>({id:r.profile_id,
-      name:(r.profiles&&(r.profiles.reclub_name||r.profiles.full_name))||"Player", pay:byId[r.profile_id]||null}))
-    .concat(guests.map(g=>({id:null,name:g.guest_name||"Walk-in",pay:g,guest:true})));
-  const paid=rows.filter(x=>x.pay&&x.pay.verified).length;
-  const collected=rows.filter(x=>x.pay&&x.pay.verified).reduce((a,b)=>a+Number(b.pay.amount||fee),0);
-  window.__fnCollected=collected; window.__fnExpected=rows.length*fee;
+      name:(r.profiles&&(r.profiles.reclub_name||r.profiles.full_name))||"Player",
+      full:(r.profiles&&r.profiles.full_name)||"", pay:byId[r.profile_id]||null}))
+    .concat(guests.map(g=>({id:null,name:g.guest_name||"Walk-in",full:"",pay:g,guest:true})));
+  // Disambiguation: when a nickname appears more than once in THIS roster (e.g. two
+  // "Mark"s), flag those rows so the render shows a distinguishing detail from full_name.
+  const nickCount={}; rows.forEach(x=>{ const k=x.name.toLowerCase(); nickCount[k]=(nickCount[k]||0)+1; });
+  rows.forEach(x=>{
+    if(nickCount[x.name.toLowerCase()]>1 && x.full){
+      // show the part of the full name that isn't already the nickname (e.g. "Mark Donkor" -> "Donkor")
+      const extra=x.full.replace(new RegExp("^\\s*"+x.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*","i"),"").trim();
+      x.disamb = extra || x.full;   // fall back to the whole full name if nickname isn't a prefix
+    }
+  });
+  // classify: paid (verified >0), waived (verified ₱0 = comped), unpaid
+  const paidRows  = rows.filter(x=>payState(x.pay)==="paid");
+  const waivedRows= rows.filter(x=>payState(x.pay)==="waived");
+  const unpaidRows= rows.filter(x=>payState(x.pay)==="unpaid");
+  const collected = paidRows.reduce((a,b)=>a+Number(b.pay.amount||0),0);
+  const billable  = rows.length - waivedRows.length;         // waived comped out
+  const expected  = billable*fee;
+  const outstanding = Math.max(0, expected-collected);
+  const pct = expected>0? Math.round(100*collected/expected) : 100;
+  const done = unpaidRows.length===0;
+  window.__fnCollected=collected; window.__fnExpected=expected;
   if(document.getElementById("exTotal")) calcFinance();
-  sum.innerHTML='<div class="paysum">'+
-    '<div><b style="color:var(--ok)">'+paid+'</b><span>collected</span></div>'+
-    '<div><b style="color:var(--red)">'+(rows.length-paid)+'</b><span>uncollected</span></div>'+
-    '<div><b>'+pesos(collected)+'</b><span>of '+pesos(rows.length*fee)+'</span></div></div>';
-  if(!rows.length){ list.innerHTML='<p class="hint">Nobody has joined this session yet.</p>'; return; }
+  sum.innerHTML=
+    '<div class="cobar"><i style="width:'+Math.min(100,pct)+'%"></i></div>'+
+    '<div class="corow"><span><b class="pos">'+pesos(collected)+'</b> <span class="dim">of '+pesos(expected)+'</span></span>'+
+      '<span class="dim">'+pct+'% · '+paidRows.length+' of '+billable+' paid</span></div>'+
+    '<div class="cotiles">'+
+      '<div><b class="'+(outstanding>0?"neg":"pos")+'">'+pesos(outstanding)+'</b><span>outstanding</span></div>'+
+      '<div><b>'+unpaidRows.length+'</b><span>haven\u2019t paid</span></div></div>'+
+    (waivedRows.length? '<div class="cowaived">🎁 '+waivedRows.length+' waived <span class="dim">· '+waivedRows.map(x=>esc(x.name)).join(", ")+'</span></div>':'')+
+    (unpaidRows.length? '<div class="colabel">Still owe ('+unpaidRows.length+')</div>'+
+      '<div class="cochips">'+unpaidRows.map(x=>'<span class="cochip">'+esc(x.name)+'</span>').join("")+'</div>':'')+
+    '<div class="cobanner '+(done?"ok":"warn")+'">'+(done
+      ? '✅ <b>Fully collected</b> — this session is settled.'
+      : '<b>Not done yet.</b> '+unpaidRows.length+' still owe '+pesos(outstanding)+'. Match their Reclub payments below.')+
+    '</div>';
+  if(!rows.length){ list.innerHTML='<p class="hint">Nobody has joined this session yet.</p>'; sum.innerHTML='<p class="hint">Nobody has joined this session yet.</p>'; return; }
   window.__ptRows=rows.slice();
   renderCollectionPage();
 }
+/* payment state for a session_players/payments pairing */
+function payState(pay){ if(!pay||!pay.verified) return "unpaid"; return Number(pay.amount)>0?"paid":"waived"; }
 let ptPageNo=0;
 function ptPage(d){ ptPageNo=Math.max(0,ptPageNo+d); renderCollectionPage(); }
+function ptFilter(){ renderCollectionPage(); }
 function renderCollectionPage(){
   const list=document.getElementById("ptList"); if(!list) return;
-  const rows=(window.__ptRows||[]).slice();
+  let rows=(window.__ptRows||[]).slice();
   const fee=window.__ptFee||0;
+  const q=((document.getElementById("ptSearch")||{}).value||"").toLowerCase().trim();
   list.innerHTML="";
   rows.sort((a,b)=>{
     const rank=x=> x.pay&&x.pay.verified?1:0;
     return rank(a)-rank(b) || a.name.localeCompare(b.name);
   });
+  if(q) rows=rows.filter(x=>x.name.toLowerCase().includes(q) || (x.full&&x.full.toLowerCase().includes(q)));   // live search (nickname OR full name)
+  const searching=!!q;
   const pages=Math.max(1,Math.ceil(rows.length/LIST_PAGE));
   if(ptPageNo>=pages) ptPageNo=pages-1;
   const pager=document.getElementById("ptPager");
   if(pager){
-    pager.style.display= rows.length>LIST_PAGE? "flex":"none";
-    document.getElementById("ptPageLbl").textContent="Page "+(ptPageNo+1)+" of "+pages+" · "+rows.length+" players";
-    document.getElementById("ptPrev").disabled=ptPageNo<=0;
-    document.getElementById("ptNext").disabled=ptPageNo>=pages-1;
+    // while searching, show every match (no paging) so the person you want is always visible
+    pager.style.display= (!searching && rows.length>LIST_PAGE)? "flex":"none";
+    if(!searching){
+      document.getElementById("ptPageLbl").textContent="Page "+(ptPageNo+1)+" of "+pages+" · "+rows.length+" players";
+      document.getElementById("ptPrev").disabled=ptPageNo<=0;
+      document.getElementById("ptNext").disabled=ptPageNo>=pages-1;
+    }
   }
-  rows.slice(ptPageNo*LIST_PAGE,(ptPageNo+1)*LIST_PAGE).forEach(x=>{
-    const state = x.pay&&x.pay.verified? "ok":"unpaid";
+  if(!rows.length){ list.innerHTML='<p class="hint">No one matches “'+esc(q)+'”.</p>'; return; }
+  const shown = searching ? rows : rows.slice(ptPageNo*LIST_PAGE,(ptPageNo+1)*LIST_PAGE);
+  shown.forEach(x=>{
+    const st=payState(x.pay);
     const div=document.createElement("div"); div.className="payrow";
-    const dot=document.createElement("span"); dot.className="paydot "+state;
-    dot.title = state==="ok"? "Collected — tap to undo" : "Tap to mark as collected";
-    dot.onclick=()=>togglePaid(x);
+    const dot=document.createElement("span"); dot.className="paydot "+(st==="paid"?"ok":st==="waived"?"waived":"unpaid");
+    dot.title = st==="paid"? "Collected — tap to undo" : st==="waived"? "Waived — tap to restore the fee" : "Tap to mark as collected";
+    dot.onclick = st==="waived"? (()=>unwaivePlayer(x)) : (()=>togglePaid(x));
     const mid=document.createElement("div"); mid.className="pm";
-    mid.innerHTML='<b>'+esc(x.name)+(x.guest?' <span class="hint">· walk-in</span>':'')+'</b><span>'+
-      (state==="ok"? "Collected"+(x.pay.verified_at?" · "+String(x.pay.verified_at).slice(0,10):"") : "Not yet collected")+'</span>';
+    const statusTxt = st==="paid"? ("Collected"+(x.pay.verified_at?" · "+String(x.pay.verified_at).slice(0,10):"")) :
+                      st==="waived"? "Waived · comped this session" : "Not yet collected";
+    mid.innerHTML='<b>'+esc(x.name)+
+      (x.disamb?' <span class="pdisamb">· '+esc(x.disamb)+'</span>':'')+
+      (x.guest?' <span class="hint">· walk-in</span>':'')+'</b><span>'+statusTxt+'</span>';
     div.append(dot,mid);
+    if(st==="unpaid"){
+      const w=document.createElement("button"); w.className="waivebtn"; w.textContent="Waive";
+      w.onclick=(e)=>{ e.stopPropagation(); waivePlayer(x); };
+      div.appendChild(w);
+    }
     list.appendChild(div);
   });
 }
@@ -7002,6 +7688,32 @@ async function togglePaid(x){
   }
   if(!r||!r.ok){ toast("Could not update payment"); return; }
   toast(nowVerified? "✅ "+x.name+" marked collected" : x.name+" set back to uncollected");
+  loadPaymentTracker(); loadBalances(true);
+}
+async function waivePlayer(x){
+  const sid=window.__ptSid, fee=window.__ptFee;
+  if(!await uiConfirm("Waive "+x.name+"\u2019s "+pesos(fee)+" fee for this session?\nThey won\u2019t be counted as owing.",
+      {title:"🎁 Waive fee",ok:"Waive"})) return;
+  let r;
+  if(x.pay){   // existing row -> convert to a ₱0 verified (waived) record
+    r=await sFetch("/rest/v1/payments?id=eq."+x.pay.id,{method:"PATCH",body:{
+      amount:0, verified:true, verified_by:auth.uid, verified_at:new Date().toISOString()}}).catch(()=>null);
+  }else{
+    r=await sFetch("/rest/v1/payments",{method:"POST",body:[{session_id:sid,profile_id:x.id,
+      guest_name:x.guest?x.name:"", amount:0, verified:true, verified_by:auth.uid,
+      verified_at:new Date().toISOString()}]}).catch(()=>null);
+  }
+  if(!r||!r.ok){ toast("Could not waive the fee"); return; }
+  toast("🎁 "+x.name+"\u2019s fee waived");
+  loadPaymentTracker(); loadBalances(true);
+}
+async function unwaivePlayer(x){
+  if(!x.pay) return;
+  if(!await uiConfirm("Remove the waiver for "+x.name+"?\nThey\u2019ll go back to owing the fee.",
+      {title:"Undo waiver",ok:"Undo"})) return;
+  const r=await sFetch("/rest/v1/payments?id=eq."+x.pay.id,{method:"DELETE"}).catch(()=>null);
+  if(!r||!r.ok){ toast("Could not undo the waiver"); return; }
+  toast(x.name+"\u2019s waiver removed");
   loadPaymentTracker(); loadBalances(true);
 }
 async function addGuestPayment(){
@@ -7046,8 +7758,10 @@ async function saveClubNote(){
 function renderMoney(){ fillFinanceSessions(); loadShuttles(); mnShow(window.__mnPane||"sess"); }
 function expensesOf(s){ const e=(s&&s.settings&&s.settings.expenses)||{}; return {
   brand:e.brand||"", rate:+e.rate||0, hours:+e.hours||0, courts:+e.courts||0,
-  tube:+e.tube||0, tubes:+e.tubes||0, otherName:e.otherName||"", other:+e.other||0 }; }
-function expenseTotal(e){ return (e.rate*e.hours*e.courts)+(e.tube*e.tubes)+e.other; }
+  tube:+e.tube||0, tubes:+e.tubes||0,
+  brand2:e.brand2||"", tube2:+e.tube2||0, tubes2:+e.tubes2||0,
+  otherName:e.otherName||"", other:+e.other||0 }; }
+function expenseTotal(e){ return (e.rate*e.hours*e.courts)+(e.tube*e.tubes)+((+e.tube2||0)*(+e.tubes2||0))+e.other; }
 async function fillFinanceSessions(){
   const sel=document.getElementById("fnSession"); if(!sel) return;
   const r=await sFetch("/rest/v1/sessions?select=id,title,session_date,status,settings&order=session_date.desc&limit=60").catch(()=>null);
@@ -7074,6 +7788,12 @@ async function loadSessionFinance(){
   document.getElementById("exTube").value=e.tube||"";
   const eb=document.getElementById("exBrand"); if(eb) eb.value=e.brand||"";
   document.getElementById("exTubes").value=e.tubes||"";
+  if(document.getElementById("exBrand2")){ document.getElementById("exBrand2").value=e.brand2||""; }
+  if(document.getElementById("exTube2")){ document.getElementById("exTube2").value=e.tube2||""; }
+  if(document.getElementById("exTubes2")){ document.getElementById("exTubes2").value=e.tubes2||""; }
+  { const has2=!!(e.brand2||e.tubes2); const w=document.getElementById("exBrand2Wrap"),
+      t=document.getElementById("exBrand2Toggle");
+    if(w) w.style.display=has2?"block":"none"; if(t) t.style.display=has2?"none":""; }
   document.getElementById("exOtherName").value=e.otherName||"";
   document.getElementById("exOther").value=e.other||"";
   window.__ptSid=sid; window.__ptFee=feeOf(s);
@@ -7087,14 +7807,19 @@ function readExpenseInputs(){
     courts:+document.getElementById("exCourts").value||0,
     tube:+document.getElementById("exTube").value||0,
     tubes:+document.getElementById("exTubes").value||0,
+    brand2:(document.getElementById("exBrand2")||{}).value||"",
+    tube2:+((document.getElementById("exTube2")||{}).value)||0,
+    tubes2:+((document.getElementById("exTubes2")||{}).value)||0,
     otherName:document.getElementById("exOtherName").value||"",
     other:+document.getElementById("exOther").value||0};
 }
 function calcFinance(){
   const e=readExpenseInputs();
-  const court=e.rate*e.hours*e.courts, shut=e.tube*e.tubes, tot=court+shut+e.other;
+  const court=e.rate*e.hours*e.courts, shut=e.tube*e.tubes, shut2=(e.tube2||0)*(e.tubes2||0);
+  const tot=court+shut+shut2+e.other;
   document.getElementById("exCourtTotal").textContent=pesos(court);
   document.getElementById("exShuttleTotal").textContent=pesos(shut);
+  const s2=document.getElementById("exShuttle2Total"); if(s2) s2.textContent=pesos(shut2);
   document.getElementById("exTotal").textContent=pesos(tot);
   const collected=window.__fnCollected||0, expected=window.__fnExpected||0;
   const net=collected-tot, pot=expected-tot;
@@ -7137,10 +7862,10 @@ async function loadPeriod(range){
   if(!sess.length){ sum.innerHTML='<p class="hint">No sessions in this period.</p>'; list.innerHTML=""; return; }
   const ids=sess.map(s=>s.id);
   const [pr,rr]=await Promise.all([
-    sFetch("/rest/v1/payments?session_id=in.("+ids.join(",")+")&select=session_id,profile_id,amount,verified").catch(()=>null),
-    sFetch("/rest/v1/session_players?session_id=in.("+ids.join(",")+")&select=session_id,profile_id").catch(()=>null)]);
-  const pays=(pr&&pr.ok)? await pr.json() : [];
-  const roster=(rr&&rr.ok)? await rr.json() : [];
+    sFetchAll("/rest/v1/payments?session_id=in.("+ids.join(",")+")&select=session_id,profile_id,amount,verified"),
+    sFetchAll("/rest/v1/session_players?session_id=in.("+ids.join(",")+")&select=session_id,profile_id")]);
+  const pays=pr.ok? pr.rows : [];
+  const roster=rr.ok? rr.rows : [];
   // chargeable = everyone who joined (walk-ins counted via their payment rows)
   const heads={};
   roster.forEach(r=>{ heads[r.session_id]=(heads[r.session_id]||0)+1; });
@@ -7253,6 +7978,25 @@ async function sFetch(path,opts){
     if(await refreshAuth()) return sFetch(path,Object.assign({},opts,{_retried:true}));
   }
   return r;
+}
+/* PostgREST silently caps any response at 1000 rows regardless of &limit=.
+   sFetchAll pages through with offset so we actually get everything.
+   Pass the query WITHOUT a limit; it will append &limit/&offset itself.
+   (This bug truncated Player Insights, the predictor, and Stats — a player's
+    older matches simply never arrived. Verified live: 1445 rows, not 1000.) */
+async function sFetchAll(path){
+  const PAGE=1000; let offset=0, all=[];
+  for(;;){
+    const sep=path.includes("?")?"&":"?";
+    const r=await sFetch(path+sep+"limit="+PAGE+"&offset="+offset).catch(()=>null);
+    if(!r||!r.ok) return {ok:false, rows:all, status:r?r.status:0};
+    const batch=await r.json();
+    all=all.concat(batch);
+    if(batch.length<PAGE) break;      // last (short) page
+    offset+=PAGE;
+    if(offset>200000) break;          // hard safety stop
+  }
+  return {ok:true, rows:all};
 }
 async function refreshAuth(){
   try{
@@ -7455,42 +8199,45 @@ async function adminLoadSessions(){
   renderSessionList();
 }
 function renderSessionList(){
-  const box=document.getElementById("sessList");
+  const boxes=[["sessList","sessPager","sessPageLbl","sessPrev","sessNext"],
+               ["sessListSess","sessPagerSess","sessPageLblSess","sessPrevSess","sessNextSess"]]
+    .map(ids=>({box:document.getElementById(ids[0]),pager:document.getElementById(ids[1]),
+      lbl:document.getElementById(ids[2]),prev:document.getElementById(ids[3]),next:document.getElementById(ids[4])}))
+    .filter(x=>x.box);
+  if(!boxes.length) return;
   const all=window.__sessRows||[];
-  const pager=document.getElementById("sessPager");
-  if(!all.length){ box.innerHTML='<p class="hint">No sessions yet — create the first one above.</p>';
-    if(pager) pager.style.display="none"; return; }
+  if(!all.length){ boxes.forEach(b=>{ b.box.innerHTML='<p class="hint">No sessions yet — create the first one above.</p>';
+    if(b.pager) b.pager.style.display="none"; }); return; }
   const pages=Math.max(1,Math.ceil(all.length/SESS_PAGE));
   if(sessPageNo>=pages) sessPageNo=pages-1;
-  if(pager){
-    pager.style.display= all.length>SESS_PAGE? "flex":"none";
-    document.getElementById("sessPageLbl").textContent="Page "+(sessPageNo+1)+" of "+pages+" · "+all.length+" sessions";
-    document.getElementById("sessPrev").disabled=sessPageNo<=0;
-    document.getElementById("sessNext").disabled=sessPageNo>=pages-1;
-  }
-  box.innerHTML="";
-  all.slice(sessPageNo*SESS_PAGE,(sessPageNo+1)*SESS_PAGE).forEach(s=>{
-    const div=document.createElement("div"); div.className="sessrow";
-    div.innerHTML='<div class="st"><b>'+esc(s.title)+'</b><span>'+esc(s.session_date)+'</span></div>'+
-      '<span class="sesscode">'+esc(s.code)+'</span>'+
-      '<span class="badge '+(s.status||"open")+'">'+String(s.status||"open").toUpperCase()+'</span>'+
-      (isDoubleXp(s)?'<span class="dxchip">⚡ 2× XP</span>':'')+
-      (feeOf(s)?'<span class="feechip">₱'+feeOf(s)+'</span>':'');
-    const copy=document.createElement("button"); copy.className="small ghost"; copy.textContent="Copy code";
-    copy.onclick=async()=>{ try{ await navigator.clipboard.writeText(s.code); }catch(e){} toast("Code "+s.code+" copied"); };
-    const dx=document.createElement("button"); dx.className="small ghost";
-    dx.textContent=isDoubleXp(s)?"⚡ 2× on":"⚡ 2× off"; dx.title="Toggle double XP for this session";
-    dx.onclick=()=>toggleDoubleXp(s);
-    div.appendChild(dx);
-    const qr=document.createElement("button"); qr.className="small"; qr.textContent="📱 QR";
-    qr.title="Show join QR"; qr.onclick=()=>showSessionQR(s);
-    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
-    del.title="Delete session"; del.onclick=()=>adminDeleteSession(s);
-    const tog=document.createElement("button"); tog.className="small "+(s.status==="open"?"ghost":"");
-    tog.textContent=s.status==="open"?"Close":"Reopen";
-    tog.onclick=async()=>{ await sFetch("/rest/v1/sessions?id=eq."+s.id,{method:"PATCH",
-      body:{status:s.status==="open"?"closed":"open"}}); adminLoadSessions(); };
-    div.append(qr,copy,tog,del); box.appendChild(div);
+  const shown=all.slice(sessPageNo*SESS_PAGE,(sessPageNo+1)*SESS_PAGE);
+  boxes.forEach(b=>{
+    if(b.pager){ b.pager.style.display= all.length>SESS_PAGE? "flex":"none";
+      if(b.lbl) b.lbl.textContent="Page "+(sessPageNo+1)+" of "+pages+" · "+all.length+" sessions";
+      if(b.prev) b.prev.disabled=sessPageNo<=0; if(b.next) b.next.disabled=sessPageNo>=pages-1; }
+    b.box.innerHTML="";
+    shown.forEach(s=>{
+      const div=document.createElement("div"); div.className="sessrow";
+      div.innerHTML='<div class="st"><b>'+esc(s.title)+'</b><span>'+esc(s.session_date)+'</span></div>'+
+        '<span class="sesscode">'+esc(s.code)+'</span>'+
+        '<span class="badge '+(s.status||"open")+'">'+String(s.status||"open").toUpperCase()+'</span>'+
+        (isDoubleXp(s)?'<span class="dxchip">⚡ 2× XP</span>':'')+
+        (feeOf(s)?'<span class="feechip">₱'+feeOf(s)+'</span>':'');
+      const copy=document.createElement("button"); copy.className="small ghost"; copy.textContent="Copy code";
+      copy.onclick=async()=>{ try{ await navigator.clipboard.writeText(s.code); }catch(e){} toast("Code "+s.code+" copied"); };
+      const dx=document.createElement("button"); dx.className="small ghost";
+      dx.textContent=isDoubleXp(s)?"⚡ 2× on":"⚡ 2× off"; dx.title="Toggle double XP for this session";
+      dx.onclick=()=>toggleDoubleXp(s);
+      const qr=document.createElement("button"); qr.className="small"; qr.textContent="📱 QR";
+      qr.title="Show join QR"; qr.onclick=()=>showSessionQR(s);
+      const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+      del.title="Delete session"; del.onclick=()=>adminDeleteSession(s);
+      const tog=document.createElement("button"); tog.className="small "+(s.status==="open"?"ghost":"");
+      tog.textContent=s.status==="open"?"Close":"Reopen";
+      tog.onclick=async()=>{ await sFetch("/rest/v1/sessions?id=eq."+s.id,{method:"PATCH",
+        body:{status:s.status==="open"?"closed":"open"}}); adminLoadSessions(); };
+      div.append(dx,qr,copy,tog,del); b.box.appendChild(div);
+    });
   });
 }
 
@@ -7665,6 +8412,7 @@ async function importRoster(manual){
     if(!mine){
       if(row.active===false) return;                        // benched before we ever saw them
       S.players.push({id:row.profile_id, name:row.profiles.reclub_name||row.profiles.full_name||"Player",
+        full:row.profiles.full_name||"",
         level:row.profiles.level||"Low Int", timeIn:timeNowHM(), timeOut:"", active:true,
         waitSince:now(), addedAt:now()});
       added++;
@@ -7845,6 +8593,7 @@ async function loadMyHistory(manual){
     }
   }
   myMatches=rows;
+  try{ loadPlayerSearch(); }catch(e){}   // refresh Players card now that match history is in
   if(!rows.length){
     stats.innerHTML="";
     myHistRows=[]; histPageNo=0;
@@ -7966,7 +8715,11 @@ async function mountPlayerBoard(sessionId){
   try{ localStorage.setItem("ss_lastSession", sessionId); }catch(e){}
   loadBench(sessionId);
   clearInterval(window.__benchTimer);
-  window.__benchTimer=setInterval(()=>{ if(window.__benchSession) loadBench(window.__benchSession); },60000);
+  // poll every 20s: bench status + who's-in (the latter drives challenge popups)
+  window.__benchTimer=setInterval(()=>{
+    if(window.__benchSession) loadBench(window.__benchSession);
+    if(window.__mySessionId){ try{ loadWhosIn(); }catch(e){} }
+  },20000);
   sFetch("/rest/v1/sessions?id=eq."+sessionId+"&select=settings")
     .then(r=>r.ok?r.json():[]).then(rows=>{
       window.__sessionDouble=!!(rows[0]&&rows[0].settings&&rows[0].settings.doubleXp);
@@ -8356,6 +9109,34 @@ async function renderCareer(){
   initSheetFolds();
 }
 
+/* ---- voice call-outs (speak the player's own queue status, opt-in) ---- */
+function voiceEnabled(){ try{ return localStorage.getItem("ss_voice")==="1"; }catch(e){ return false; } }
+function voiceToggle(){
+  const on=!voiceEnabled();
+  try{ localStorage.setItem("ss_voice", on?"1":"0"); }catch(e){}
+  if(on){ speak("Voice calls on."); }   // also unlocks audio via the user gesture
+  const b=document.getElementById("voiceBtn"); if(b){ b.textContent=on?"🔊 Voice on":"🔈 Voice off"; b.classList.toggle("on",on); }
+  toast(on?"🔊 Voice calls on — you'll be called by name":"Voice calls off");
+}
+function speak(text){
+  if(!voiceEnabled() || !("speechSynthesis" in window)) return;
+  try{
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=0.98; u.pitch=1; u.volume=1;
+    speechSynthesis.cancel();   // don't stack
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function voiceOnStatus(s){
+  if(!voiceEnabled()) return;
+  const mode=s&&s.mode;
+  if(mode!==window.__lastVoiceMode){
+    const nm=(myProfile&&(myProfile.reclub_name||myProfile.full_name)||"").split(" ")[0];
+    if(mode==="oncourt") speak((nm?nm+", ":"")+"you're up! Head to "+(s.court||"your court")+".");
+    else if(mode==="next") speak((nm?nm+", ":"")+"you're up next. Get ready.");
+    window.__lastVoiceMode=mode;
+  }
+}
 function renderQueueStatus(state){
   const card=document.getElementById("qStatusCard"), box=document.getElementById("qStatus");
   if(!card||!box) return;
@@ -8368,6 +9149,9 @@ function renderQueueStatus(state){
   }
   const s=myQueueStatus(state);
   card.style.display="block";
+  { const vb=document.getElementById("voiceBtn"); if(vb){ const on=voiceEnabled(); vb.textContent=on?"🔊 Voice on":"🔈 Voice off"; vb.classList.toggle("on",on); } }
+  // Voice call-out: speak ONCE when MY status changes to on-court / up-next.
+  try{ voiceOnStatus(s); }catch(e){}
   if(s.mode==="playing"){
     const mins=s.start? Math.max(0,Math.round((Date.now()-s.start)/60000)) : 0;
     box.className="playing";
@@ -8476,6 +9260,149 @@ async function playerAutoBoard(){
 
 /* ======================= RPG PLAYER VIEW ======================= */
 let myMatches=[], mySessions={};
+/* ---- Players search + viewer-relative snapshot ---- */
+async function loadPlayerSearch(){
+  renderPlayerSearch();                 // paint whatever we have NOW (never leave "Loading…" stuck)
+  if(window.__plRoster || window.__plLoading) return;   // already have it / already fetching
+  window.__plLoading=true;
+  try{
+    const r=await sFetchAll("/rest/v1/profiles?select=id,reclub_name,full_name,avatar&order=reclub_name.asc");
+    window.__plRoster = (r&&r.ok) ? r.rows.filter(p=>p.reclub_name) : [];
+  }catch(e){ window.__plRoster = window.__plRoster || []; }
+  window.__plLoading=false;
+  renderPlayerSearch();                 // repaint with the roster
+}
+/* the 10 most-recent distinct people I've shared a court with (partners + opponents) */
+function recentPlayers(){
+  const me=auth&&auth.uid; const seen=new Set(); const out=[];
+  const byId={}; (window.__plRoster||[]).forEach(p=>byId[p.id]=p);
+  const ord=(myMatches||[]).slice().sort((a,b)=>new Date(b.ended_at||0)-new Date(a.ended_at||0));
+  for(const m of ord){
+    const t1=(m.t1||[]), t2=(m.t2||[]);
+    const meIn1=t1.includes(me), meIn2=t2.includes(me);
+    if(!meIn1&&!meIn2) continue;
+    const mates = meIn1? t1 : t2;
+    const opps  = meIn1? t2 : t1;
+    const rel=[]; mates.forEach(id=>{ if(id&&id!==me) rel.push([id,"partner"]); });
+    opps.forEach(id=>{ if(id) rel.push([id,"opponent"]); });
+    for(const [id,kind] of rel){
+      if(seen.has(id)) continue; seen.add(id);
+      const p=byId[id]; if(p) out.push({p,kind});
+      if(out.length>=10) return out;
+    }
+  }
+  return out;
+}
+let __ppMode="recent";
+function ppSegSet(m){
+  __ppMode=m;
+  document.querySelectorAll("#ppSeg button").forEach(b=>b.classList.toggle("on",b.dataset.mode===m));
+  renderPlayerSearch();
+}
+function renderPlayerSearch(){
+  const box=document.getElementById("ppList"); if(!box) return;
+  const roster=window.__plRoster||[];
+  if(!roster.length && window.__plLoading){
+    box.innerHTML=Array.from({length:5}).map(()=>'<div class="ppskel"><div class="sk av"></div><div style="flex:1"><div class="sk l1"></div><div class="sk l2"></div></div></div>').join("");
+    return;
+  }
+  const q=((document.getElementById("ppSearch")||{}).value||"").toLowerCase().trim();
+  const seg=document.getElementById("ppSeg"); if(seg) seg.style.display = q? "none":"flex";
+  const nick={}; roster.forEach(p=>{const k=(p.reclub_name||"").toLowerCase();nick[k]=(nick[k]||0)+1;});
+  const disamb=p=>{ if(nick[(p.reclub_name||"").toLowerCase()]>1 && p.full_name){
+    const e=p.full_name.replace(new RegExp("^\\s*"+(p.reclub_name||"").replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*","i"),"").trim();
+    return e?' <span class="dis">· '+esc(e)+'</span>':''; } return ""; };
+  const subOf=p=>{ const xp=(window.__xpBy||{})[p.id];
+    if(xp==null) return "Tap to see your record"; const lv=levelOf(xp); return esc(tierOf(lv))+" · LV "+lv; };
+  const row=(p,tagHtml)=>'<div class="pprow" onclick="openPlayerSnapshot(\''+p.id+'\')">'+
+    '<div class="ppav">'+(p.avatar&&p.avatar.startsWith("http")?'<img src="'+esc(p.avatar)+'">':esc((p.reclub_name||"?").slice(0,1).toUpperCase()))+'</div>'+
+    '<div class="ppmain"><div class="ppname">'+esc(p.reclub_name)+disamb(p)+'</div><div class="ppsub">'+subOf(p)+'</div></div>'+
+    (tagHtml||'<span class="ppchev">›</span>')+'</div>';
+  if(q){
+    const list=roster.filter(p=>(p.reclub_name||"").toLowerCase().includes(q)||(p.full_name||"").toLowerCase().includes(q));
+    box.innerHTML = list.length? '<div class="ppglab">'+list.length+' player'+(list.length===1?"":"s")+' found</div>'+list.slice(0,60).map(p=>row(p)).join("")
+      : '<div class="ppglab">Search</div><p class="hint" style="padding:14px 2px">No players match "'+esc(q)+'".</p>';
+    return;
+  }
+  if(__ppMode==="all"){
+    box.innerHTML='<div class="ppglab">All players · '+roster.length+'</div>'+roster.slice(0,120).map(p=>row(p)).join("");
+    return;
+  }
+  // recent mode
+  const recent=recentPlayers();
+  box.innerHTML = recent.length
+    ? '<div class="ppglab">Last 10 you\u2019ve shared a court with</div>'+recent.map(r=>row(r.p,
+        '<span class="pptag '+(r.kind==="partner"?"mate":"opp")+'">'+(r.kind==="partner"?"🤝 partner":"⚔ opponent")+'</span>')).join("")
+    : '<div class="ppglab">Recently played</div><p class="hint" style="padding:14px 2px">Play some matches and the people you meet show up here. Or search anyone above.</p>';
+}
+// compute MY record vs / with a given player, from my own match history
+function pairRecord(pid){
+  const me=auth&&auth.uid; const vs={w:0,g:0}, wth={w:0,g:0};
+  (myMatches||[]).forEach(m=>{
+    const t1=(m.t1||[]), t2=(m.t2||[]);
+    const meIn1=t1.includes(me), meIn2=t2.includes(me);
+    const themIn1=t1.includes(pid), themIn2=t2.includes(pid);
+    if(!(meIn1||meIn2) || !(themIn1||themIn2)) return;
+    const myWin = (meIn1 && m.s1>m.s2) || (meIn2 && m.s2>m.s1);
+    if((meIn1&&themIn1)||(meIn2&&themIn2)){ wth.g++; if(myWin) wth.w++; }   // same team
+    else { vs.g++; if(myWin) vs.w++; }                                       // opponents
+  });
+  return {vs,wth};
+}
+async function openPlayerSnapshot(pid){
+  const roster=window.__plRoster||[]; const p=roster.find(x=>x.id===pid); if(!p) return;
+  const me=auth&&auth.uid; const isMe=pid===me;
+  const rec=isMe?null:pairRecord(pid);
+  // their public XP/level — from cache, else fetch just this player's total
+  if(!window.__xpBy) window.__xpBy={};
+  let xp=window.__xpBy[pid];
+  if(xp==null){
+    try{ const r=await sFetch("/rest/v1/leaderboard_alltime?profile_id=eq."+pid+"&select=xp");
+      const rows=r&&r.ok?await r.json():[]; xp=(rows[0]&&rows[0].xp)||0; }catch(e){ xp=0; }
+    window.__xpBy[pid]=xp;
+  }
+  const lv=levelOf(xp), tier=tierOf(lv);
+  const nm=p.reclub_name||"Player";
+  const isNem=(window.__nemeses3||[]).some(n=>n.id===pid);
+  const inTonight=(window.__whosInIds||[]).indexOf(pid)>=0;
+  const alreadyCh=(window.__myChTargets||[]).indexOf(pid)>=0;
+  const canChallenge = !isMe && isNem && inTonight && !alreadyCh;
+  const total=rec? (rec.vs.g+rec.wth.g):0;
+  const tierCol = tier==="Mythic"||tier==="Demogorgon"||tier==="Ascendant"||tier==="Primordial" ? "var(--red)" : "var(--gold)";
+  const vsCard=(cls,ic,lab,r,goodSub,badSub)=>{
+    if(!r || r.g===0) return '<div class="vscard '+cls+' empty"><div class="vico">'+ic+'</div><div class="vlab">'+lab+'</div>'+
+      '<div class="vnew">—</div><div class="vsub">no games yet</div></div>';
+    const w=r.w, l=r.g-r.w, edge=w>l?goodSub:(w<l?badSub:"dead even");
+    return '<div class="vscard '+cls+'"><div class="vico">'+ic+'</div><div class="vlab">'+lab+'</div>'+
+      '<div class="vrec">'+w+'\u2013'+l+'</div><div class="vsub">'+edge+'</div></div>';
+  };
+  let ov=document.getElementById("snapModal");
+  if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="snapModal";
+    ov.innerHTML='<div class="modal snapsheet" style="max-width:400px;padding:0;overflow:hidden"><div id="snapBody"></div></div>';
+    document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("snapModal"); }); }
+  const av=(p.avatar&&p.avatar.startsWith("http"))?'<img src="'+esc(p.avatar)+'">':esc(nm.slice(0,1).toUpperCase());
+  document.getElementById("snapBody").innerHTML=
+    '<div class="shero" style="--tc:'+tierCol+'">'+
+      '<button class="shclose" onclick="closeModal(\'snapModal\')">\u2715 Close</button>'+
+      '<div class="savatar">'+av+'</div>'+
+      '<div class="sname">'+esc(nm)+'</div>'+
+      '<div class="sclass">'+esc(tier)+'</div>'+
+      '<div class="slv">'+(tierCol==="var(--red)"?"\uD83D\uDC51 ":"")+'LV '+lv+' \u00b7 '+xp.toLocaleString()+' XP</div>'+
+    '</div>'+
+    (isMe
+      ? '<p class="hint" style="padding:26px;text-align:center">This is you \u2014 open your Profile above for the full character sheet.</p>'
+      : '<div class="vsblock">'+
+          vsCard("h2h","\u2694\uFE0F","You vs them",rec.vs,"you\u2019ve got their number","they own this matchup")+
+          vsCard("duo","\uD83E\uDD1D","Teamed up",rec.wth,"a strong duo","room to click")+
+        '</div>'+
+        (total>0? '<p class="scross">You\u2019ve crossed paths <b>'+total+' time'+(total===1?"":"s")+'</b> this season.</p>'
+                : '<p class="scross">No games together yet \u2014 <b>go make a rivalry</b> \u2694\uFE0F</p>')+
+        (canChallenge
+          ? '<button class="challbtn" onclick="chIssue(\''+pid+'\');closeModal(\'snapModal\')">\u2694\uFE0F Challenge '+esc(nm)+' tonight</button>'
+          : (isNem && !inTonight ? '<p class="scta-note">\uD83D\uDE24 Your nemesis \u2014 challenge them when they\u2019re in tonight.</p>'
+            : alreadyCh ? '<p class="scta-note">\u2694\uFE0F Challenge already sent \u00b7 waiting on them.</p>':'')));
+  openModal("snapModal");
+}
 /* ---------- relationship + form analytics ---------- */
 /* ---------- collapsible player cards ---------- */
 const FOLD_DEFAULT_SHUT=["Session Stat Cards","Quest Log","Badges"];   // long lists start closed
@@ -8857,7 +9784,7 @@ const BADGES=[
  {id:"owl",    em:"🌙", name:"Night Owl",              d:"Finish a match after 10pm",         f:(st,ex)=>ex.nights>=1},
  {id:"leader", em:"⚡", name:"Leader of the Party",    d:"Battle in 5 different sessions",    f:(st,ex,ns)=>ns>=5},
 ];
-const TIERS=[[13,"Mythic"],[10,"Legend"],[8,"Warden"],[5,"Knight"],[3,"Squire"],[1,"Rookie"]];
+const TIERS=[[25,"Primordial"],[21,"Ascendant"],[17,"Demogorgon"],[13,"Mythic"],[10,"Legend"],[8,"Warden"],[5,"Knight"],[3,"Squire"],[1,"Rookie"]];
 function tierOf(lv){ for(const [min,t] of TIERS) if(lv>=min) return t; return "Rookie"; }
 function renderRPG(){
   if(!myProfile) return;
@@ -8866,6 +9793,7 @@ function renderRPG(){
   const nSessions=new Set(myMatches.map(m=>m.session_id)).size;
   window.__myShare={st,ex,name:(myProfile.reclub_name||myProfile.full_name||"Player")};
   try{ renderCareer(); }catch(e){}
+  try{ loadPlayerSearch(); }catch(e){}   // populate the Players card (covers all entry paths, not just the nav tap)
   setTimeout(()=>{ try{ msCheck(); }catch(e){} },900);
   try{ initFolds(); }catch(e){}
   try{ loadMyTrainings(); }catch(e){}
@@ -9770,6 +10698,7 @@ function ptShow(id){
   document.querySelectorAll(".ptab").forEach(t=>t.classList.toggle("on",t.id===id));
   document.querySelectorAll(".pnb").forEach(b=>b.classList.toggle("on",b.dataset.pt===id));
   window.scrollTo({top:0});
+  if(id==="pt-profile"){ try{ loadPlayerSearch(); }catch(e){} }
 }
 function showAchPopup(face,isImg,name,desc,unlocked){
   const f=document.getElementById("achFace");
