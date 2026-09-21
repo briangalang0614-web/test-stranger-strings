@@ -239,6 +239,12 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--green);color:#f5eedb;
   padding:10px 18px;border-radius:30px;box-shadow:var(--shadow);z-index:80;font-size:14px;opacity:0;transition:opacity .25s}
 .toast.show{opacity:1}
+.syncbanner{position:fixed;left:12px;right:12px;bottom:16px;z-index:85;cursor:pointer;
+  background:linear-gradient(180deg,#b98a3f,#8a6320);color:#fff8ec;padding:13px 16px;border-radius:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13.5px;text-align:center;border:1px solid rgba(255,240,200,.3);
+  animation:syncpulse 2.5s ease-in-out infinite}
+.syncbanner b{color:#fff}
+@keyframes syncpulse{50%{box-shadow:0 8px 30px rgba(185,138,63,.6)}}
 /* ---------- share card (green & gold edition) ---------- */
 .igcard{width:300px;margin:0 auto;border-radius:20px;padding:26px 16px 14px;text-align:center;color:#f0e6cc;
   background:
@@ -3196,7 +3202,7 @@ function finishInline(c){
   const t1=c.slots.slice(0,2).filter(Boolean), t2=c.slots.slice(2).filter(Boolean);
   const _m={id:uid(),n:S.matchNo++,court:c.name,
     t1,t2,t1n:t1.map(pname),t2n:t2.map(pname),
-    s1,s2,start:c.start,end:now(),waits:c.waits||{}};
+    s1,s2,start:c.start,end:now(),waits:c.waits||{},synced:false};
   S.matches.push(_m); dbRecordMatch(_m); clearFulfilledPrefs(_m); rtOnMatch(_m);
   endCourt(c);
   toast("Match #"+(S.matchNo-1)+" saved — players are back in the pool");
@@ -3240,7 +3246,7 @@ function saveScore(){
     const t1=c.slots.slice(0,2).filter(Boolean), t2=c.slots.slice(2).filter(Boolean);
     const _m2={id:uid(),n:S.matchNo++,court:c.name,
       t1,t2,t1n:t1.map(pname),t2n:t2.map(pname),
-      s1,s2,start:c.start,end:now(),waits:c.waits||{}};
+      s1,s2,start:c.start,end:now(),waits:c.waits||{},synced:false};
   S.matches.push(_m2); dbRecordMatch(_m2); clearFulfilledPrefs(_m2); rtOnMatch(_m2);
     endCourt(c);
     toast("Match #"+(S.matchNo-1)+" saved — players are back in the pool");
@@ -5764,8 +5770,8 @@ async function loadShuttles(){
     sFetch("/rest/v1/shuttle_channels?select=*&order=sort.asc").catch(()=>null),
     sFetch("/rest/v1/shuttle_prices?select=*").catch(()=>null),
     sFetch("/rest/v1/shuttle_batches?select=*&order=received_on.desc").catch(()=>null),
-    sFetch("/rest/v1/shuttle_sales?select=*&order=sold_on.desc&limit=500").catch(()=>null),
-    sFetch("/rest/v1/used_shuttle_sales?select=*&order=sold_on.desc&limit=300").catch(()=>null)]);
+    sFetchAll("/rest/v1/shuttle_sales?select=*&order=sold_on.desc").catch(()=>null),
+    sFetchAll("/rest/v1/used_shuttle_sales?select=*&order=sold_on.desc").catch(()=>null)]);
   if(!br||!br.ok){ window.__shMissing=true;
     box.innerHTML='<p class="hint">Run shuttles.sql to enable shuttlecock tracking.</p>'; return; }
   window.__shMissing=false;
@@ -5773,8 +5779,8 @@ async function loadShuttles(){
   SH.channels=(ch&&ch.ok)? await ch.json():[];
   SH.prices=(pr&&pr.ok)? await pr.json():[];
   SH.batches=(ba&&ba.ok)? await ba.json():[];
-  SH.sales=(sa&&sa.ok)? await sa.json():[];
-  window.__usedSales=(us&&us.ok)? await us.json():[];
+  SH.sales=(sa&&sa.ok)? sa.rows:[];
+  window.__usedSales=(us&&us.ok)? us.rows:[];
   // queue usage comes from session expenses — one source of truth
   if(!window.__allSessions) await fillFinanceSessions();
   SH.queue=[];
@@ -7933,6 +7939,10 @@ setInterval(()=>{
     if(p) el.textContent=metaLine(p,el.dataset.mini==="1");
   });
 },1000);
+/* offline match outbox: retry unsynced matches on a timer, on reconnect, and on load */
+setInterval(()=>{ if(navigator.onLine) flushUnsyncedMatches(false); }, 30000);
+window.addEventListener("online", ()=>{ flushUnsyncedMatches(false); });
+setTimeout(()=>{ try{ updateSyncBanner(); if(navigator.onLine) flushUnsyncedMatches(false); }catch(e){} }, 2500);
 /* ======================= INTEGRATED SYSTEM · PHASE 1 ======================= */
 /* Fill these two values from your Supabase project (Settings -> API).        */
 /* Leave blank to run in the classic standalone/offline mode.                 */
@@ -8456,17 +8466,44 @@ async function clearFulfilledPrefs(m){
   if(who.length) toast("🤝 Partner request fulfilled — "+who.join(" & "));
 }
 async function dbRecordMatch(m){
-  if(!SUPA.url || !S.db || !S.db.sessionId) return;
+  if(!SUPA.url || !S.db || !S.db.sessionId){ return; }
   const ids=[...m.t1,...m.t2];
-  if(!ids.every(id=>UUID_RE.test(id))) return;      // legacy/local ids — keep match local only
-  const body={session_id:S.db.sessionId, match_no:m.n, court_name:m.court,
+  if(!ids.every(id=>UUID_RE.test(id))){ m.synced=true; return; }  // legacy/local ids — never syncable, don't nag
+  // stamp the match with its session + a stable client key the first time we try
+  if(!m.client_uid) m.client_uid = (S.db.sessionId||"s")+":"+m.id;
+  if(!m.syncSession) m.syncSession = S.db.sessionId;
+  const body={client_uid:m.client_uid, session_id:m.syncSession, match_no:m.n, court_name:m.court,
     t1:m.t1, t2:m.t2, t1n:m.t1n||[], t2n:m.t2n||[], s1:m.s1, s2:m.s2,
     started_at:new Date(m.start).toISOString(), ended_at:new Date(m.end).toISOString(),
     waits:m.waits||{}};
-  const r=await sFetch("/rest/v1/matches",{method:"POST",body,headers:{Prefer:"return=representation"}}).catch(()=>null);
-  if(!r || !r.ok){ toast("⚠️ Match saved locally but not to the database"); return; }
+  // upsert on client_uid — a retry of an already-saved match is a harmless no-op (no duplicate)
+  let r=null;
+  try{ r=await sFetch("/rest/v1/matches?on_conflict=client_uid",
+    {method:"POST",body,headers:{Prefer:"return=representation,resolution=merge-duplicates"}}); }catch(e){ r=null; }
+  if(!r || !r.ok){ m.synced=false; try{ save(); }catch(e){} updateSyncBanner(); return; }  // keep it queued, no loss
+  m.synced=true;
+  try{ save(); }catch(e){}
+  updateSyncBanner();
   try{ const saved=await r.json(); const mid=saved&&saved[0]&&saved[0].id;
        if(mid) chResolveMatch(mid,m); }catch(e){}   // fire-and-forget; never blocks match save
+}
+/* ---- offline outbox: retry any matches that never reached the DB ---- */
+async function flushUnsyncedMatches(manual){
+  const pend=(S.matches||[]).filter(m=>m.synced===false);
+  if(!pend.length){ updateSyncBanner(); return; }
+  if(manual) toast("Retrying "+pend.length+" unsaved match"+(pend.length>1?"es":"")+"\u2026");
+  for(const m of pend){ await dbRecordMatch(m); }
+  const left=(S.matches||[]).filter(m=>m.synced===false).length;
+  updateSyncBanner();
+  if(manual) toast(left? ("Still "+left+" unsaved \u2014 check your connection") : "\u2705 All matches saved!");
+}
+function updateSyncBanner(){
+  const n=(S.matches||[]).filter(m=>m.synced===false).length;
+  let el=document.getElementById("syncBanner");
+  if(!n){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement("div"); el.id="syncBanner"; el.className="syncbanner";
+    el.onclick=()=>flushUnsyncedMatches(true); document.body.appendChild(el); }
+  el.innerHTML='\u26A0\uFE0F <b>'+n+' match'+(n>1?'es':'')+' not saved</b> to the database \u00b7 tap to retry';
 }
 /* ---- queue_state upsert on every save ---- */
 let dbPushTimer=null;
@@ -8574,10 +8611,10 @@ async function loadEpoch(){
 async function loadMyHistory(manual){
   const hist=document.getElementById("myHist"), stats=document.getElementById("myStats");
   const uid=auth.uid;
-  const r=await sFetch("/rest/v1/matches?or=(t1.cs.{"+uid+"},t2.cs.{"+uid+"})"+
-    "&select=*&order=ended_at.desc&limit=200").catch(()=>null);
+  const r=await sFetchAll("/rest/v1/matches?or=(t1.cs.{"+uid+"},t2.cs.{"+uid+"})"+
+    "&select=*&order=ended_at.desc");
   if(!r||!r.ok){ if(manual) toast("Could not load history"); return; }
-  let rows=await r.json();
+  let rows=r.rows;
   // a master reset sets an epoch — matches before it stay in the DB but stop counting
   await loadEpoch();
   if(window.__hofEpoch){
@@ -9315,7 +9352,7 @@ function renderPlayerSearch(){
   const subOf=p=>{ const xp=(window.__xpBy||{})[p.id];
     if(xp==null) return "Tap to see your record"; const lv=levelOf(xp); return esc(tierOf(lv))+" · LV "+lv; };
   const row=(p,tagHtml)=>'<div class="pprow" onclick="openPlayerSnapshot(\''+p.id+'\')">'+
-    '<div class="ppav">'+(p.avatar&&p.avatar.startsWith("http")?'<img src="'+esc(p.avatar)+'">':esc((p.reclub_name||"?").slice(0,1).toUpperCase()))+'</div>'+
+    '<div class="ppav">'+(p.avatar?'<img src="'+esc(p.avatar)+'">':esc((p.reclub_name||"?").slice(0,1).toUpperCase()))+'</div>'+
     '<div class="ppmain"><div class="ppname">'+esc(p.reclub_name)+disamb(p)+'</div><div class="ppsub">'+subOf(p)+'</div></div>'+
     (tagHtml||'<span class="ppchev">›</span>')+'</div>';
   if(q){
@@ -9380,7 +9417,7 @@ async function openPlayerSnapshot(pid){
   if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="snapModal";
     ov.innerHTML='<div class="modal snapsheet" style="max-width:400px;padding:0;overflow:hidden"><div id="snapBody"></div></div>';
     document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("snapModal"); }); }
-  const av=(p.avatar&&p.avatar.startsWith("http"))?'<img src="'+esc(p.avatar)+'">':esc(nm.slice(0,1).toUpperCase());
+  const av=(p.avatar)?'<img src="'+esc(p.avatar)+'">':esc(nm.slice(0,1).toUpperCase());
   document.getElementById("snapBody").innerHTML=
     '<div class="shero" style="--tc:'+tierCol+'">'+
       '<button class="shclose" onclick="closeModal(\'snapModal\')">\u2715 Close</button>'+
@@ -9628,9 +9665,9 @@ function rpgClass(a){
 }
 async function rpgPercentile(uid){
   try{
-    const r=await sFetch("/rest/v1/leaderboard_alltime?select=profile_id,xp&order=xp.desc&limit=500");
+    const r=await sFetchAll("/rest/v1/leaderboard_alltime?select=profile_id,xp&order=xp.desc");
     if(!r.ok) return null;
-    const rows=await r.json();
+    const rows=r.rows;
     const i=rows.findIndex(x=>x.profile_id===uid);
     if(i<0||rows.length<6) return null;
     return Math.max(1,Math.round(100*(i+1)/rows.length));
@@ -10607,6 +10644,8 @@ async function loadPlayerList(){
       : '<span style="width:34px;height:34px;border-radius:50%;flex:none;background:var(--panel2);border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-weight:800">'+esc((p.reclub_name||"?").slice(0,1).toUpperCase())+'</span>';
     div.innerHTML=av+'<div class="st"><b>'+esc(p.reclub_name||"Player")+'</b>'+
       '<span>@'+esc(p.username||"")+' \u00b7 joined '+(p.created_at||"").slice(0,10)+'</span></div>';
+    div.style.cursor="pointer";
+    div.onclick=(e)=>{ if(e.target.closest("button")) return; openAdminPlayer(p); };
     if(p.id!==auth.uid){
       const key=document.createElement("button"); key.className="small ghost"; key.textContent="🔑";
       key.title="Set a temporary password"; key.onclick=()=>resetPlayerPassword(p);
@@ -10628,6 +10667,48 @@ async function loadPlayerList(){
   document.getElementById("plPageLbl").textContent="Page "+(plPageNo+1)+" of "+pages+" \u00b7 "+plTotal+" players";
   document.getElementById("plPrev").disabled=plPageNo<=0;
   document.getElementById("plNext").disabled=plPageNo>=pages-1;
+}
+async function openAdminPlayer(p){
+  let ov=document.getElementById("apModal");
+  if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="apModal";
+    ov.innerHTML='<div class="modal" style="max-width:380px"><div id="apBody"></div>'+
+      '<button class="wide" style="margin-top:12px" onclick="closeModal(\'apModal\')">Close</button></div>';
+    document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("apModal"); }); }
+  const av=p.avatar
+    ? '<img src="'+esc(p.avatar)+'" style="width:74px;height:74px;border-radius:50%;object-fit:cover;border:2px solid var(--green)">'
+    : '<span style="width:74px;height:74px;border-radius:50%;background:var(--panel2);border:2px solid var(--line);display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:30px">'+esc((p.reclub_name||"?").slice(0,1).toUpperCase())+'</span>';
+  const nn=esc(p.reclub_name||"Player"), fn=esc(p.full_name||"\u2014");
+  document.getElementById("apBody").innerHTML=
+    '<div style="text-align:center;padding:6px 0 10px">'+av+
+      '<div style="font-family:Georgia,serif;font-size:22px;margin-top:8px">'+nn+'</div>'+
+      '<div class="hint">@'+esc(p.username||"")+'</div></div>'+
+    '<div class="mrow"><label>Full name</label><b>'+fn+'</b></div>'+
+    '<div class="mrow"><label>Nickname</label><b>'+nn+'</b></div>'+
+    '<div class="mrow"><label>Joined</label><b>'+((p.created_at||"").slice(0,10)||"\u2014")+'</b></div>'+
+    '<div class="paysum" id="apWL" style="margin-top:12px"><div><b>\u2026</b><span>loading record\u2026</span></div></div>';
+  openModal("apModal");
+  try{
+    const ep=await loadEpoch();
+    const r=await sFetchAll("/rest/v1/matches?or=(t1.cs.{"+p.id+"},t2.cs.{"+p.id+"})&select=t1,t2,s1,s2,session_id,ended_at");
+    let ms=r.ok?r.rows:[];
+    // epoch gate the same way loadMyHistory does: play_date = session_date, fallback ended_at date
+    if(ep){
+      const sids=[...new Set(ms.map(m=>m.session_id).filter(Boolean))];
+      const sd={};
+      if(sids.length){ const sr=await sFetch("/rest/v1/sessions?id=in.("+sids.join(",")+")&select=id,session_date").catch(()=>null);
+        if(sr&&sr.ok) (await sr.json()).forEach(s=>sd[s.id]=s.session_date); }
+      ms=ms.filter(m=>{ const d=sd[m.session_id]||(m.ended_at||"").slice(0,10); return !d || d>=ep; });
+    }
+    let w=0,l=0;
+    ms.forEach(m=>{ if(m.s1===m.s2) return; const in1=(m.t1||[]).includes(p.id);
+      const win=(in1&&m.s1>m.s2)||(!in1&&m.s2>m.s1); win?w++:l++; });
+    const g=w+l, rate=g?Math.round(100*w/g):0;
+    const el=document.getElementById("apWL");
+    if(el) el.innerHTML='<div><b class="pos">'+w+'</b><span>Wins</span></div>'+
+      '<div><b class="neg">'+l+'</b><span>Losses</span></div>'+
+      '<div><b>'+rate+'%</b><span>Win rate</span></div>'+
+      '<div><b>'+g+'</b><span>Games</span></div>';
+  }catch(e){ const el=document.getElementById("apWL"); if(el) el.innerHTML='<div><b>\u2014</b><span>record unavailable</span></div>'; }
 }
 async function loadPlayerStats(){
   const el=document.getElementById("plStats"); if(!el) return;
@@ -10655,20 +10736,20 @@ function ensureXLSX(){
 async function exportPlayers(){
   toast("Preparing player list\u2026");
   const [rp,rs,rl]=await Promise.all([
-    sFetch("/rest/v1/profiles?select=id,username,full_name,reclub_name,created_at&order=reclub_name.asc"),
-    sFetch("/rest/v1/session_players?select=profile_id,time_in,sessions(title,session_date)"),
-    sFetch("/rest/v1/leaderboard_alltime?select=profile_id,xp,wins,diff")]);
+    sFetchAll("/rest/v1/profiles?select=id,username,full_name,reclub_name,created_at&order=reclub_name.asc"),
+    sFetchAll("/rest/v1/session_players?select=profile_id,time_in,sessions(title,session_date)"),
+    sFetchAll("/rest/v1/leaderboard_alltime?select=profile_id,xp,wins,diff")]);
   if(!rp.ok) return toast("Could not load players");
-  const profs=await rp.json();
+  const profs=rp.rows;
   const att={};
-  if(rs.ok) (await rs.json()).forEach(x=>{
+  if(rs.ok) rs.rows.forEach(x=>{
     if(!x.sessions) return;
     const cur=att[x.profile_id];
     if(!cur || x.sessions.session_date>cur.session_date) att[x.profile_id]=x.sessions;
   });
   const rank={};
   if(rl.ok){
-    const rows=await rl.json();
+    const rows=rl.rows;
     rows.sort((a,b)=>(b.xp||0)-(a.xp||0)||b.wins-a.wins||b.diff-a.diff);
     rows.forEach((x,i)=>rank[x.profile_id]="#"+(i+1));
   }
