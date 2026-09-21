@@ -7445,10 +7445,10 @@ async function rtLoad(){
   const r=await sFetchAll("/rest/v1/player_rating?select=profile_id,mu,sigma,games,last_played");
   if(!r.ok){
     window.__rtMissing=true;
-    if(r){ const j=await r.json().catch(()=>({})); window.__rtLastError=j.message||("HTTP "+r.status); }
+    window.__rtLastError="HTTP "+(r.status||"?");
     return false; }
   window.__rtMissing=false; window.__RT={};
-  (await r.json()).forEach(x=>{ window.__RT[x.profile_id]={mu:+x.mu,sigma:+x.sigma,games:x.games,last:x.last_played}; });
+  (r.rows||[]).forEach(x=>{ window.__RT[x.profile_id]={mu:+x.mu,sigma:+x.sigma,games:x.games,last:x.last_played}; });
   return true;
 }
 /* ids that actually exist in profiles — a match array can hold orphan ids from
