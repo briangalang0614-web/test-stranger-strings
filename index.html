@@ -100,6 +100,14 @@ main{max-width:1560px;margin:0 auto;padding:16px}
 .pcard.swappable{cursor:pointer}
 .pcard.swappable:hover{outline:1.5px solid rgba(226,194,102,.5);outline-offset:1px}
 .swaplist{display:flex;flex-direction:column;gap:7px;max-height:52vh;overflow:auto}
+.melab{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:10px 2px 6px}
+.melab.t1{color:#8fb8e0} .melab.t2{color:#e0a08f}
+.merow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.meslot{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);cursor:pointer;text-align:left}
+.meslot.t1{border-color:rgba(90,143,208,.4)} .meslot.t2{border-color:rgba(208,122,106,.4)}
+.meslot .mesn{font-weight:700;font-size:15px} .meslot .mesx{font-size:11px;color:var(--muted)}
+.mescore{display:flex;align-items:center;justify-content:center;gap:12px;margin:12px 0}
+.mesin{width:70px;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--ink);font-size:22px;font-weight:800;text-align:center}
 .swapopt{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;
   padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--panel2);color:var(--ink);cursor:pointer;text-align:left}
 .swapopt:hover{border-color:var(--gold);background:rgba(226,194,102,.06)}
@@ -2728,7 +2736,7 @@ function openPlayerModal(id){
   buildLevelBtns(p?p.level:"Low Int");
   window._pmReg=null;
   const rw=document.getElementById("pmRegWrap");
-  if(!id && SUPA.url && myProfile && myProfile.is_admin){
+  if(!id && SUPA.url && can("queue")){
     rw.style.display="block";
     const sel=document.getElementById("pmReg");
     if(S.db && S.db.sessionId){ sel.disabled=false; fillRegSel(); }
@@ -2875,7 +2883,7 @@ function cardEl(p, mini, noMeta){
     }
     if(any) d.append(chips);
   }
-  if(!window.__rtMissing && myProfile && myProfile.is_admin){
+  if(!window.__rtMissing && can("queue")){
     const r=rtGet(p.id);
     if(r.games>0){
       const lo=Math.max(0,Math.min(100,(r.mu-r.sigma+3)/6*100));
@@ -2980,7 +2988,7 @@ function renderQueues(){
     box._bal=()=>{
       const old=box.querySelector(".balrow2"); if(old) old.remove();
       const oldSw=box.querySelector(".swapbtn"); if(oldSw) oldSw.remove();
-      if(window.__rtMissing||!myProfile||!myProfile.is_admin) return;
+      if(window.__rtMissing||!can("queue")) return;
       const r=rtBalance(q.slots.slice(0,2),q.slots.slice(2));
       if(!r) return;
       const k=r.pct>=70?"ok":(r.pct>=45?"warn":"bad");
@@ -4618,7 +4626,7 @@ function avFace(pid,name,cls){
   return url? '<img class="'+cls+'" src="'+url+'" alt="">'
             : '<span class="'+cls+'">'+esc((name||"?").trim().slice(0,1).toUpperCase())+'</span>';
 }
-function lbPill(p,t){return '<div class="pp '+t+'">'+avFace(p.pid,p.n,"av")+'<span class="pn">'+esc(p.n)+'</span>'+
+function lbPill(p,t){return '<div class="pp '+t+'">'+avFace(p.pid,p.n,"av")+'<span class="pn" data-pid="'+esc(p.pid||"")+'">'+esc(p.n)+'</span>'+
   (p.st>=3? '<span class="pstreak">🔥'+p.st+'</span>':'')+'</div>';}
 function lbBox(t1,t2){return '<div class="cbox"><div class="trow">'+t1.map(p=>lbPill(p,"t1")).join("")+
   '</div><div class="vs"><span>VS</span></div><div class="trow">'+t2.map(p=>lbPill(p,"t2")).join("")+'</div></div>';}
@@ -5446,7 +5454,7 @@ function qpRefresh(){
 }
 /* Party-Leader guide: accepted challenges waiting to be set up on a court */
 async function chGuideRefresh(){
-  if(!S.db||!S.db.sessionId||!myProfile||!myProfile.is_admin) return;
+  if(!S.db||!S.db.sessionId||!can("queue")) return;
   try{
     const r=await sFetch("/rest/v1/challenges?session_id=eq."+S.db.sessionId+
       "&status=in.(accepted,placed)&select=id,challenger,target");
@@ -7971,6 +7979,37 @@ function cfgBanner(msg){
 const AUTH_KEY="strangerStrings.auth";
 const PSEUDO_DOMAIN="players.strangerstrings.app";
 let auth=null, myProfile=null;
+/* ---- role & permissions (single source of truth) ---- */
+const PERMS = {
+  admin: ["*"],
+  qm:    ["queue","edit_match","view_gate","roster","join_code","stats_read"],
+  player:[]
+};
+function myRole(){
+  if(!myProfile) return "player";
+  if(myProfile.role) return myProfile.role;
+  return myProfile.is_admin ? "admin" : "player";   // backward-compat if role not present
+}
+function can(perm){
+  const list = PERMS[myRole()] || [];
+  return list.indexOf("*")>=0 || list.indexOf(perm)>=0;
+}
+function isQMonly(){ return myRole()==="qm"; }        // QM but not admin
+/* hide admin panes a QM must not access; called after the admin surface mounts */
+function applyRoleUI(role){
+  const qm = (role==="qm");
+  // admin-only panes: Hall-of-Fame controls + Danger Zone
+  ["hall","danger"].forEach(ad=>{
+    const btn=document.querySelector('.anitem[data-ad="'+ad+'"]');
+    if(btn) btn.style.display=qm?"none":"";
+  });
+  // People pane stays visible (roster context) but admin-only actions inside it are gated
+  // separately via can()/is_admin checks. Money tab button already hidden at login.
+  document.body.classList.toggle("role-qm", qm);
+  // if a QM somehow lands on a hidden pane, bounce to Sessions
+  if(qm){ const cur=document.querySelector(".anpane.on"); 
+    if(cur && (cur.id==="ad-hall"||cur.id==="ad-danger")){ try{ adShow("sess"); }catch(e){} } }
+}
 function authLoad(){ try{ auth=JSON.parse(localStorage.getItem(AUTH_KEY)); }catch(e){ auth=null; } }
 function authSave(){ try{ auth? localStorage.setItem(AUTH_KEY,JSON.stringify(auth))
                               : localStorage.removeItem(AUTH_KEY); }catch(e){} }
@@ -8097,18 +8136,28 @@ async function enterApp(cachedProfile){
        if(_er&&_er.ok){ const _ej=await _er.json(); window.__xpEpoch=(_ej[0]&&_ej[0].xp_epoch)||null; } }catch(e){}
   document.getElementById("authScreen").classList.remove("on");
   document.getElementById("userBadge").style.display="";
-  document.getElementById("userBadge").textContent=(p.reclub_name||p.name||"")+(p.is_admin?" · admin":"");
+  document.getElementById("userBadge").textContent=(p.reclub_name||p.name||"")+
+    (p.role==="admin"||p.is_admin?" · admin":(p.role==="qm"?" · QM":""));
   document.getElementById("logoutBtn").style.display="";
-  if(p.is_admin){
+  const _canRun = (p.role==="admin"||p.is_admin||p.role==="qm");
+  if(_canRun){
     document.getElementById("tabAdminBtn").style.display="flex";
+    // Money tab: admins only. Hide the button entirely for QM.
+    { const mb=document.getElementById("tabMoneyBtn"); if(mb) mb.style.display=(p.role==="qm"&&!p.is_admin)?"none":""; }
     pingPresence(); setInterval(pingPresence,60000);
     legacyInit();
     adminLoadSessions();
     loadOpenSessions();
-    loadHall();
-    loadPlayerStats();
-    loadPartnersAdmin();
-    fillFinanceSessions(); loadClubQR(); showHofEpoch(); rtLoad(); loadTrainings();
+    rtLoad(); loadTrainings();
+    const _isAdmin=(p.role==="admin"||p.is_admin);
+    if(_isAdmin){
+      // admin-only surfaces: Hall controls, People stats, Partners admin, Money/HoF/QR
+      loadHall();
+      loadPlayerStats();
+      loadPartnersAdmin();
+      fillFinanceSessions(); loadClubQR(); showHofEpoch();
+    }
+    applyRoleUI(myRole());   // hide/show admin panes per role
     setTimeout(()=>{ try{ initAdminFolds(); }catch(e){}
       let pane="sess"; try{ pane=localStorage.getItem("ss_adPane")||"sess"; }catch(e){}
       try{ adShow(pane); }catch(e){}
@@ -8508,7 +8557,7 @@ function updateSyncBanner(){
 /* ---- queue_state upsert on every save ---- */
 let dbPushTimer=null;
 function scheduleDbPush(){
-  if(!SUPA.url || !S.db || !S.db.sessionId || !myProfile || !myProfile.is_admin) return;
+  if(!SUPA.url || !S.db || !S.db.sessionId || !can("queue")) return;
   clearTimeout(dbPushTimer);
   dbPushTimer=setTimeout(async()=>{
     await sFetch("/rest/v1/queue_state?on_conflict=session_id",{method:"POST",
@@ -9036,8 +9085,11 @@ async function toggleBench(){
 /* ---------- "where am I in line?" ---------- */
 function meMatches(p){
   const me=(myProfile&&myProfile.id)||null;
+  // If the slot carries a profile id, match on id ONLY — never fall back to name
+  // (two players sharing a nickname must not match each other).
+  if(p && p.pid){ return !!me && p.pid===me; }
+  // Legacy/walk-in slots with no id: fall back to name.
   const nm=myBoardName().trim().toLowerCase();
-  if(me && p.pid && p.pid===me) return true;
   return !!nm && (p.n||"").trim().toLowerCase()===nm;
 }
 function myQueueStatus(state){
@@ -9221,12 +9273,17 @@ function renderQueueStatus(state){
   if(window.__sessionDouble) box.innerHTML+='<div class="dxbanner">\u26A1 2\u00d7 XP TONIGHT</div>';
 }
 function checkSummoned(state){
-  const me=myBoardName().trim().toLowerCase();
-  if(!me || !state || !state.next) { hideSummon(); return; }
-  const inNext=state.next.some(q=>[].concat(q.t1||[],q.t2||[]).some(p=>(p.n||"").trim().toLowerCase()===me));
-  // highlight my name in the Up Next pills
+  const me=(myProfile&&myProfile.id)||null;
+  const meNm=myBoardName().trim().toLowerCase();
+  if((!me && !meNm) || !state || !state.next) { hideSummon(); return; }
+  // Match by id (via meMatches) — falls back to name only for id-less legacy slots.
+  const inNext=state.next.some(q=>[].concat(q.t1||[],q.t2||[]).some(meMatches));
+  // highlight my name in the Up Next pills — only highlight when this pill is actually me.
+  // Prefer id via data-pid; fall back to text only when the pill has no id.
   document.querySelectorAll("#pboardWrap .panel .pn").forEach(el=>{
-    if(el.textContent.trim().toLowerCase()===me) el.classList.add("summoned");
+    const pid=el.getAttribute("data-pid");
+    const isMe = pid ? (!!me && pid===me) : (!!meNm && el.textContent.trim().toLowerCase()===meNm);
+    if(isMe) el.classList.add("summoned");
   });
   const banner=document.getElementById("summonBanner");
   if(inNext){
@@ -10632,7 +10689,7 @@ async function loadPlayerList(){
     const safe=encodeURIComponent("*"+q.replace(/[(),*]/g,"")+"*");
     filter="&or=(reclub_name.ilike."+safe+",username.ilike."+safe+",full_name.ilike."+safe+")";
   }
-  const r=await sFetch("/rest/v1/profiles?select=id,username,reclub_name,full_name,created_at,avatar"+filter+
+  const r=await sFetch("/rest/v1/profiles?select=id,username,reclub_name,full_name,created_at,avatar,role,is_admin"+filter+
     "&order=created_at.desc&limit="+PL_PAGE+"&offset="+(plPageNo*PL_PAGE)).catch(()=>null);
   if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load players.</p>'; return; }
   const rows=await r.json();
@@ -10646,7 +10703,21 @@ async function loadPlayerList(){
       '<span>@'+esc(p.username||"")+' \u00b7 joined '+(p.created_at||"").slice(0,10)+'</span></div>';
     div.style.cursor="pointer";
     div.onclick=(e)=>{ if(e.target.closest("button")) return; openAdminPlayer(p); };
-    if(p.id!==auth.uid){
+    if(p.id!==auth.uid && can("*")){
+      // QM role toggle (admin-only): promote a player to Queue Master, or demote back.
+      const rl=document.createElement("button"); rl.className="small ghost";
+      const isQM=(p.role==="qm"); rl.textContent=isQM?"⭐":"☆"; rl.title=isQM?"Queue Master — tap to remove":"Make Queue Master";
+      if(p.role==="admin"){ rl.textContent="👑"; rl.title="Admin"; rl.disabled=true; rl.style.opacity=".6"; }
+      else rl.onclick=async()=>{
+        const to=isQM?"player":"qm";
+        if(!await uiConfirm(isQM?('Remove Queue Master from "'+(p.reclub_name||p.username)+'"?')
+          :('Make "'+(p.reclub_name||p.username)+'" a Queue Master?\nThey can run the queue and edit matches, but NOT access Money or reset the Hall of Fame.'),
+          {title:isQM?"Remove Queue Master":"Assign Queue Master",ok:isQM?"Remove":"Make QM"})) return;
+        const pr=await sFetch("/rest/v1/profiles?id=eq."+p.id,{method:"PATCH",body:{role:to}});
+        toast(pr.ok?(to==="qm"?"⭐ Queue Master assigned":"Role removed"):"Update failed");
+        loadPlayerList();
+      };
+      div.appendChild(rl);
       const key=document.createElement("button"); key.className="small ghost"; key.textContent="🔑";
       key.title="Set a temporary password"; key.onclick=()=>resetPlayerPassword(p);
       div.appendChild(key);
@@ -10977,11 +11048,71 @@ function renderTonight(){
     (g&&g!=="—"? '<div class="adpred"><b>'+g+'</b><span>games<br>each</span></div>':'')+
     '</div>';
 }
+/* ---- Match editor: fix players + scores on a current-session match (admin + QM) ---- */
+function openMatchEditor(m){
+  // working copies of the 4 player ids (+ any names we can't resolve to a roster id)
+  const slots=[ (m.t1||[])[0], (m.t1||[])[1], (m.t2||[])[0], (m.t2||[])[1] ];
+  const nmFallback=[ (m.t1n||[])[0], (m.t1n||[])[1], (m.t2n||[])[0], (m.t2n||[])[1] ];
+  let s1=m.s1, s2=m.s2;
+  const nameOf=(id,i)=>{ const p=id&&player(id); return p? p.name : (nmFallback[i]||"—"); };
+  let ov=document.getElementById("meModal");
+  if(!ov){ ov=document.createElement("div"); ov.className="overlay"; ov.id="meModal";
+    ov.innerHTML='<div class="modal" style="max-width:420px"><h3 id="meTitle" style="margin:0 0 4px"></h3>'+
+      '<div class="hint" style="margin-bottom:12px">Fix mis-typed players or scores. Ratings & records update automatically.</div>'+
+      '<div id="meBody"></div>'+
+      '<div class="controls" style="margin-top:14px"><button class="wide" id="meSave">Save changes</button>'+
+      '<button class="small ghost" onclick="closeModal(\'meModal\')">Cancel</button></div></div>';
+    document.body.appendChild(ov); ov.addEventListener("click",e=>{ if(e.target===ov) closeModal("meModal"); }); }
+  document.getElementById("meTitle").textContent="Edit match #"+m.match_no;
+  function paint(){
+    const slot=(i,team)=>'<button class="meslot '+team+'" onclick="__mePick('+i+')">'+
+      '<span class="mesn">'+esc(nameOf(slots[i],i))+'</span><span class="mesx">swap ›</span></button>';
+    document.getElementById("meBody").innerHTML=
+      '<div class="melab t1">Team 1</div><div class="merow">'+slot(0,"t1")+slot(1,"t1")+'</div>'+
+      '<div class="mescore"><input id="meS1" type="number" min="0" value="'+s1+'" class="mesin"><span>–</span><input id="meS2" type="number" min="0" value="'+s2+'" class="mesin"></div>'+
+      '<div class="melab t2">Team 2</div><div class="merow">'+slot(2,"t2")+slot(3,"t2")+'</div>';
+    document.getElementById("meS1").oninput=e=>s1=+e.target.value;
+    document.getElementById("meS2").oninput=e=>s2=+e.target.value;
+  }
+  // roster picker for a slot
+  window.__mePick=(i)=>{
+    const onCourt=new Set(slots.filter(Boolean));
+    const avail=(S.players||[]).filter(p=>p.active!==false).sort((a,b)=>a.name.localeCompare(b.name));
+    let pv=document.getElementById("mePick");
+    if(!pv){ pv=document.createElement("div"); pv.className="overlay"; pv.id="mePick"; pv.style.zIndex="120";
+      pv.innerHTML='<div class="modal" style="max-width:360px"><h3 style="margin:0 0 10px">Replace player</h3><div id="mePickBody" style="max-height:52vh;overflow:auto"></div><button class="wide" style="margin-top:10px" onclick="closeModal(\'mePick\')">Cancel</button></div>';
+      document.body.appendChild(pv); pv.addEventListener("click",e=>{ if(e.target===pv) closeModal("mePick"); }); }
+    document.getElementById("mePickBody").innerHTML=avail.map(p=>{
+      const dup=(S.players||[]).filter(x=>x.name.toLowerCase()===p.name.toLowerCase()).length>1;
+      const extra=dup&&p.full? " · "+esc(p.full.replace(new RegExp("^\\s*"+p.name.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*","i"),"").trim()):"";
+      return '<button class="swapopt" onclick="__meSet('+i+',\''+p.id+'\')"><b>'+esc(p.name)+'</b>'+
+        (extra?'<span style="color:var(--gold)">'+extra+'</span>':'')+(onCourt.has(p.id)?'<span style="color:var(--dim)"> · already in match</span>':'')+'</button>';
+    }).join("");
+    openModal("mePick");
+  };
+  window.__meSet=(i,pid)=>{ slots[i]=pid; closeModal("mePick"); paint(); };
+  document.getElementById("meSave").onclick=async()=>{
+    if(!(s1>=0&&s2>=0)) return alert("Scores must be non-negative.");
+    if(s1===s2) return alert("Badminton has no draws — scores can't be equal.");
+    const t1=[slots[0],slots[1]].filter(Boolean), t2=[slots[2],slots[3]].filter(Boolean);
+    if(t1.length<2||t2.length<2) return alert("Each team needs 2 players.");
+    const t1n=t1.map(id=>{const p=player(id);return p?p.name:"?";});
+    const t2n=t2.map(id=>{const p=player(id);return p?p.name:"?";});
+    const body={t1,t2,t1n,t2n,s1,s2};
+    const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"PATCH",body});
+    if(!pr||!pr.ok){ toast("Update failed"); return; }
+    mmSyncLocal(m.match_no,body);   // refresh queue board, session leaderboard, player Gate
+    try{ if(!window.__rtMissing){ await rtLoad(); } }catch(e){}  // ratings recompute on next load
+    toast("Match #"+m.match_no+" updated");
+    closeModal("meModal"); adminLoadMatches();
+  };
+  paint(); openModal("meModal");
+}
 async function adminLoadMatches(manual){
   const box=document.getElementById("mmList"); if(!box) return;
   if(!S.db||!S.db.sessionId){ box.innerHTML='<p class="hint">Select your active session in the Home tab first.</p>'; return; }
   const r=await sFetch("/rest/v1/matches?session_id=eq."+S.db.sessionId+
-    "&select=id,match_no,t1n,t2n,s1,s2,court_name&order=match_no.desc&limit=200").catch(()=>null);
+    "&select=id,match_no,t1,t2,t1n,t2n,s1,s2,court_name&order=match_no.desc&limit=200").catch(()=>null);
   if(!r||!r.ok){ box.innerHTML='<p class="hint">Could not load matches.</p>'; return; }
   const rows=await r.json();
   if(!rows.length){ box.innerHTML='<p class="hint">No matches recorded for this session yet.</p>'; return; }
@@ -10991,28 +11122,24 @@ async function adminLoadMatches(manual){
     div.innerHTML='<div class="st"><b>#'+m.match_no+' · '+esc((m.t1n||[]).join("/")||"?")+
       ' vs '+esc((m.t2n||[]).join("/")||"?")+'</b><span>'+esc(m.court_name||"")+'</span></div>'+
       '<span class="sesscode">'+m.s1+'–'+m.s2+'</span>';
-    const ed=document.createElement("button"); ed.className="small ghost"; ed.textContent="✏️";
-    ed.onclick=async()=>{
-      const a=await uiPrompt("Team 1 score ("+((m.t1n||[]).join("/")||"T1")+"):",m.s1,{title:"Edit match #"+m.match_no,type:"number"}); if(a===null) return;
-      const b=await uiPrompt("Team 2 score ("+((m.t2n||[]).join("/")||"T2")+"):",m.s2,{title:"Edit match #"+m.match_no,type:"number"}); if(b===null) return;
-      const s1=+a, s2=+b;
-      if(!(s1>=0&&s2>=0)||s1===s2) return alert("Scores must be non-negative and not a draw.");
-      const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"PATCH",body:{s1,s2}});
-      if(!pr||!pr.ok){ toast("Update failed"); return; }
-      mmSyncLocal(m.match_no,{s1,s2});          // queue board, session leaderboard, player Gate
-      toast("Match #"+m.match_no+" updated");
-      adminLoadMatches();
-    };
-    const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
-    del.onclick=async()=>{
-      if(!await uiConfirm("Delete match #"+m.match_no+" ("+m.s1+"–"+m.s2+")?\nThis removes it from history and leaderboards.",{title:"Delete match",ok:"Delete"})) return;
-      const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"DELETE"});
-      if(!pr||!pr.ok){ toast("Delete failed"); return; }
-      mmSyncLocal(m.match_no,null);             // remove locally too
-      toast("Match #"+m.match_no+" deleted");
-      adminLoadMatches();
-    };
-    div.append(ed,del); box.appendChild(div);
+    if(can("edit_match")){
+      const ed=document.createElement("button"); ed.className="small ghost"; ed.textContent="✏️";
+      ed.onclick=()=>openMatchEditor(m);
+      div.append(ed);
+    }
+    if(can("*")){   // deleting a match (removes history/XP) stays admin-only
+      const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
+      del.onclick=async()=>{
+        if(!await uiConfirm("Delete match #"+m.match_no+" ("+m.s1+"–"+m.s2+")?\nThis removes it from history and leaderboards.",{title:"Delete match",ok:"Delete"})) return;
+        const pr=await sFetch("/rest/v1/matches?id=eq."+m.id,{method:"DELETE"});
+        if(!pr||!pr.ok){ toast("Delete failed"); return; }
+        mmSyncLocal(m.match_no,null);
+        toast("Match #"+m.match_no+" deleted");
+        adminLoadMatches();
+      };
+      div.append(del);
+    }
+    box.appendChild(div);
   });
 }
 
