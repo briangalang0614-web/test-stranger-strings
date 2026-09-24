@@ -2016,7 +2016,7 @@ window.SS_CONFIG = {
       <button class="small ghost" id="plNext" onclick="plPage(1)">Next ▶</button>
     </div>
   </div>
-  <div class="card" style="max-width:760px;margin:14px auto 0">
+  <div class="card" id="ad-sidequests" style="max-width:760px;margin:14px auto 0">
     <h3>🎖 Side Quests <span class="hint" style="font-weight:400">+100 XP each</span></h3>
     <div class="controls" style="flex-wrap:wrap">
       <select id="sqPlayer" style="flex:1;min-width:150px"><option value="">choose a player…</option></select>
@@ -2026,7 +2026,7 @@ window.SS_CONFIG = {
     </div>
     <div id="sqList"><p class="hint">Recent quest awards will appear here.</p></div>
   </div>
-  <div class="card" style="max-width:760px;margin:14px auto 0">
+  <div class="card" id="ad-badgestudio" style="max-width:760px;margin:14px auto 0">
     <h3>🏅 Badge Studio <span class="hint" style="font-weight:400">custom partner badges</span></h3>
     <div class="controls" style="flex-wrap:wrap">
       <input id="bsName" placeholder="Badge name (e.g. SmashPro Elite)" style="flex:1;min-width:150px">
@@ -2056,7 +2056,7 @@ window.SS_CONFIG = {
     </div>
     <div id="bsList" style="margin-top:10px"><p class="hint">Loading badges…</p></div>
   </div>
-  <div class="card" style="max-width:760px;margin:14px auto 0">
+  <div class="card" id="ad-partners" style="max-width:760px;margin:14px auto 0">
     <h3>🤝 Community Partners</h3>
     <div class="controls" style="flex-wrap:wrap">
       <input id="ptnName" placeholder="Partner name" style="flex:1;min-width:140px">
@@ -8003,6 +8003,12 @@ function applyRoleUI(role){
     const btn=document.querySelector('.anitem[data-ad="'+ad+'"]');
     if(btn) btn.style.display=qm?"none":"";
   });
+  // admin-only tools inside the People pane (award XP, create badges, manage sponsors)
+  ["ad-sidequests","ad-badgestudio","ad-partners"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display=qm?"none":"";
+  });
+  // Export Excel (full-roster export) is admin-only
+  document.querySelectorAll('#ad-people button[onclick^="exportPlayers"]').forEach(b=>b.style.display=qm?"none":"");
   // People pane stays visible (roster context) but admin-only actions inside it are gated
   // separately via can()/is_admin checks. Money tab button already hidden at login.
   document.body.classList.toggle("role-qm", qm);
@@ -10703,11 +10709,12 @@ async function loadPlayerList(){
       '<span>@'+esc(p.username||"")+' \u00b7 joined '+(p.created_at||"").slice(0,10)+'</span></div>';
     div.style.cursor="pointer";
     div.onclick=(e)=>{ if(e.target.closest("button")) return; openAdminPlayer(p); };
+    const targetIsAdmin=(p.role==="admin"||p.is_admin);
+    // Role toggle + delete: ADMIN ONLY.
     if(p.id!==auth.uid && can("*")){
-      // QM role toggle (admin-only): promote a player to Queue Master, or demote back.
       const rl=document.createElement("button"); rl.className="small ghost";
       const isQM=(p.role==="qm"); rl.textContent=isQM?"⭐":"☆"; rl.title=isQM?"Queue Master — tap to remove":"Make Queue Master";
-      if(p.role==="admin"){ rl.textContent="👑"; rl.title="Admin"; rl.disabled=true; rl.style.opacity=".6"; }
+      if(targetIsAdmin){ rl.textContent="👑"; rl.title="Admin"; rl.disabled=true; rl.style.opacity=".6"; }
       else rl.onclick=async()=>{
         const to=isQM?"player":"qm";
         if(!await uiConfirm(isQM?('Remove Queue Master from "'+(p.reclub_name||p.username)+'"?')
@@ -10718,9 +10725,15 @@ async function loadPlayerList(){
         loadPlayerList();
       };
       div.appendChild(rl);
+    }
+    // Password reset: QM + admin — but a QM may NOT reset an admin's password.
+    if(p.id!==auth.uid && can("queue") && !(isQMonly() && targetIsAdmin)){
       const key=document.createElement("button"); key.className="small ghost"; key.textContent="🔑";
       key.title="Set a temporary password"; key.onclick=()=>resetPlayerPassword(p);
       div.appendChild(key);
+    }
+    // Delete account: ADMIN ONLY.
+    if(p.id!==auth.uid && can("*")){
       const del=document.createElement("button"); del.className="small ghost"; del.textContent="🗑";
       del.onclick=async()=>{
         if(!await uiConfirm('Delete "'+(p.reclub_name||p.username)+'" and their account?\nProfile, roster spots, quest XP and badges are removed permanently. Recorded matches keep their stored name.',
