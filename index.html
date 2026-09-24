@@ -1953,7 +1953,7 @@ window.SS_CONFIG = {
       <button class="small ghost" id="sessNextSess" onclick="sessPage(1)">Next ▶</button>
     </div>
 </div>
-<div class="card" style="max-width:760px;margin:0 auto 14px">
+<div class="card" id="ad-createsess" style="max-width:760px;margin:0 auto 14px">
     <h3>Create Session</h3>
     <div class="controls">
       <input id="asTitle" placeholder="Session title (e.g. Wednesday Night Smash)" style="flex:2;min-width:200px">
@@ -8003,8 +8003,8 @@ function applyRoleUI(role){
     const btn=document.querySelector('.anitem[data-ad="'+ad+'"]');
     if(btn) btn.style.display=qm?"none":"";
   });
-  // admin-only tools inside the People pane (award XP, create badges, manage sponsors)
-  ["ad-sidequests","ad-badgestudio","ad-partners"].forEach(id=>{
+  // admin-only sections WITHIN the People pane + Sessions pane
+  ["ad-sidequests","ad-badgestudio","ad-partners","ad-createsess"].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display=qm?"none":"";
   });
   // Export Excel (full-roster export) is admin-only
