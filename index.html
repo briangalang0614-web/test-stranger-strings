@@ -8417,6 +8417,13 @@ async function integratedBoot(){
 function pidNew(){
   return (SUPA.url && auth && crypto.randomUUID)? crypto.randomUUID() : uid();
 }
+/* ---- cross-device queue continuity: a stable per-device/tab id ---- */
+const SS_DEVICE=(function(){
+  try{ let d=localStorage.getItem("ss_device");
+    if(!d){ d=(crypto.randomUUID?crypto.randomUUID():uid())+""; localStorage.setItem("ss_device",d); }
+    return d;
+  }catch(e){ return "dev-"+Math.random().toString(36).slice(2); }
+})();
 const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /* ---- admin: active session + roster ---- */
 async function loadOpenSessions(){
@@ -8432,14 +8439,89 @@ async function loadOpenSessions(){
     sel.appendChild(o); });
   bar.style.display="";
   fillRegSel();
-  if(S.db && S.db.sessionId){ importRoster(); adminLoadMatches(); }
+  if(S.db && S.db.sessionId){
+    await importRoster(); adminLoadMatches();
+    resumeOpState(S.db.sessionId, {manual:false});   // auto-resume the live board on load
+  }
 }
 async function selectSession(id){
   if(!id){ S.db=null; save(); document.getElementById("sessInfo").textContent=""; return; }
   S.db={sessionId:id}; save();
   toast("Session linked — matches now save to the database");
-  importRoster(true);
+  await importRoster(true);          // roster must load before we validate restored pids
   adminLoadMatches();
+  resumeOpState(id, {manual:true});
+}
+/* ---- cross-device queue continuity: pull the operator snapshot on resume ----
+   Own device -> auto-apply silently. Same login, other device -> auto-apply (Q2).
+   Another operator, recent -> take-over prompt (last-write-wins) with view-only fallback. */
+let __opResumeBusy=false;
+async function resumeOpState(sessionId, opts){
+  opts=opts||{};
+  if(!SUPA.url || !can("queue") || __opResumeBusy) return;
+  if(!S.db || S.db.sessionId!==sessionId) return;
+  __opResumeBusy=true;
+  try{
+    const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+
+      "&select=op_state,op_updated_at,op_updated_by,op_device").catch(()=>null);
+    if(!r||!r.ok) return;
+    const rows=await r.json().catch(()=>[]);
+    const row=rows&&rows[0];
+    const op=row&&row.op_state;
+    if(!op||!op.v||(!Array.isArray(op.courts)&&!Array.isArray(op.queues))) return; // nothing to resume
+    const mine=(row.op_device===SS_DEVICE);
+    const sameLogin=(myProfile&&myProfile.id&&row.op_updated_by===myProfile.id);
+    if(!mine && !sameLogin){
+      // another operator holds the board — take-over prompt (recent = same night)
+      const ageMs=row.op_updated_at? (Date.now()-new Date(row.op_updated_at).getTime()) : Infinity;
+      const recent = ageMs < 4*60*60*1000;               // < 4h
+      let whoName="Another admin";
+      if(row.op_updated_by){
+        const pr=await sFetch("/rest/v1/profiles?id=eq."+row.op_updated_by+"&select=reclub_name,full_name")
+                   .catch(()=>null);
+        if(pr&&pr.ok){ const p=(await pr.json().catch(()=>[]))[0];
+          if(p) whoName=p.reclub_name||p.full_name||whoName; }
+      }
+      const rel = recent? ("updated "+opAgo(ageMs)) : "from an earlier session";
+      const take=await uiConfirm(
+        whoName+" is running this session on another device ("+rel+").\n\n"+
+        "Take over the live board here? Their device will stop auto-syncing.\n"+
+        "Choose View only to look without changing the queue.",
+        {title:"Someone else is running this queue", ok:"Take over"});
+      if(!take){ S.__opViewOnly=true;                      // view-only: don't seat courts, don't push
+        toast("View only — finished matches are still editable"); return; }
+      S.__opViewOnly=false;
+    } else {
+      S.__opViewOnly=false;
+    }
+    applyOpState(op);
+    if(!mine && !sameLogin){ toast("Live board restored — you're now running this queue"); }
+    else if(opts.manual){ toast("Live board restored on this device"); }
+  }catch(e){ /* leave local state as-is */ }
+  finally{ __opResumeBusy=false; }
+}
+function opAgo(ms){
+  const m=Math.round(ms/60000);
+  if(m<1) return "just now"; if(m<60) return m+" min ago";
+  const h=Math.round(m/60); return h+" hr ago";
+}
+function applyOpState(op){
+  try{
+    const roster=new Set((S.players||[]).map(p=>p.id));
+    const cleanSlots=arr=>Array.isArray(arr)? arr.slice(0,4).map(pid=> (pid&&roster.has(pid))? pid : null) : [null,null,null,null];
+    if(Array.isArray(op.courts)){
+      S.courts=op.courts.map(c=>({ id:c.id||uid(), name:c.name||"Court",
+        slots:cleanSlots(c.slots), start:c.start||null,
+        s1:+c.s1||0, s2:+c.s2||0, waits:c.waits||null, levels:c.levels||null }));
+    }
+    if(Array.isArray(op.queues)){
+      S.queues=op.queues.map(q=>({ id:q.id||uid(), name:q.name||"Queue", slots:cleanSlots(q.slots) }));
+      if(!S.queues.length) S.queues.push({id:uid(),name:"Queue 1",slots:[null,null,null,null]});
+    }
+    if(typeof op.matchNo==="number") S.matchNo=Math.max(S.matchNo||1, op.matchNo);  // never regress
+    save();
+    try{ renderHome(); }catch(e){}
+  }catch(e){ toast("Couldn't restore the live board — starting fresh."); }
 }
 let rosterTimer=null;
 async function importRoster(manual){
@@ -8566,11 +8648,18 @@ function updateSyncBanner(){
 let dbPushTimer=null;
 function scheduleDbPush(){
   if(!SUPA.url || !S.db || !S.db.sessionId || !can("queue")) return;
+  if(S.__opViewOnly) return;   // view-only operator must not clobber the active board
   clearTimeout(dbPushTimer);
   dbPushTimer=setTimeout(async()=>{
+    const nowIso=new Date().toISOString();
+    // op_state: loss-less operator snapshot for cross-device resume (courts/queues verbatim).
+    // Distinct from `state` (display payload for the player board), which is unchanged.
+    const op={ v:1, courts:S.courts, queues:S.queues, matchNo:S.matchNo, savedAt:Date.now() };
     await sFetch("/rest/v1/queue_state?on_conflict=session_id",{method:"POST",
       headers:{Prefer:"resolution=merge-duplicates"},
-      body:[{session_id:S.db.sessionId, state:liveData(), updated_at:new Date().toISOString()}]
+      body:[{session_id:S.db.sessionId, state:liveData(), updated_at:nowIso,
+             op_state:op, op_updated_at:nowIso,
+             op_updated_by:(myProfile&&myProfile.id)||null, op_device:SS_DEVICE}]
     }).catch(()=>{});
   },1200);
 }
