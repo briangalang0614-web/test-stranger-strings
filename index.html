@@ -547,6 +547,16 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
   border:1px solid transparent;border-radius:11px;padding:10px 11px;margin-bottom:5px;
   font-size:13.5px;font-weight:700;color:var(--muted);cursor:pointer;font-family:inherit}
 .anitem:hover{background:var(--panel2);color:var(--ink)}
+/* ===== QM role: hide admin-only surfaces (CSS = robust vs re-renders) ===== */
+body.role-qm .anitem[data-ad="hall"],
+body.role-qm .anitem[data-ad="danger"],
+body.role-qm #ad-hall,
+body.role-qm #ad-danger,
+body.role-qm #ad-sidequests,
+body.role-qm #ad-badgestudio,
+body.role-qm #ad-partners,
+body.role-qm #ad-createsess,
+body.role-qm #ad-people button[onclick^="exportPlayers"]{ display:none !important; }
 .anitem.on{background:rgba(124,176,138,.16);border-color:rgba(124,176,138,.55);color:var(--ink)}
 .anfoot{border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
 .anfoot select{width:100%}
@@ -7998,23 +8008,15 @@ function isQMonly(){ return myRole()==="qm"; }        // QM but not admin
 /* hide admin panes a QM must not access; called after the admin surface mounts */
 function applyRoleUI(role){
   const qm = (role==="qm");
-  // admin-only panes: Hall-of-Fame controls + Danger Zone
-  ["hall","danger"].forEach(ad=>{
-    const btn=document.querySelector('.anitem[data-ad="'+ad+'"]');
-    if(btn) btn.style.display=qm?"none":"";
-  });
-  // admin-only sections WITHIN the People pane + Sessions pane
-  ["ad-sidequests","ad-badgestudio","ad-partners","ad-createsess"].forEach(id=>{
-    const el=document.getElementById(id); if(el) el.style.display=qm?"none":"";
-  });
-  // Export Excel (full-roster export) is admin-only
-  document.querySelectorAll('#ad-people button[onclick^="exportPlayers"]').forEach(b=>b.style.display=qm?"none":"");
-  // People pane stays visible (roster context) but admin-only actions inside it are gated
-  // separately via can()/is_admin checks. Money tab button already hidden at login.
+  // CSS (body.role-qm) does the hiding robustly — survives re-renders/fold-restores.
   document.body.classList.toggle("role-qm", qm);
-  // if a QM somehow lands on a hidden pane, bounce to Sessions
-  if(qm){ const cur=document.querySelector(".anpane.on"); 
-    if(cur && (cur.id==="ad-hall"||cur.id==="ad-danger")){ try{ adShow("sess"); }catch(e){} } }
+  // if a QM's last-open pane was an admin-only one, bounce to Sessions
+  if(qm){
+    try{ const last=localStorage.getItem("ss_adPane");
+      if(last==="hall"||last==="danger"){ localStorage.setItem("ss_adPane","sess"); } }catch(e){}
+    const cur=document.querySelector(".anpane.on");
+    if(cur && (cur.id==="ad-hall"||cur.id==="ad-danger")){ try{ adShow("sess"); }catch(e){} }
+  }
 }
 function authLoad(){ try{ auth=JSON.parse(localStorage.getItem(AUTH_KEY)); }catch(e){ auth=null; } }
 function authSave(){ try{ auth? localStorage.setItem(AUTH_KEY,JSON.stringify(auth))
