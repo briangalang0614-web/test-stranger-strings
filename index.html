@@ -1330,11 +1330,46 @@ body.role-qm #ad-people button[onclick^="exportPlayers"]{ display:none !importan
 .xpbar i{display:block;height:100%;width:0%;background:linear-gradient(90deg,var(--green),#caa64e);transition:width .6s}
 .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
 .abadge{text-align:center;padding:9px 4px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
-.abadge .em{font-size:22px}
+.abadge .em{font-size:29px;line-height:1.15;display:block}
+#playerHome #csBadges .abadge span.em{font-size:30px!important;line-height:1.15;display:block}   /* beat the mobile span rule */
+#playerHome #csBadges .abadge span.btier{font-size:9px!important}
+#playerHome #csBadges .abadge span.bsflag{font-size:8.5px!important}
+.abadge.season{border-color:rgba(214,120,40,.65);background:linear-gradient(160deg,rgba(214,120,40,.14),var(--panel2) 60%)}
+.abadge.season.locked{opacity:.7;filter:none}
 .abadge .bimg{width:30px;height:30px;border-radius:7px;object-fit:cover;display:inline-block;vertical-align:middle}
 .abadge b{display:block;font-size:10px;margin-top:3px;line-height:1.25}
 .abadge.locked{opacity:.35;filter:grayscale(1)}
 .abadge small{display:block;font-size:8.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+/* ---- badge expansion: tiers, secrets, sections ---- */
+.bsect{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);font-weight:800;margin:12px 2px 6px}
+.bsect:first-child{margin-top:2px}
+.abadge{position:relative}
+.abadge .btier{position:absolute;top:4px;right:5px;font:900 8.5px/1 Georgia,serif;padding:2px 4px;border-radius:5px;color:#130c05}
+.abadge .btier.b{background:#c07f4a}.abadge .btier.s{background:#b9c2c6}.abadge .btier.g{background:#e2bd55}
+.abadge.t-b{border-color:rgba(192,127,74,.6)}.abadge.t-s{border-color:rgba(185,194,198,.7)}
+.abadge.t-g{border-color:rgba(226,189,85,.85);box-shadow:0 0 12px rgba(226,189,85,.25)}
+.abadge .bpips{display:flex;gap:3px;justify-content:center;margin-top:4px}
+.abadge .bpips i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.abadge .bpips i.b{background:#c07f4a}.abadge .bpips i.s{background:#b9c2c6}.abadge .bpips i.g{background:#e2bd55}
+.abadge.secret{background:repeating-linear-gradient(135deg,var(--panel2) 0 6px,var(--chipbg) 6px 12px);border-style:dashed}
+.abadge.secret b{color:var(--muted)}
+.abadge.secretwon{padding-top:17px;border-color:rgba(232,168,198,.6);box-shadow:0 0 12px rgba(232,168,198,.2)}
+.abadge .bsflag{position:absolute;top:4px;left:0;right:0;font-size:7.5px;font-weight:900;letter-spacing:.12em;color:#e8a8c6}
+.achtiers{display:flex;gap:8px;margin:10px 0 4px}
+.achtr{flex:1;border:1px solid var(--line);border-radius:10px;padding:6px 4px;font-size:11px;background:var(--panel2);color:var(--muted)}
+.achtr b{display:block;font:900 14px Georgia,serif;color:var(--muted)}
+.achtr.on.b{border-color:#c07f4a}.achtr.on.b b{color:#c07f4a}
+.achtr.on.s{border-color:#b9c2c6}.achtr.on.s b{color:#b9c2c6}
+.achtr.on.g{border-color:#e2bd55}.achtr.on.g b{color:#e2bd55}
+.achtr.cur{box-shadow:0 0 0 2px rgba(200,168,96,.35)}
+.achprog{margin:8px 0 6px;text-align:left}
+.achprog .l{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.04em;margin-bottom:5px}
+.achprog .b{height:9px;border-radius:99px;background:rgba(127,127,127,.18);overflow:hidden}
+.achprog .b i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--gold))}
+.achhint{border:1px dashed rgba(232,168,198,.55);border-radius:12px;padding:10px;font-size:13.5px;font-style:italic;
+  background:rgba(232,168,198,.07);margin:8px 0}
+body:not(.dark) .achhint{color:#7a2f55}
+.achbig.achsecret{filter:none;opacity:.75}
 .dlgmsg{font-size:14px;line-height:1.5;margin:2px 0 14px;white-space:pre-wrap}
 .dlg input{width:100%;margin-top:4px}
 #summonBanner{position:fixed;left:12px;right:12px;top:12px;z-index:210;background:linear-gradient(90deg,var(--green),#caa64e);color:#0a1a0f;font-weight:800;padding:14px 16px;border-radius:14px;box-shadow:0 8px 26px rgba(0,0,0,.4);display:none;text-align:center;letter-spacing:.02em;animation:summonPulse 1s ease-in-out infinite alternate}
@@ -2465,9 +2500,11 @@ window.SS_CONFIG = {
     <div class="achbig" id="achFace">🏅</div>
     <div id="achName">Badge</div>
     <div id="achDesc"></div>
+    <div id="achExtra"></div>
     <div id="achState"></div>
     <div class="achbrand">Stranger Strings · Greenfield Badminton Club</div>
-    <div class="actions"><button class="ghost" onclick="closeModal('achModal')">Close</button></div>
+    <div class="actions"><button class="ghost" onclick="closeModal('achModal')">Close</button>
+      <button id="achShareBtn" onclick="achShare()">📸 Share</button></div>
   </div>
 </div>
 <div class="overlay" id="dlgModal"><div class="modal dlg" style="max-width:420px">
@@ -5341,7 +5378,11 @@ function chShowVerdict(accepted, targetName){
     :"No duel tonight \u2014 catch them another session.";
   document.getElementById("chStakes").innerHTML=green
     ?'<span class="gold">vs '+esc(targetName||"them")+' \u00b7 winner takes +20</span>':"";
-  document.getElementById("chBtns").innerHTML='<button class="msshare '+(green?"chy2":"msok")+'" onclick="chDismiss()">'+(green?"Let's go \u2694\uFE0F":"Okay")+'</button>';
+  document.getElementById("chBtns").innerHTML=(green?'<button class="msshare" onclick="chShare()">\uD83D\uDCF8 Share</button>':'')+
+    '<button class="msshare '+(green?"chy2":"msok")+'" onclick="chDismiss()">'+(green?"Let's go \u2694\uFE0F":"Okay")+'</button>';
+  if(green) popPrepare({kick:"CHALLENGE ACCEPTED", emoji:"\u2694\uFE0F", head:"It's on.",
+    who:"vs "+(targetName||"a rival"), sub:"The grudge match is locked in. The Party Leader will call us both to a court.",
+    pill:{text:"WINNER TAKES +20 XP"}, theme:"duel", file:"challenge"});
   if(green) chEmbers(document.getElementById("chConf")); else document.getElementById("chConf").innerHTML="";
   document.getElementById("chOver").classList.add("on");
   try{ if(navigator.vibrate) navigator.vibrate(green?[25,70,25]:[40]); }catch(e){}
@@ -9242,6 +9283,9 @@ function bdShowPopup(ymd){
   }).join("");
   const okb=ov.querySelector(".msok"); if(okb) okb.textContent="Let's play";
   ov.classList.add("bdayover","on");
+  popPrepare({kick:"BIRTHDAY NIGHT", emoji:"🎂", head:"Happy Birthday,<br>"+esc(name)+"!",
+    sub:BD_LINES[(+y)%BD_LINES.length], theme:"bday", file:"birthday",
+    pill:{text:"🎂 BIRTHDAY NIGHT", c1:"#7a3c5c", c2:"#caa64e", ink:"#170a10"}});
   try{ localStorage.setItem(key,"1"); }catch(e){}
   try{ if(navigator.vibrate) navigator.vibrate([18,60,18,60,40]); }catch(e){}
 }
@@ -10083,7 +10127,11 @@ function msShow(m){
   if(s.ids.includes(m.id)) return false;          // never twice
   if(s.n>=MS_CAP) return false;                   // rare by design
   { const ov=document.getElementById("msOver"); ov.classList.remove("bdayover");   // undo birthday styling
-    const okb=ov.querySelector(".msok"); if(okb) okb.textContent="Nice"; }
+    const okb=ov.querySelector(".msok"); if(okb) okb.textContent="Nice";
+    if(m.theme==="secret") ov.classList.add("bdayover");                        // secrets get the pink treatment
+    const dz=ov.querySelector(".msdisc");                                       // bronze / silver medal for tiers I / II
+    if(dz) dz.style.cssText= m.tier===1? "background:linear-gradient(160deg,#f0c49a,#c07f4a 46%,#7a4a24)"
+      : m.tier===2? "background:linear-gradient(160deg,#f2f5f6,#b9c2c6 46%,#6f787c);box-shadow:0 0 44px rgba(200,210,215,.6),inset 0 -12px 26px rgba(0,0,0,.3)" : ""; }
   window.__msCur=m;
   document.getElementById("msKick").textContent=m.kick;
   document.getElementById("msEmoji").textContent=m.emoji;
@@ -10103,6 +10151,9 @@ function msShow(m){
       ';animation-duration:'+d+'s;animation-delay:'+dl+'s"></i>';
   }).join("");
   document.getElementById("msOver").classList.add("on");
+  popPrepare({kick:m.kick, emoji:m.emoji, head:m.head, sub:m.sub, metal:m.tier||3,
+    pill:m.xp? {text:"⚡ +"+m.xp+" XP"} : null, prog:m.prog||null, theme:m.theme==="secret"?"bday":"gold",
+    file:String(m.id||"milestone").replace(/[^a-z0-9]+/gi,"_")});
   msMark(m.id);
   try{ if(navigator.vibrate) navigator.vibrate([18,60,18]); }catch(e){}
   return true;
@@ -10111,11 +10162,158 @@ function msClose(e,force){
   if(e && !force && e.target && e.target.id!=="msOver") return;
   document.getElementById("msOver").classList.remove("on");
 }
+/* ======================= POPUP SHARE CARDS =======================
+   Every celebratory popup shares an image of ITSELF (not the career card).
+   The card is drawn when the popup opens so the Share tap can open the phone's
+   share sheet synchronously (iOS rejects share() if it happens too long after the tap).
+   spec: {kick, kickColor, emoji, img, head(html,<br>), who, sub(html), pill:{text,c1,c2,ink},
+          prog:{label,now,goal}, theme:"gold"|"bday"|"duel", file} */
+const POP_W=1080, POP_H=1350;
+const POP_EMOJI_FONT='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+let __popLogo=null;
+function popLogo(){
+  if(!__popLogo){ __popLogo=new Image(); __popLogo.src=LOGO; }
+  return __popLogo;
+}
+function popLoadImg(src){
+  return new Promise(res=>{
+    if(!src) return res(null);
+    const im=new Image();
+    if(!/^data:/.test(src)) im.crossOrigin="anonymous";
+    im.onload=()=>res(im); im.onerror=()=>res(null); im.src=src;
+  });
+}
+function popPlain(html){ const d=document.createElement("div"); d.innerHTML=String(html||""); return (d.textContent||"").replace(/\s+/g," ").trim(); }
+function popLines(html){ return String(html||"").split(/<br\s*\/?>/i).map(popPlain).filter(Boolean); }
+function popSpaced(ctx,text,cx,y,sp){             // centred, letter-spaced (canvas letterSpacing isn't everywhere)
+  const chars=[...text], w=chars.reduce((a,ch)=>a+ctx.measureText(ch).width,0)+sp*(chars.length-1);
+  let x=cx-w/2; ctx.textAlign="left";
+  chars.forEach(ch=>{ ctx.fillText(ch,x,y); x+=ctx.measureText(ch).width+sp; });
+  ctx.textAlign="center";
+}
+function popWrap(ctx,text,maxW){
+  const words=String(text).split(" "), out=[]; let line="";
+  words.forEach(w=>{ const t=line? line+" "+w : w;
+    if(ctx.measureText(t).width>maxW && line){ out.push(line); line=w; } else line=t; });
+  if(line) out.push(line); return out;
+}
+function popRound(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+async function popRender(spec){
+  const T={gold:{bg:"#16241b",ray:"234,194,95",glow:"234,194,95",kick:"#c8a860"},
+           bday:{bg:"#26162a",ray:"234,160,200",glow:"234,160,200",kick:"#e8a8c6"},
+           duel:{bg:"#2a1714",ray:"234,150,95",glow:"234,194,95",kick:"#8fd6a0"}}[spec.theme||"gold"];
+  const c=document.createElement("canvas"); c.width=POP_W; c.height=POP_H;
+  const x=c.getContext("2d"), CX=POP_W/2, MY=500;
+  // background
+  let g=x.createRadialGradient(CX,MY,40,CX,MY,1000); g.addColorStop(0,T.bg); g.addColorStop(1,"#040807");
+  x.fillStyle=g; x.fillRect(0,0,POP_W,POP_H);
+  // rays, faded out from the centre
+  const rl=document.createElement("canvas"); rl.width=POP_W; rl.height=POP_H; const r=rl.getContext("2d");
+  for(let i=0;i<12;i++){ const a0=i*Math.PI/6, a1=a0+Math.PI/22;
+    r.beginPath(); r.moveTo(CX,MY); r.arc(CX,MY,1100,a0,a1); r.closePath();
+    r.fillStyle="rgba("+T.ray+",.30)"; r.fill(); }
+  r.globalCompositeOperation="destination-in";
+  g=r.createRadialGradient(CX,MY,60,CX,MY,640); g.addColorStop(0,"rgba(0,0,0,1)"); g.addColorStop(1,"rgba(0,0,0,0)");
+  r.fillStyle=g; r.fillRect(0,0,POP_W,POP_H); x.drawImage(rl,0,0);
+  // confetti
+  const cols=spec.theme==="bday"?["#eac25f","#e8a8c6","#7cd18f","#f0e6cc","#7fb0e0"]:["#eac25f","#7cd18f","#d9453a","#f0e6cc","#7fb0e0"];
+  for(let i=0;i<110;i++){ const px=Math.random()*POP_W, py=40+Math.random()*POP_H*0.72;
+    if(Math.abs(px-CX)<340) continue;                 // keep the text column clean
+    x.save(); x.translate(px,py); x.rotate(Math.random()*Math.PI); x.globalAlpha=.55+Math.random()*.4;
+    x.fillStyle=cols[i%cols.length]; x.fillRect(-6,-12,10+Math.random()*6,18+Math.random()*10); x.restore(); }
+  x.globalAlpha=1; x.textAlign="center"; x.textBaseline="alphabetic";
+  // brand header
+  const lg=popLogo();
+  if(lg&&lg.complete&&lg.naturalWidth){ x.save(); x.beginPath(); x.arc(CX,108,52,0,Math.PI*2); x.clip();
+    x.drawImage(lg,CX-52,56,104,104); x.restore();
+    x.strokeStyle="#7cb08a"; x.lineWidth=4; x.beginPath(); x.arc(CX,108,52,0,Math.PI*2); x.stroke(); }
+  x.fillStyle="#7cb08a"; x.font='600 30px Georgia,serif'; popSpaced(x,"STRANGER STRINGS",CX,208,9);
+  // kick
+  x.fillStyle=spec.kickColor||T.kick; x.font='800 30px "Avenir Next","Segoe UI",system-ui,sans-serif';
+  popSpaced(x,popPlain(spec.kick||"").toUpperCase(),CX,290,12);
+  // medal
+  g=x.createRadialGradient(CX,MY,60,CX,MY,250); g.addColorStop(0,"rgba("+T.glow+",.55)"); g.addColorStop(1,"rgba("+T.glow+",0)");
+  x.fillStyle=g; x.beginPath(); x.arc(CX,MY,250,0,Math.PI*2); x.fill();
+  g=x.createLinearGradient(CX-120,MY-150,CX+120,MY+150);
+  const MET={1:["#f0c49a","#c07f4a","#7a4a24"],2:["#f2f5f6","#b9c2c6","#6f787c"]}[spec.metal]||["#f7dc8a","#caa64e","#8a6b25"];
+  g.addColorStop(0,MET[0]); g.addColorStop(.46,MET[1]); g.addColorStop(1,MET[2]);
+  x.save(); x.shadowColor="rgba(234,194,95,.75)"; x.shadowBlur=60;
+  x.fillStyle=g; x.beginPath(); x.arc(CX,MY,150,0,Math.PI*2); x.fill(); x.restore();
+  x.lineWidth=12; x.strokeStyle="#fff4cf"; x.beginPath(); x.arc(CX,MY,150,0,Math.PI*2); x.stroke();
+  const img=spec.img? await popLoadImg(spec.img) : null;
+  if(img){ x.save(); x.beginPath(); x.arc(CX,MY,138,0,Math.PI*2); x.clip();
+    x.drawImage(img,CX-138,MY-138,276,276); x.restore(); }
+  else{ x.font='150px '+POP_EMOJI_FONT; x.textBaseline="middle"; x.fillText(spec.emoji||"🏅",CX,MY+8); x.textBaseline="alphabetic"; }
+  // headline (auto-fit)
+  const hl=popLines(spec.head); let y=MY+250;
+  let fs=96; x.font='400 '+fs+'px Georgia,serif';
+  while(fs>54 && hl.some(l=>x.measureText(l).width>940)){ fs-=4; x.font='400 '+fs+'px Georgia,serif'; }
+  x.save(); x.fillStyle="#fff6d8"; x.shadowColor="rgba(234,194,95,.8)"; x.shadowBlur=36;
+  hl.forEach(l=>{ x.fillText(l,CX,y); y+=Math.round(fs*1.04); }); x.restore();
+  y+=Math.round(fs*0.1);
+  if(spec.who){ x.fillStyle="#e6e4da"; x.font='700 36px "Avenir Next","Segoe UI",system-ui,sans-serif';
+    x.fillText(popPlain(spec.who),CX,y); y+=56; }
+  // sub (max 4 lines)
+  if(spec.sub){ x.fillStyle="#d8d6cc"; x.font='400 34px "Avenir Next","Segoe UI",system-ui,sans-serif';
+    popWrap(x,popPlain(spec.sub),860).slice(0,4).forEach(l=>{ x.fillText(l,CX,y); y+=48; }); y+=16; }
+  // pill
+  if(spec.pill&&spec.pill.text){ x.font='900 32px "Avenir Next","Segoe UI",system-ui,sans-serif';
+    const tw=x.measureText(spec.pill.text).width, pw=tw+90, ph=74, px=CX-pw/2;
+    g=x.createLinearGradient(px,0,px+pw,0); g.addColorStop(0,spec.pill.c1||"#2b5a35"); g.addColorStop(1,spec.pill.c2||"#caa64e");
+    x.fillStyle=g; popRound(x,px,y,pw,ph,37); x.fill();
+    x.fillStyle=spec.pill.ink||"#07130b"; x.fillText(spec.pill.text,CX,y+49); y+=ph+30; }
+  // progress bar
+  if(spec.prog&&spec.prog.goal){ const bw=620, bx=CX-bw/2;
+    x.fillStyle="#8b948c"; x.font='800 24px "Avenir Next","Segoe UI",system-ui,sans-serif';
+    x.textAlign="left"; x.fillText(popPlain(spec.prog.label).toUpperCase(),bx,y);
+    x.textAlign="right"; x.fillText(spec.prog.now+" / "+spec.prog.goal,bx+bw,y); x.textAlign="center";
+    x.fillStyle="rgba(255,255,255,.12)"; popRound(x,bx,y+14,bw,18,9); x.fill();
+    const pct=Math.min(1,spec.prog.now/spec.prog.goal); g=x.createLinearGradient(bx,0,bx+bw,0);
+    g.addColorStop(0,"#4e9a63"); g.addColorStop(1,"#c8a860"); x.fillStyle=g; popRound(x,bx,y+14,Math.max(18,bw*pct),18,9); x.fill(); }
+  // footer: who earned it + where + when
+  const nm=(myProfile&&(myProfile.reclub_name||myProfile.full_name))||"";
+  x.fillStyle="rgba(255,255,255,.10)"; x.fillRect(120,POP_H-150,POP_W-240,2);
+  if(nm){ x.fillStyle="#f2ead2"; x.font='800 40px "Avenir Next","Segoe UI",system-ui,sans-serif'; x.fillText(nm,CX,POP_H-92); }
+  x.fillStyle="#8b948c"; x.font='500 26px "Avenir Next","Segoe UI",system-ui,sans-serif';
+  x.fillText("Greenfield Badminton Club · "+new Date().toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"}),CX,POP_H-48);
+  return c;
+}
+let __popShare=null;   // {canvas, file, title} for the popup currently on screen
+async function popPrepare(spec){
+  __popShare={canvas:null, spec};
+  popLogo();
+  try{ const cv=await popRender(spec); if(__popShare&&__popShare.spec===spec) __popShare.canvas=cv; }catch(e){}
+}
+function popDataUrlToFile(url,name){
+  const [h,b]=url.split(","), bin=atob(b), u=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  return new File([u],name,{type:(h.match(/data:([^;]+)/)||[])[1]||"image/png"});
+}
+async function popShareNow(){
+  const cur=__popShare; if(!cur) return false;
+  const nm=((myProfile&&myProfile.reclub_name)||"player").replace(/\s+/g,"_");
+  const fname="stranger_strings_"+(cur.spec.file||"moment")+"_"+nm+".png";
+  let cv=cur.canvas;
+  if(!cv){ toast("Building your card…"); try{ cv=await popRender(cur.spec); }catch(e){} }
+  if(!cv){ toast("Couldn't build the card — try again"); return false; }
+  let file=null;
+  try{ file=popDataUrlToFile(cv.toDataURL("image/png"),fname); }catch(e){}   // sync: keeps the tap's permission
+  try{
+    if(file && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:"Stranger Strings"}); return true;
+    }
+  }catch(e){ if(e&&e.name==="AbortError") return true; }                       // they closed the share sheet
+  if(file) download(fname,file); else cv.toBlob(b=>download(fname,b));
+  toast("📸 Card saved — post it and tag the Party");
+  return true;
+}
 function msShare(e){
   if(e) e.stopPropagation();
-  msClose(null,true);
-  shareCareerCard();
+  popShareNow().then(()=>msClose(null,true));
 }
+function achShare(){ popShareNow(); }
+function chShare(){ popShareNow(); }
 /* work out what (if anything) is worth celebrating */
 function msCheck(){
   if(!auth||!myMatches||!myMatches.length) return;
@@ -10134,19 +10332,35 @@ function msCheck(){
       xp:0,prog:{label:"NEXT TIER",now:xpOf(st),goal:need}});
   }
   try{ localStorage.setItem("ss_lastLv",String(lv)); }catch(e){}
-  // new badge
-  const earned=(window.__myEarned||[]);
-  let prev=[]; try{ prev=JSON.parse(localStorage.getItem("ss_badges")||"[]"); }catch(e){}
-  const fresh=earned.filter(n=>!prev.includes(n));
-  if(fresh.length && prev.length){
-    const all=(window.__myAllBadges||[]);
-    const b=all.find(x=>x.name===fresh[0])||{emoji:"\uD83C\uDFC5"};
-    cands.push({id:"bg:"+fresh[0],pri:2,kick:"BADGE EARNED",emoji:b.emoji,
-      head:fresh[0].toUpperCase().replace(/ /g,"<br>"),
-      sub:"A new relic for your sheet.<br><b>"+earned.length+" of "+all.length+" collected.</b>",
-      xp:0,prog:{label:"RELICS",now:earned.length,goal:all.length}});
+  // new badge / new tier / secret found \u2014 tracked by badge+tier key
+  const earnedK=(window.__myEarnedKeys||[]), bidx=(window.__badgeIndex||{});
+  let prevK=null; try{ prevK=JSON.parse(localStorage.getItem("ss_badgesK")||"null"); }catch(e){}
+  if(!prevK){   // first run after the badge update: carry old badge names over as already seen
+    let old=[]; try{ old=JSON.parse(localStorage.getItem("ss_badges")||"[]"); }catch(e){}
+    const custByName={}; (window.__customBadges||[]).forEach(b=>custByName[b.name]="c:"+b.id);
+    prevK=[]; old.forEach(n=>{ const ks=[].concat(BADGE_OLD_KEYS[n]||custByName[n]||[]);
+      ks.forEach(k=>{ prevK.push(k); const [id,t]=k.split(":"); for(let i=1;i<+(t||0);i++) prevK.push(id+":"+i); }); });
   }
-  try{ localStorage.setItem("ss_badges",JSON.stringify(earned)); }catch(e){}
+  const freshK=earnedK.filter(k=>!prevK.includes(k))
+    .sort((a,b)=>((bidx[b]||{}).tier||0)-((bidx[a]||{}).tier||0));   // highest new tier first
+  if(freshK.length && prevK.length && bidx[freshK[0]]){
+    const b=bidx[freshK[0]], all=(window.__myAllBadges||[]), earnedN=(window.__myEarned||[]).length;
+    const words=b.name.toUpperCase().split(" "), lines=[]; let ln="";
+    words.forEach(w=>{ const t=ln? ln+" "+w : w; if(t.length>12&&ln){ lines.push(ln); ln=w; } else ln=t; }); if(ln) lines.push(ln);
+    const m={id:"bg:"+freshK[0],pri:2,emoji:b.em,head:lines.join("<br>"),xp:0};
+    if(b.secret){ Object.assign(m,{kick:"SECRET BADGE FOUND",theme:"secret",
+      sub:(b.flavor||b.d)+"<br><b>"+b.found+" of 3 secrets found.</b>"}); }
+    else if(b.tier>=1){ Object.assign(m,{kick:b.tier>=2?"BADGE LEVELLED UP":"BADGE EARNED",tier:b.tier,
+      sub: b.next!=null? "Tier "+BADGE_ROMAN[b.tier]+" of III reached.<br><b>Next: "+b.next+" "+b.unit+".</b>"
+                       : "Gold \u2014 the top tier.<br><b>Nothing left to prove.</b>",
+      prog: b.next!=null? {label:"NEXT TIER",now:b.v,goal:b.next} : null}); }
+    else Object.assign(m,{kick:"BADGE EARNED",
+      sub:esc(b.d||"A new relic for your sheet.")+"<br><b>"+earnedN+" of "+all.length+" collected.</b>",
+      prog:{label:"RELICS",now:earnedN,goal:all.length}});
+    cands.push(m);
+  }
+  try{ localStorage.setItem("ss_badgesK",JSON.stringify(earnedK)); }catch(e){}
+  try{ localStorage.setItem("ss_badges",JSON.stringify(window.__myEarned||[])); }catch(e){}
   // streaks
   if(ex.curStreak>=3){
     // the ladder must always stay ahead of the streak
@@ -10360,20 +10574,189 @@ function xpAccumulate(matches, uid, opts){
 }
 function xpOf(st){ return (st && st.xp!=null)? st.xp : (st.w*50+(st.l)*10); }
 function levelOf(xp){ let lv=1; while(xp>=25*lv*lv) lv++; return lv; }
-const BADGES=[
- {id:"first",  em:"🩸", name:"First Blood",            d:"Win your first match",              f:(st,ex)=>st.w>=1},
- {id:"slayer", em:"⚔️", name:"Demogorgon Slayer",      d:"Win 10 matches",                    f:(st,ex)=>st.w>=10},
- {id:"conq",   em:"👑", name:"Upside Down Conqueror",  d:"75%+ win rate over 10+ games",      f:(st,ex)=>st.g>=10&&st.winRate>=75},
- {id:"clutch", em:"🧠", name:"Mind Flayer Slayer",     d:"3 clutch wins (by 2 pts or less)",  f:(st,ex)=>ex.clutch>=3},
- {id:"streak", em:"🔥", name:"Unstoppable",            d:"5-win streak",                      f:(st,ex)=>ex.streak>=5},
- {id:"mara",   em:"🏃", name:"Marathoner",             d:"Play 25 matches",                   f:(st,ex)=>st.g>=25},
- {id:"party",  em:"🗓", name:"Party Regular",          d:"Battle in 3 different sessions",    f:(st,ex,ns)=>ns>=3},
- {id:"cent",   em:"💯", name:"Centurion of the Court", d:"Play 100 matches",                  f:(st,ex)=>st.g>=100},
- {id:"swarm",  em:"🦇", name:"Demobat Swarm",          d:"Win 50 matches",                    f:(st,ex)=>st.w>=50},
- {id:"wall",   em:"🛡", name:"Iron Wall",              d:"10-win streak",                     f:(st,ex)=>ex.streak>=10},
- {id:"owl",    em:"🌙", name:"Night Owl",              d:"Finish a match after 10pm",         f:(st,ex)=>ex.nights>=1},
- {id:"leader", em:"⚡", name:"Leader of the Party",    d:"Battle in 5 different sessions",    f:(st,ex,ns)=>ns>=5},
+/* ======================= BADGES (season-scoped, computed live — nothing stored) =======================
+   sect: "tier" = climb I/II/III · "new" = added this season · "secret" = hidden until found.
+   Tiered: v(c) -> number, tiers = [bronze, silver, gold] thresholds.
+   Goal:   v(c) -> number, goal = target (shows progress while locked).
+   Flag:   f(c) -> bool.
+   c = {st, ex, ns, bx}. Demobat Swarm / Centurion / Leader were folded into tier II; streak badges stay standalone (5 / 10 / 15). */
+const BADGE_ROMAN=["","I","II","III"], BADGE_METAL=["","BRONZE","SILVER","GOLD"];
+const BADGE_DEFS=[
+ // climb the tiers (bronze / silver / gold)
+ {id:"slayer", sect:"tier", em:"⚔️", name:"Demogorgon Slayer",   unit:"wins",          tiers:[10,50,100], v:c=>c.st.w,      d:"Win matches this season."},
+ {id:"mara",   sect:"tier", em:"🏃", name:"Marathoner",          unit:"matches",       tiers:[25,100,200],v:c=>c.st.g,      d:"Play matches this season."},
+ {id:"party",  sect:"tier", em:"🗓", name:"Party Regular",       unit:"nights",        tiers:[3,5,15],    v:c=>c.ns,        d:"Battle in different sessions this season."},
+ {id:"clutch", sect:"tier", em:"🧠", name:"Mind Flayer Slayer",  unit:"clutch wins",   tiers:[3,10,20],   v:c=>c.ex.clutch, d:"Win by 2 points or less."},
+ {id:"owl",    sect:"tier", em:"🌙", name:"Night Owl",           unit:"late finishes", tiers:[1,10,25],   v:c=>c.ex.nights, d:"Finish matches after 10pm."},
+ // seasonal
+ {id:"octo",   sect:"season", em:"🎃", name:"Octoberfest", month:10, goal:30, unit:"wins",
+   d:"Win 30 matches in October. Progress resets every year until you earn it."},
+ // milestones
+ {id:"first",  sect:"mile", em:"🩸", name:"First Blood",          s:"First win",               d:"Win your first match.",            f:c=>c.st.w>=1},
+ {id:"streak", sect:"mile", em:"🔥", name:"Unstoppable",          s:"5 wins in a row",         d:"Hit a 5-win streak.",              f:c=>c.ex.streak>=5},
+ {id:"wall",   sect:"mile", em:"🛡", name:"Iron Wall",            s:"10 wins in a row",        d:"Hit a 10-win streak.",             f:c=>c.ex.streak>=10},
+ {id:"hill",   sect:"mile", em:"🏔", name:"Running Up That Hill", s:"15 wins in a row",        d:"Hit a 15-win streak \u2014 the top of the streak ladder.", f:c=>c.ex.streak>=15},
+ {id:"conq",   sect:"mile", em:"👑", name:"Upside Down Conqueror",s:"75%+ over 10",            d:"75%+ win rate over 10+ matches.",  f:c=>c.st.g>=10&&c.st.winRate>=75},
+ {id:"stay",   sect:"mile", em:"🎸", name:"Should I Stay or Should I Go", s:"Last match, after 11pm", d:"Play the last match of the night, after 11pm.", f:c=>!!c.bx.stayLast},
+ {id:"bagel",  sect:"mile", em:"🥯", name:"Bagel Baker",          s:"Win, they score \u22645", d:"Win with your opponents on 5 points or fewer.", f:c=>c.bx.bagel>=1},
+ {id:"t31",    sect:"mile", em:"🧮", name:"Thirty-One Flavors",   s:"Win a to-31",             d:"Win a to-31 match.",               f:c=>c.bx.t31>=1},
+ {id:"social", sect:"mile", em:"🦋", name:"Social Butterfly",     s:"50 different people",     d:"Play with or against 50 different people.", goal:50, unit:"people", v:c=>c.bx.coPlayers},
+ {id:"duo",    sect:"mile", em:"👯", name:"Dynamic Duo",          s:"10 wins, same partner",   d:"Win 10 matches with the same partner.",    goal:10, unit:"wins", v:c=>c.bx.duoBest, withName:c=>c.bx.duoName},
+ {id:"nemesis",sect:"mile", em:"😤", name:"Nemesis Down",         s:"Beat your nemesis",       d:"Beat a rival who had the better of you (3+ meetings, they led).", f:c=>!!c.bx.nemDown},
+ {id:"duelist",sect:"mile", em:"🤺", name:"Duelist",              s:"5 accepted duels",        d:"Take part in 5 accepted challenges.",      goal:5,  unit:"duels", v:c=>c.bx.duels},
+ {id:"dbl",    sect:"mile", em:"⚡", name:"Double Trouble",       s:"5 wins on 2\u00d7 XP",   d:"Win 5 matches on 2\u00d7 XP nights.",     goal:5,  unit:"wins", v:c=>c.bx.dblW},
+ {id:"heart",  sect:"mile", em:"💔", name:"Heartbreak Hotel",     s:"5 one-point losses",      d:"Lose 5 matches by exactly 1 point.",       goal:5,  unit:"heartbreaks", v:c=>c.bx.lost1},
+ // secrets
+ {id:"eleven", sect:"secret",em:"🧇", name:"Eleven",             s:"Won 21\u201311 \u00d73", d:"Win 21\u201311 three times.", f:c=>c.bx.eleven>=3,
+   hint:"Some scores are stranger than others.", flavor:"Three wins by exactly 21\u201311. Someone get this player an <b>Eggo</b>."},
+ {id:"barb",   sect:"secret",em:"🪦", name:"Barb",               s:"5 losses in a row",       d:"Lose 5 matches in a row.", f:c=>c.bx.lossBest>=5,
+   hint:"Not everyone makes it out of Hawkins.", flavor:"Five in a row. Justice for Barb \u2014 <b>you'll rise again</b>."},
+ {id:"upside", sect:"secret",em:"🙃", name:"The Upside Down",    s:"Lost 3, then won 3",      d:"Lose your first 3 of a night, then win the next 3.", f:c=>!!c.bx.upside,
+   hint:"Things can flip at any moment. Some of the best nights start in the dark.", flavor:"From the dark side to the <b>winning side</b>."},
 ];
+/* old badge names -> new keys, so the switch-over doesn't fire fake "new badge" popups */
+const BADGE_OLD_KEYS={"First Blood":"first","Demogorgon Slayer":"slayer:1","Demobat Swarm":"slayer:2",
+  "Upside Down Conqueror":"conq","Mind Flayer Slayer":"clutch:1","Unstoppable":"streak","Iron Wall":"wall",
+  "Marathoner":"mara:1","Centurion of the Court":"mara:2","Party Regular":"party:1","Leader of the Party":"party:2","Night Owl":"owl:1"};
+/* per-match stats the new badges need (sync, from this season's matches) */
+function badgeStatsFrom(rows,uid){
+  const ord=[...(rows||[])].filter(m=>m.ended_at).sort((a,b)=>new Date(a.ended_at)-new Date(b.ended_at));
+  let eleven=0,bagel=0,t31=0,lost1=0,lossRun=0,lossBest=0,dblW=0,nemDown=false,upside=false;
+  const co=new Set(), duo={}, rival={}, bySess={}, monthWins={};
+  const ymOf=m=>{ const d=(typeof pdOf==="function"&&pdOf(m))||new Date(new Date(m.ended_at).getTime()+8*3600e3).toISOString().slice(0,10); return String(d).slice(0,7); };
+  ord.forEach(m=>{
+    const t1=m.t1||[], t2=m.t2||[], onT1=t1.includes(uid), won=onT1===(m.s1>m.s2);
+    const ws=Math.max(m.s1,m.s2), ls=Math.min(m.s1,m.s2);
+    const mine=onT1?t1:t2, theirs=onT1?t2:t1, mineN=(onT1?m.t1n:m.t2n)||[];
+    t1.concat(t2).forEach(p=>{ if(p&&p!==uid) co.add(p); });
+    if(won){
+      { const ym=ymOf(m); monthWins[ym]=(monthWins[ym]||0)+1; }
+      if(ws===21&&ls===11) eleven++;
+      if(ls<=5) bagel++;
+      if(ws===31) t31++;
+      if(window.__dblSess&&window.__dblSess.has(m.session_id)) dblW++;
+      mine.forEach((p,i)=>{ if(p&&p!==uid){ duo[p]=duo[p]||{w:0,n:mineN[i]||""}; duo[p].w++; } });
+    }else if(ws-ls===1) lost1++;
+    lossRun=won?0:lossRun+1; lossBest=Math.max(lossBest,lossRun);
+    // Nemesis Down: judged BEFORE this match — they'd met you 3+ times and led
+    theirs.forEach(p=>{ if(!p) return; const r=rival[p]||(rival[p]={g:0,w:0});
+      if(won && r.g>=3 && r.w/r.g<0.5) nemDown=true;
+      r.g++; if(won) r.w++; });
+    (bySess[m.session_id]=bySess[m.session_id]||[]).push(won);
+  });
+  Object.values(bySess).forEach(a=>{ if(a.length>=6&&!a[0]&&!a[1]&&!a[2]&&a[3]&&a[4]&&a[5]) upside=true; });
+  let best=null; Object.values(duo).forEach(d=>{ if(!best||d.w>best.w) best=d; });
+  return {eleven,bagel,t31,lost1,lossBest,dblW,nemDown,upside,coPlayers:co.size,monthWins,
+    duoBest:best?best.w:0, duoName:best?best.n:"", stayLast:false, duels:0};
+}
+/* the two badges that need one extra lookup each */
+async function badgeExtrasLoad(uid,bx){
+  // Should I Stay: only nights where one of MY matches ended at/after 11pm (Manila)
+  const late={};
+  (myMatches||[]).forEach(m=>{ if(!m.ended_at) return;
+    const hh=new Date(new Date(m.ended_at).getTime()+8*3600e3).getUTCHours();
+    if((hh>=23||hh<5) && (!late[m.session_id]||new Date(m.ended_at)>new Date(late[m.session_id]))) late[m.session_id]=m.ended_at; });
+  for(const sid of Object.keys(late).slice(0,30)){
+    if(bx.stayLast) break;
+    const r=await sFetch("/rest/v1/matches?session_id=eq."+sid+"&select=ended_at&order=ended_at.desc&limit=1").catch(()=>null);
+    if(r&&r.ok){ const row=(await r.json().catch(()=>[]))[0];
+      if(row && new Date(row.ended_at).getTime()===new Date(late[sid]).getTime()) bx.stayLast=true; }
+  }
+  // Duelist: accepted duels on either side (accepted / placed on court / resolved)
+  const r2=await sFetch("/rest/v1/challenges?or=(challenger.eq."+uid+",target.eq."+uid+")"+
+    "&status=in.(accepted,placed,resolved)&select=id").catch(()=>null);
+  if(r2&&r2.ok) bx.duels=((await r2.json().catch(()=>[]))||[]).length;
+}
+function evalBadge(def,c){
+  if(def.month){   // seasonal: goal inside one calendar month; earned once = kept; missed = resets next year
+    const today=new Date(Date.now()+8*3600e3).toISOString().slice(0,10), yr=+today.slice(0,4), mo=+today.slice(5,7);
+    const mm=String(def.month).padStart(2,"0"), byM=(c.bx&&c.bx.monthWins)||{};
+    const won=Object.keys(byM).filter(k=>k.slice(5,7)===mm && byM[k]>=def.goal).sort();
+    const v=byM[yr+"-"+mm]||0, un=won.length>0, open=mo===def.month;
+    const MON=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][def.month];
+    return {def,v,un,open,label:def.name,
+      prog: un? "Earned "+MON+" "+won[won.length-1].slice(0,4)
+        : open? Math.min(v,def.goal)+" / "+def.goal+" wins this "+MON
+        : mo<def.month? "Opens "+MON+" 1" : "Back next "+MON};
+  }
+  if(def.tiers){
+    const v=+def.v(c)||0; let tier=0; def.tiers.forEach(t=>{ if(v>=t) tier++; });
+    const next=def.tiers[tier];
+    return {def,v,tier,un:tier>0,next,maxed:tier===3,
+      label:def.name+(tier?" "+BADGE_ROMAN[tier]:""),
+      prog: next==null? (v+" "+def.unit+" · maxed") : (def.best?"Best ":"")+v+" / "+next+(def.best?"":" "+def.unit)};
+  }
+  if(def.goal){
+    const v=+def.v(c)||0, un=v>=def.goal, nm=def.withName&&def.withName(c);
+    return {def,v,un,label:def.name,
+      prog: un? (def.s||def.d) : Math.min(v,def.goal)+" / "+def.goal+(nm? " with "+nm : " "+def.unit)};
+  }
+  const un=!!def.f(c); return {def,un,label:def.name,prog:def.s||def.d};
+}
+function badgeKeys(e){ if(e.def.tiers){ const k=[]; for(let t=1;t<=e.tier;t++) k.push(e.def.id+":"+t); return k; }
+  return e.un? [e.def.id] : []; }
+function renderBadges(){
+  const c0=window.__badgeCtx; if(!c0) return;
+  const c=Object.assign({},c0,{bx:window.__bx||{}});
+  const {st,ex,ns}=c, customs=window.__customBadges||[];
+  const evs=BADGE_DEFS.map(d=>evalBadge(d,c));
+  const secrets=evs.filter(e=>e.def.sect==="secret"), found=secrets.filter(e=>e.un).length;
+  // earned keys (badge + tier) drive popups and toasts
+  const keys=[]; evs.forEach(e=>keys.push(...badgeKeys(e)));
+  const cust=customs.map(b=>({b,un:customBadgeUnlocked(b,st,ex,ns)}));
+  cust.forEach(x=>{ if(x.un) keys.push("c:"+x.b.id); });
+  window.__myEarnedKeys=keys;
+  const idx={};
+  evs.forEach(e=>badgeKeys(e).forEach(k=>{ const t=+(k.split(":")[1]||0);
+    idx[k]={name:t? e.def.name+" "+BADGE_ROMAN[t] : e.def.name, em:e.def.em, tier:t,
+      secret:e.def.sect==="secret", flavor:e.def.flavor, d:e.def.d, unit:e.def.unit,
+      next:t? e.def.tiers[t] : null, v:e.v, found}; }));
+  cust.forEach(x=>{ idx["c:"+x.b.id]={name:x.b.name, em:x.b.emoji||"🏅", tier:0, d:x.b.description||critText(x.b)}; });
+  window.__badgeIndex=idx;
+  // relics (profile + career card): one per badge; secrets stay "❓" until found
+  window.__myAllBadges=evs.map(e=>({name:e.def.name, emoji:(e.def.sect==="secret"&&!e.un)?"❓":e.def.em}))
+    .concat(customs.map(b=>({name:b.name,emoji:b.emoji||b.em||"🏅"})));
+  window.__myEarned=evs.filter(e=>e.un).map(e=>e.def.name).concat(cust.filter(x=>x.un).map(x=>x.b.name));
+  // shelf
+  const bb=document.getElementById("csBadges"); if(!bb) return;
+  bb.classList.remove("badges");
+  const handlers=[];
+  const metal=["","b","s","g"];
+  const tile=e=>{
+    const i=handlers.length, d=e.def;
+    if(d.sect==="secret" && !e.un){
+      handlers.push(()=>showAchPopup("❓",false,"Secret badge","Nobody tells you how to find these.",false,{secret:true,hint:d.hint}));
+      return '<div class="abadge secret" data-bi="'+i+'"><span class="em">❓</span><b>???</b><small>Tap for a hint</small></div>';
+    }
+    const face=(e.un||d.sect==="season")? d.em : "🔒";   // seasonal shows its icon even before it's earned
+    handlers.push(()=>showAchPopup(d.em,false,e.label,d.d,e.un,
+      d.tiers? {tiers:d.tiers,tier:e.tier,v:e.v,unit:d.unit,best:d.best}
+      : (d.sect==="secret"? {secret:true,found:true,flavor:d.flavor}
+      : (d.month? (e.open&&!e.un? {goal:d.goal,v:e.v,unit:d.unit} : null)
+      : (d.goal? {goal:d.goal,v:e.v,unit:d.unit}:null)))));
+    let cls="abadge"+(e.un?"":" locked")+(d.sect==="season"?" season":""), extra="";
+    if(d.tiers && e.un){ cls+=" t-"+metal[e.tier]; extra='<span class="btier '+metal[e.tier]+'">'+BADGE_ROMAN[e.tier]+'</span>'; }
+    if(d.sect==="secret"){ cls+=" secretwon"; extra='<span class="bsflag">SECRET</span>'; }
+    const pips=d.tiers? '<span class="bpips">'+[1,2,3].map(t=>'<i class="'+(e.tier>=t?metal[t]:"")+'"></i>').join("")+'</span>' : "";
+    return '<div class="'+cls+'" data-bi="'+i+'">'+extra+'<span class="em">'+face+'</span><b>'+esc(d.name)+'</b><small>'+esc(e.prog)+'</small>'+pips+'</div>';
+  };
+  const grid=(title,arr)=> arr.length? '<div class="bsect">'+title+'</div><div class="badges">'+arr.join("")+'</div>' : "";
+  bb.innerHTML=
+    grid("Climb the tiers", evs.filter(e=>e.def.sect==="tier").map(tile))+
+    grid("Seasonal", evs.filter(e=>e.def.sect==="season").map(tile))+
+    grid("Milestones", evs.filter(e=>e.def.sect==="mile").map(tile))+
+    grid("Secrets · "+found+" of "+secrets.length+" found", secrets.map(tile))+
+    grid("Club badges", cust.map(x=>{ const i=handlers.length, b=x.b;
+      handlers.push(()=>showAchPopup(x.un?b.img:"🔒",x.un,b.name,b.description||critText(b),x.un));
+      const face=x.un? '<img class="em bimg" src="'+b.img+'" alt="">' : '<span class="em">🔒</span>';
+      return '<div class="abadge'+(x.un?"":" locked")+'" data-bi="'+i+'">'+face+'<b>'+esc(b.name)+'</b><small>'+esc(b.description||critText(b))+'</small></div>'; }));
+  bb.querySelectorAll("[data-bi]").forEach(t=>{ const h=handlers[+t.dataset.bi]; if(h){ t.onclick=h; t.style.cursor="pointer"; } });
+  // small toast for badges earned while the app is open (never on the first paint, never before lookups finish)
+  if(window.__bxLoaded){
+    if(window.__badgeSeen) keys.forEach(k=>{ if(!window.__badgeSeen.includes(k)){ const b=idx[k]; if(b) achToast(b.em,b.name); } });
+    window.__badgeSeen=keys;
+  }
+}
 const TIERS=[[25,"Primordial"],[21,"Ascendant"],[17,"Demogorgon"],[13,"Mythic"],[10,"Legend"],[8,"Warden"],[5,"Knight"],[3,"Squire"],[1,"Rookie"]];
 function tierOf(lv){ for(const [min,t] of TIERS) if(lv>=min) return t; return "Rookie"; }
 function renderRPG(){
@@ -10384,7 +10767,7 @@ function renderRPG(){
   window.__myShare={st,ex,name:(myProfile.reclub_name||myProfile.full_name||"Player")};
   try{ renderCareer(); }catch(e){}
   try{ loadPlayerSearch(); }catch(e){}   // populate the Players card (covers all entry paths, not just the nav tap)
-  setTimeout(()=>{ try{ msCheck(); }catch(e){} },900);
+  setTimeout(()=>{ Promise.resolve(window.__bxReady).catch(()=>{}).then(()=>{ try{ msCheck(); }catch(e){} }); },900);   // wait for badge lookups
   try{ initFolds(); }catch(e){}
   try{ loadMyTrainings(); }catch(e){}
   try{ renderTrends(); }catch(e){}
@@ -10408,40 +10791,14 @@ function renderRPG(){
     [["Wins",st.w],["Losses",st.l],["Win rate",st.g?Math.round(st.winRate)+"%":"—"],
      ["+/-",(st.diff>0?"+":"")+st.diff],["Best streak",ex.streak],["Side quests",window.__questCount||0]]
     .map(x=>'<div class="mstat"><b>'+x[1]+'</b><span>'+x[0]+'</span></div>').join("");
-  const customs=window.__customBadges||[];
-  const unlockedNow=BADGES.filter(b=>b.f(st,ex,nSessions)).map(b=>b.id)
-    .concat(customs.filter(b=>customBadgeUnlocked(b,st,ex,nSessions)).map(b=>"c:"+b.id));
-  // relics for the character sheet
-  window.__myAllBadges=BADGES.map(b=>({name:b.name,emoji:b.em||"🏅"}))
-    .concat(customs.map(b=>({name:b.name,emoji:b.emoji||b.em||"🏅"})));
-  window.__myEarned=BADGES.filter(b=>b.f(st,ex,nSessions)).map(b=>b.name)
-    .concat(customs.filter(b=>customBadgeUnlocked(b,st,ex,nSessions)).map(b=>b.name));
-  const bb=document.getElementById("csBadges");
-  bb.innerHTML=BADGES.map(b=>{
-    const un=b.f(st,ex,nSessions);
-    const face = b.img
-      ? (un? '<img class="em bimg" src="'+b.img+'" alt="">' : '<span class="em">🔒</span>')
-      : '<span class="em">'+(un?b.em:"🔒")+'</span>';
-    return '<div class="abadge'+(un?"":" locked")+'" title="'+esc(b.d)+'">'+
-      face+'<b>'+esc(b.name)+'</b><small>'+esc(b.d)+'</small></div>';
-  }).join("")+customs.map(b=>{
-    const un=customBadgeUnlocked(b,st,ex,nSessions);
-    const face=un? '<img class="em bimg" src="'+b.img+'" alt="">' : '<span class="em">🔒</span>';
-    return '<div class="abadge'+(un?"":" locked")+'" title="'+esc(b.description||"")+'">'+
-      face+'<b>'+esc(b.name)+'</b><small>'+esc(b.description||critText(b))+'</small></div>';
-  }).join("");
-  // celebrate newly-earned badges (skip the very first paint after login)
-  if(window.__badgeSeen){
-    BADGES.forEach(b=>{ if(unlockedNow.includes(b.id) && !window.__badgeSeen.includes(b.id)) achToast(b.em,b.name); });
-    customs.forEach(b=>{ if(unlockedNow.includes("c:"+b.id) && !window.__badgeSeen.includes("c:"+b.id)) achToast("🏅",b.name); });
-  }
-  window.__badgeSeen=unlockedNow;
-  const tiles=[...bb.querySelectorAll(".abadge")];
-  const all=[...BADGES.map(b=>({face:b.img&&b.f(st,ex,nSessions)?b.img:(b.f(st,ex,nSessions)?b.em:"🔒"),
-      isImg:!!b.img&&b.f(st,ex,nSessions), name:b.name, d:b.d, un:b.f(st,ex,nSessions)})),
-    ...customs.map(b=>{const un=customBadgeUnlocked(b,st,ex,nSessions);
-      return {face: un? b.img : "🔒", isImg:un, name:b.name, d:b.description||critText(b), un};})];
-  tiles.forEach((t,i)=>{ if(all[i]) t.onclick=()=>showAchPopup(all[i].face,all[i].isImg,all[i].name,all[i].d,all[i].un); t.style.cursor="pointer"; });
+  // badges: sync stats now, the two lookup-based badges once their data lands
+  window.__badgeCtx={st,ex,ns:nSessions,uid};
+  const _bx=badgeStatsFrom(myMatches,uid);
+  window.__bx=_bx; window.__bxLoaded=false;
+  renderBadges();
+  window.__bxReady=badgeExtrasLoad(uid,_bx)
+    .then(()=>{ if(window.__bx===_bx){ window.__bxLoaded=true; renderBadges(); } })
+    .catch(()=>{ window.__bxLoaded=true; });
   // session card picker
   const sel=document.getElementById("scSel");
   const seen=[]; myMatches.forEach(m=>{ if(!seen.includes(m.session_id)) seen.push(m.session_id); });
@@ -11355,15 +11712,35 @@ function ptShow(id){
   window.scrollTo({top:0});
   if(id==="pt-profile"){ try{ loadPlayerSearch(); }catch(e){} }
 }
-function showAchPopup(face,isImg,name,desc,unlocked){
+function showAchPopup(face,isImg,name,desc,unlocked,x){
+  x=x||{};
   const f=document.getElementById("achFace");
-  f.className="achbig"+(unlocked?"":" locked");
+  f.className="achbig"+(unlocked?"":" locked")+(x.secret&&!unlocked?" achsecret":"");
   f.innerHTML= isImg? '<img src="'+face+'" alt="">' : esc(face);
   document.getElementById("achName").textContent=name;
   document.getElementById("achDesc").textContent=desc||"";
-  const st=document.getElementById("achState");
-  st.textContent= unlocked? "UNLOCKED ✦" : "🔒 LOCKED — keep grinding";
-  st.style.color= unlocked? "var(--green)" : "var(--muted)";
+  const st=document.getElementById("achState"), box=document.getElementById("achExtra");
+  let stTxt= unlocked? "UNLOCKED ✦" : "🔒 LOCKED — keep grinding", html="";
+  const bar=(label,now,goal)=>'<div class="achprog"><div class="l"><span>'+label+'</span><span>'+now+' / '+goal+'</span></div>'+
+    '<div class="b"><i style="width:'+Math.min(100,Math.round(100*now/goal))+'%"></i></div></div>';
+  if(x.tiers){
+    const met=["","b","s","g"];
+    html='<div class="achtiers">'+x.tiers.map((t,i)=>'<div class="achtr'+(x.tier>=i+1?" on "+met[i+1]:"")+(x.tier===i+1?" cur":"")+'">'+
+      '<b>'+BADGE_ROMAN[i+1]+'</b>'+t+' '+esc(x.best? "streak" : x.unit)+'</div>').join("")+'</div>';
+    if(x.tier<3) html+=bar(x.tier? "NEXT: TIER "+BADGE_ROMAN[x.tier+1] : "FIRST TIER", x.v, x.tiers[x.tier]);
+    if(unlocked) stTxt=BADGE_METAL[x.tier]+" ✦ TIER "+BADGE_ROMAN[x.tier]+" OF III";
+  }else if(x.goal && !unlocked){ html=bar("PROGRESS", Math.min(x.v,x.goal), x.goal); }
+  if(x.secret && !unlocked){ html='<div class="achhint">“'+esc(x.hint||"")+'”</div>'; stTxt="🔒 NOT YET FOUND"; }
+  if(x.secret && unlocked) stTxt="SECRET FOUND ✦";
+  if(box) box.innerHTML=html;
+  st.textContent=stTxt;
+  st.style.color= unlocked? (x.secret?"#e8a8c6":"var(--green)") : "var(--muted)";
+  const sb=document.getElementById("achShareBtn");
+  if(sb) sb.style.display= unlocked? "" : "none";            // only unlocked badges are shareable
+  if(unlocked) popPrepare({kick:x.secret?"SECRET BADGE FOUND":(x.tiers?BADGE_METAL[x.tier]+" · TIER "+BADGE_ROMAN[x.tier]:"BADGE UNLOCKED"),
+    emoji:isImg?null:face, img:isImg?face:null, metal:x.tiers?x.tier:3,
+    head:name, sub:x.secret?(x.flavor||desc||""):(desc||""), theme:x.secret?"bday":"gold",
+    file:"badge_"+String(name||"").replace(/[^a-z0-9]+/gi,"_")});
   openModal("achModal");
 }
 /* ---- community partners (player) ---- */
