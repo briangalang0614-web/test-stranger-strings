@@ -2708,6 +2708,27 @@ function uiConfirm(msg,opts){ opts=opts||{};
     openModal("dlgModal");
   });
 }
+/* 3-way choice on the shared dialog: primary / middle / cancel.
+   Reuses #dlgModal but injects a temporary middle button, removed on close,
+   so the shared confirm/prompt dialog is unaffected. Resolves "ok"|"mid"|"cancel". */
+function uiChoice3(msg,opts){ opts=opts||{};
+  return new Promise(res=>{
+    document.getElementById("dlgTitle").textContent=opts.title||"Please choose";
+    document.getElementById("dlgMsg").textContent=msg;
+    document.getElementById("dlgInputWrap").style.display="none";
+    const ok=document.getElementById("dlgOk"), cx=document.getElementById("dlgCancel");
+    const actions=ok.parentNode;
+    ok.textContent=opts.ok||"OK"; cx.textContent=opts.cancel||"Cancel"; cx.style.display="";
+    const mid=document.createElement("button");
+    mid.className="ghost"; mid.id="dlgMid"; mid.textContent=opts.mid||"Option";
+    actions.insertBefore(mid, ok);   // order: Cancel · [Middle] · OK
+    const done=v=>{ closeModal("dlgModal");
+      ok.onclick=cx.onclick=mid.onclick=null; if(mid.parentNode) mid.parentNode.removeChild(mid);
+      cx.textContent="Cancel"; res(v); };
+    ok.onclick=()=>done("ok"); mid.onclick=()=>done("mid"); cx.onclick=()=>done("cancel");
+    openModal("dlgModal");
+  });
+}
 function uiPrompt(msg,def,opts){ opts=opts||{};
   return new Promise(res=>{
     document.getElementById("dlgTitle").textContent=opts.title||"Enter a value";
@@ -8462,13 +8483,17 @@ async function resumeOpState(sessionId, opts){
   if(!S.db || S.db.sessionId!==sessionId) return;
   __opResumeBusy=true;
   try{
+    // Finished matches always follow the device (server matches -> S.matches),
+    // independent of whether there's a queue snapshot to restore.
+    const gotMatches=await hydrateMatchesFromServer(sessionId);
+    if(gotMatches){ try{ renderStats(true); renderPlayers(); }catch(e){} }
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+
       "&select=op_state,op_updated_at,op_updated_by,op_device").catch(()=>null);
     if(!r||!r.ok) return;
     const rows=await r.json().catch(()=>[]);
     const row=rows&&rows[0];
     const op=row&&row.op_state;
-    if(!op||!op.v||(!Array.isArray(op.courts)&&!Array.isArray(op.queues))) return; // nothing to resume
+    if(!op||!op.v||(!Array.isArray(op.courts)&&!Array.isArray(op.queues))) return; // no queue snapshot; matches already synced above
     const mine=(row.op_device===SS_DEVICE);
     const sameLogin=(myProfile&&myProfile.id&&row.op_updated_by===myProfile.id);
     if(!mine && !sameLogin){
@@ -8483,13 +8508,14 @@ async function resumeOpState(sessionId, opts){
           if(p) whoName=p.reclub_name||p.full_name||whoName; }
       }
       const rel = recent? ("updated "+opAgo(ageMs)) : "from an earlier session";
-      const take=await uiConfirm(
+      const choice=await uiChoice3(
         whoName+" is running this session on another device ("+rel+").\n\n"+
         "Take over the live board here? Their device will stop auto-syncing.\n"+
         "Choose View only to look without changing the queue.",
-        {title:"Someone else is running this queue", ok:"Take over"});
-      if(!take){ S.__opViewOnly=true;                      // view-only: don't seat courts, don't push
+        {title:"Someone else is running this queue", ok:"Take over", mid:"View only", cancel:"Cancel"});
+      if(choice==="mid"){ S.__opViewOnly=true;             // view-only: don't seat courts, don't push
         toast("View only — finished matches are still editable"); return; }
+      if(choice!=="ok"){ return; }                         // Cancel: do nothing, leave local as-is
       S.__opViewOnly=false;
     } else {
       S.__opViewOnly=false;
@@ -8504,6 +8530,30 @@ function opAgo(ms){
   const m=Math.round(ms/60000);
   if(m<1) return "just now"; if(m<60) return m+" min ago";
   const h=Math.round(m/60); return h+" hr ago";
+}
+/* cross-device: pull this session's finished matches from the server into S.matches
+   so stats/leaderboard/liveData reflect matches finished on other devices.
+   Server rows are authoritative by match_no; any local UNSYNCED match (offline
+   outbox, not yet on the server) is preserved so nothing pending is lost. */
+async function hydrateMatchesFromServer(sessionId){
+  if(!SUPA.url || !sessionId) return false;
+  const r=await sFetchAll("/rest/v1/matches?session_id=eq."+sessionId+
+    "&select=id,client_uid,match_no,court_name,t1,t2,t1n,t2n,s1,s2,started_at,ended_at,waits&order=match_no.asc")
+    .catch(()=>({ok:false}));
+  if(!r || !r.ok) return false;
+  const fromServer=(r.rows||[]).map(x=>({
+    id:x.id, client_uid:x.client_uid, n:x.match_no, court:x.court_name||"",
+    t1:x.t1||[], t2:x.t2||[], t1n:x.t1n||[], t2n:x.t2n||[], s1:x.s1, s2:x.s2,
+    start:x.started_at? new Date(x.started_at).getTime():Date.now(),
+    end:x.ended_at? new Date(x.ended_at).getTime():Date.now(),
+    waits:x.waits||{}, synced:true }));
+  const serverNos=new Set(fromServer.map(m=>m.n));
+  // keep local matches the server doesn't have yet AND that are still pending (unsynced)
+  const keepLocal=(S.matches||[]).filter(m=> m.synced===false && !serverNos.has(m.n));
+  S.matches=fromServer.concat(keepLocal).sort((a,b)=>(a.n||0)-(b.n||0));
+  const maxNo=S.matches.reduce((mx,m)=>Math.max(mx, m.n||0), 0);
+  S.matchNo=Math.max(S.matchNo||1, maxNo+1);   // next number never collides with a finished one
+  return true;
 }
 function applyOpState(op){
   try{
