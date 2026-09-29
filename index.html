@@ -377,6 +377,38 @@ footer.app{padding:14px;text-align:center;font-size:11px;letter-spacing:.14em;te
   letter-spacing:.08em;border-radius:999px;padding:3px 9px;margin-left:6px;white-space:nowrap}
 #qStatus .dxbanner{margin-top:10px;font-size:12.5px;font-weight:900;letter-spacing:.06em;color:#0a1a0f;
   background:linear-gradient(90deg,var(--green),var(--gold));border-radius:999px;padding:5px 14px;display:inline-block}
+/* ---- birthdays ---- */
+#qStatus .bdband{margin-top:10px;font-size:12.5px;font-weight:900;letter-spacing:.08em;color:#1a0d13;
+  background:linear-gradient(90deg,#e8a8c6,var(--gold));border-radius:999px;padding:5px 14px;display:inline-block}
+#bdayGateCard{background:linear-gradient(135deg,rgba(232,168,198,.16),rgba(200,168,96,.12));
+  border:1px solid rgba(232,168,198,.42)}
+#bdayGateCard .bgi{display:flex;gap:12px;align-items:center}
+#bdayGateCard .bgic{font-size:30px;line-height:1}
+#bdayGateCard .bgt{font-family:Georgia,serif;font-size:17px;color:#f6dbe8}
+body:not(.dark) #bdayGateCard .bgt{color:#7a2f55}
+#bdayGateCard .bgd{font-size:13px;color:var(--ink);margin-top:2px}
+#bdayGateCard .bgd b{color:var(--gold)}
+.bdtag{font-size:.9em;margin-left:3px}
+.bdrow2{display:flex;gap:8px}.bdrow2 select{flex:1;min-width:0}
+.bdchk{display:flex;gap:8px;align-items:flex-start;font-size:13px;margin-top:8px;text-align:left;cursor:pointer}
+.bdchk input,#playerHome .bdchk input,.authcard .bdchk input{width:18px!important;height:18px;min-height:0!important;
+  padding:0!important;margin:2px 0 0;flex:none;accent-color:var(--green)}
+.phrow .bdchk{display:inline-flex;align-items:center;gap:8px;margin:0}
+.phrow .bdchk input{margin:0}
+.bdhint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.4;text-align:left}
+#bdayModal .modal{text-align:center}
+#bdayModal .bdcake{font-size:42px;line-height:1}
+#bdayModal h3{text-transform:none;letter-spacing:0;font-family:Georgia,serif;font-weight:400;font-size:22px;margin:8px 0 4px}
+#bdayModal .bdlead{color:var(--muted);font-size:13.5px;margin:0 0 12px}
+#bdayModal .bdbtns{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+#bdayModal .bdbtns button{width:100%}
+#bdayModal .bdwhy{font-size:11.5px;color:var(--muted);margin-top:10px}
+#bdayModal .bderr{color:var(--red);font-size:12.5px;min-height:1em;margin-top:6px}
+#bdayProfBody .phrow .bdact{display:flex;gap:6px}
+#bdayProfBody .bdnote{font-size:12px;color:var(--muted);margin:8px 0 0}
+.msover.bdayover .msrays{filter:hue-rotate(-40deg) saturate(1.3)}
+.msover.bdayover .mskick{color:#e8a8c6}
+.msover.bdayover .msglow{background:radial-gradient(circle,rgba(234,160,200,.5),transparent 62%)}
 .benchstate{border-radius:12px;padding:11px 13px;margin-bottom:10px;font-size:13.5px;font-weight:700;line-height:1.45}
 .benchstate.inplay{background:rgba(124,176,138,.14);border:1px solid rgba(124,176,138,.5);color:var(--ink)}
 .benchstate.benched{background:rgba(202,166,78,.14);border:1px solid rgba(202,166,78,.55);color:var(--ink)}
@@ -2181,6 +2213,10 @@ window.SS_CONFIG = {
       <p class="pemsg" id="peMsg"></p>
     </div>
   </div>
+  <div class="phcard" id="bdayProfCard">
+    <h3><span class="htxt">🎂 Birthday</span></h3>
+    <div id="bdayProfBody"><p class="soon">Loading…</p></div>
+  </div>
   <div class="phcard ppcard">
     <h3><span class="htxt">👥 Players</span></h3>
     <div class="ppsearch"><span class="ppmag">🔍</span><input id="ppSearch" type="text" placeholder="Search any player…" autocomplete="off" oninput="renderPlayerSearch()"></div>
@@ -2326,6 +2362,11 @@ window.SS_CONFIG = {
       <div class="fld"><label>Full name</label><input id="auFull"></div>
       <div class="fld"><label>Nickname (shows on boards)</label><input id="auReclub"></div>
       <div class="fld"><label>Level</label><select id="auLevel"></select></div>
+      <div class="fld"><label>Birthday <small style="color:var(--gold);font-weight:800;letter-spacing:.12em">OPTIONAL</small></label>
+        <div class="bdrow2"><select id="auBMonth"></select><select id="auBDay"></select></div>
+        <div class="bdhint">Month and day only — no year. Only you and club admins can see it.</div>
+        <label class="bdchk"><input type="checkbox" id="auBShow" checked><span>Give me a birthday shout-out on the Gate</span></label>
+      </div>
     </div>
     <div class="autherr" id="authErr"></div>
     <button class="wide" id="authGo" onclick="authSubmit()">Log in</button>
@@ -2435,6 +2476,19 @@ window.SS_CONFIG = {
   <div id="dlgInputWrap" style="display:none"><input id="dlgInput"></div>
   <div class="actions"><button class="ghost" id="dlgCancel">Cancel</button>
     <button id="dlgOk">OK</button></div>
+</div></div>
+<div class="overlay" id="bdayModal"><div class="modal" style="max-width:380px">
+  <div class="bdcake">🎂</div>
+  <h3>When's your birthday?</h3>
+  <p class="bdlead">We'll light up the Gate on your birthday night. Month and day only.</p>
+  <div class="bdrow2"><select id="bdMonth"></select><select id="bdDay"></select></div>
+  <label class="bdchk"><input type="checkbox" id="bdShow" checked><span>Give me a birthday shout-out on the Gate</span></label>
+  <div class="bderr" id="bdErr"></div>
+  <div class="bdbtns">
+    <button id="bdSaveBtn" onclick="bdPromptSave()">Save birthday</button>
+    <button id="bdDeclineBtn" class="ghost" onclick="bdPromptDecline()">Prefer not to say</button>
+  </div>
+  <div class="bdwhy">We won't ask again. You can add or remove it any time in Profile.</div>
 </div></div>
 <div class="overlay" id="playerModal"><div class="modal">
   <h3 id="pmTitle">Add Player</h3>
@@ -4666,7 +4720,8 @@ function avFace(pid,name,cls){
   return url? '<img class="'+cls+'" src="'+url+'" alt="">'
             : '<span class="'+cls+'">'+esc((name||"?").trim().slice(0,1).toUpperCase())+'</span>';
 }
-function lbPill(p,t){return '<div class="pp '+t+'">'+avFace(p.pid,p.n,"av")+'<span class="pn" data-pid="'+esc(p.pid||"")+'">'+esc(p.n)+'</span>'+
+function lbPill(p,t){return '<div class="pp '+t+'">'+avFace(p.pid,p.n,"av")+'<span class="pn" data-pid="'+esc(p.pid||"")+'">'+esc(p.n)+
+  (p.pid&&window.__bdaySet&&window.__bdaySet.has(p.pid)?'<span class="bdtag" title="Birthday Night">🎂</span>':'')+'</span>'+
   (p.st>=3? '<span class="pstreak">🔥'+p.st+'</span>':'')+'</div>';}
 function lbBox(t1,t2){return '<div class="cbox"><div class="trow">'+t1.map(p=>lbPill(p,"t1")).join("")+
   '</div><div class="vs"><span>VS</span></div><div class="trow">'+t2.map(p=>lbPill(p,"t2")).join("")+'</div></div>';}
@@ -8148,7 +8203,10 @@ async function authSubmit(){
       const rec=document.getElementById("auReclub").value.trim();
       const lvl=document.getElementById("auLevel").value;
       if(!full||!rec) throw new Error("Full name and nickname are required.");
+      const bd=bdRead("auBMonth","auBDay");
+      if(bd==="partial") throw new Error("Birthday: pick both the month and the day, or leave both blank.");
       await sbSignup(u,p,full,rec,lvl);
+      await bdSaveFromSignup(bd, document.getElementById("auBShow").checked);   // optional; never blocks sign-up
     }else{
       await sbLogin(u,p);
     }
@@ -8164,6 +8222,7 @@ function showAuth(){
   const sel=document.getElementById("auLevel"); sel.innerHTML="";
   LEVELS.forEach(l=>{ const o=document.createElement("option"); o.value=l; o.textContent=l;
     if(l==="Low Int")o.selected=true; sel.appendChild(o); });
+  try{ bdFillSelects("auBMonth","auBDay"); }catch(e){}
   document.getElementById("authScreen").classList.add("on");
 }
 async function enterApp(cachedProfile){
@@ -8225,7 +8284,10 @@ async function enterApp(cachedProfile){
     loadPartners();
     loadMyPayments();
     loadHall();
+    try{ bdRenderProfile(); }catch(e){}
   }
+  // birthdays: one-time ask for members with no answer yet (any role), after the app settles
+  setTimeout(()=>{ try{ bdMaybePrompt(); }catch(e){} }, 1800);
 }
 /* ---------- admin: sessions ---------- */
 function feeOf(s){ const f=s&&s.settings&&s.settings.queueFee; return f>0? f : 0; }
@@ -9007,6 +9069,225 @@ function closeGatePreview(){
   pbSession=null;
   closeModal("gateModal");
 }
+/* ======================= BIRTHDAYS =======================
+   Stored in profile_birthdays (own row + admin read only) — never on profiles,
+   which every signed-in member can read. Month + day only, no year.
+   The Gate learns "who's celebrating tonight" via session_birthdays(), which
+   returns names only (never dates), matched against the SESSION date. */
+const BD_MONTHS=["January","February","March","April","May","June","July","August",
+  "September","October","November","December"];
+const BD_MAXDAY=[31,29,31,30,31,30,31,31,30,31,30,31];
+window.__myBday=undefined;          // undefined = not loaded; null = no row; else the row
+function bdFillSelects(mId,dId,m,d){
+  const ms=document.getElementById(mId), ds=document.getElementById(dId);
+  if(!ms||!ds) return;
+  ms.innerHTML='<option value="">Month</option>'+BD_MONTHS.map((n,i)=>
+    '<option value="'+(i+1)+'"'+(m===i+1?' selected':'')+'>'+n+'</option>').join("");
+  const fillDays=()=>{
+    const mm=+ms.value||0, max=mm? BD_MAXDAY[mm-1] : 31, cur=+ds.value||d||0;
+    ds.innerHTML='<option value="">Day</option>'+Array.from({length:max},(_,i)=>i+1).map(x=>
+      '<option value="'+x+'"'+(cur===x?' selected':'')+'>'+x+'</option>').join("");
+  };
+  ms.onchange=fillDays; fillDays();
+}
+/* returns {m,d} | null (both blank) | "partial" (only one picked) */
+function bdRead(mId,dId){
+  const m=+document.getElementById(mId).value||0, d=+document.getElementById(dId).value||0;
+  if(!m&&!d) return null;
+  if(!m||!d) return "partial";
+  return {m,d};
+}
+function bdLabel(row){ return row&&row.status==="shared"&&row.bmonth? BD_MONTHS[row.bmonth-1]+" "+row.bday : ""; }
+/* is (m,d) the birthday on this 'YYYY-MM-DD' date? Feb 29 -> Feb 28 in non-leap years */
+function bdMatches(m,d,ymd){
+  if(!m||!d||!ymd) return false;
+  const [y,mm,dd]=String(ymd).slice(0,10).split("-").map(Number);
+  if(m===mm && d===dd) return true;
+  const leap=(y%4===0&&y%100!==0)||y%400===0;
+  return m===2 && d===29 && !leap && mm===2 && dd===28;
+}
+async function bdLoadMine(force){
+  if(!force && window.__myBday!==undefined) return window.__myBday;
+  if(!SUPA.url||!auth||!auth.uid) return (window.__myBday=null);
+  const r=await sFetch("/rest/v1/profile_birthdays?profile_id=eq."+auth.uid+
+    "&select=bmonth,bday,show_on_gate,status").catch(()=>null);
+  if(!r||!r.ok) return undefined;                 // unknown (offline) — don't prompt on a failed read
+  const rows=await r.json().catch(()=>[]);
+  return (window.__myBday=rows[0]||null);
+}
+async function bdUpsert(body){
+  const r=await sFetch("/rest/v1/profile_birthdays?on_conflict=profile_id",{method:"POST",
+    headers:{Prefer:"return=representation,resolution=merge-duplicates"},
+    body:[Object.assign({profile_id:auth.uid, updated_at:new Date().toISOString()},body)]}).catch(()=>null);
+  if(!r||!r.ok) return false;
+  const rows=await r.json().catch(()=>[]);
+  window.__myBday=rows[0]||window.__myBday;
+  return true;
+}
+function bdShared(m,d,show){ return {bmonth:m,bday:d,show_on_gate:!!show,status:"shared"}; }
+function bdDeclined(){ return {bmonth:null,bday:null,show_on_gate:false,status:"declined"}; }
+/* sign-up: save straight after the account is created (we're logged in by then) */
+async function bdSaveFromSignup(val,show){
+  try{
+    if(val&&val!=="partial"){ await bdUpsert(bdShared(val.m,val.d,show)); }
+    else{ try{ localStorage.setItem("ss_bday_skip_"+auth.uid,"1"); }catch(e){} }  // skipped at sign-up: don't nag right away
+  }catch(e){}
+}
+/* one-time prompt for existing members */
+async function bdMaybePrompt(){
+  if(!SUPA.url||!auth||!auth.uid) return;
+  try{ if(localStorage.getItem("ss_bday_skip_"+auth.uid)) return; }catch(e){}
+  const row=await bdLoadMine(true);
+  if(row!==null) return;                          // has a row (shared or declined) or read failed
+  if(document.querySelector(".overlay.open") || document.querySelector(".msover.on")){
+    setTimeout(bdMaybePrompt,4000); return;       // something else is on screen — try again shortly
+  }
+  bdFillSelects("bdMonth","bdDay");
+  document.getElementById("bdShow").checked=true;
+  document.getElementById("bdErr").textContent="";
+  openModal("bdayModal");
+}
+async function bdPromptSave(){
+  const v=bdRead("bdMonth","bdDay"), err=document.getElementById("bdErr");
+  if(v===null) return err.textContent="Pick a month and day — or tap Prefer not to say.";
+  if(v==="partial") return err.textContent="Pick both the month and the day.";
+  const ok=await bdUpsert(bdShared(v.m,v.d,document.getElementById("bdShow").checked));
+  if(!ok) return err.textContent="Couldn't save — check your connection and try again.";
+  closeModal("bdayModal"); toast("🎂 Birthday saved"); bdRenderProfile();
+}
+async function bdPromptDecline(){
+  const ok=await bdUpsert(bdDeclined());
+  if(!ok){ document.getElementById("bdErr").textContent="Couldn't save — check your connection and try again."; return; }
+  closeModal("bdayModal"); toast("No problem — you can add it later in Profile"); bdRenderProfile();
+}
+/* Profile section */
+async function bdRenderProfile(editing){
+  const box=document.getElementById("bdayProfBody"); if(!box) return;
+  const row=await bdLoadMine();
+  if(row===undefined){ box.innerHTML='<p class="soon">Couldn’t load your birthday right now.</p>'; return; }
+  const shared=row&&row.status==="shared";
+  if(editing){
+    box.innerHTML='<div class="bdrow2"><select id="bpMonth"></select><select id="bpDay"></select></div>'+
+      '<label class="bdchk"><input type="checkbox" id="bpShow"'+(!row||row.show_on_gate!==false?' checked':'')+'>'+
+      '<span>Give me a birthday shout-out on the Gate</span></label>'+
+      '<div class="bderr" id="bpErr" style="color:var(--red);font-size:12.5px;min-height:1em;margin-top:6px"></div>'+
+      '<div class="controls"><button onclick="bdProfSave()">Save</button>'+
+      '<button class="ghost" onclick="bdRenderProfile()">Cancel</button></div>';
+    bdFillSelects("bpMonth","bpDay", shared?row.bmonth:0, shared?row.bday:0);
+    return;
+  }
+  if(!shared){
+    box.innerHTML='<div class="phrow"><span>Birthday</span><b>Not set</b></div>'+
+      '<p class="bdnote">Add it and the Gate lights up on your birthday night. Month and day only.</p>'+
+      '<div class="controls"><button class="small" onclick="bdRenderProfile(true)">🎂 Add birthday</button></div>';
+    return;
+  }
+  box.innerHTML='<div class="phrow"><span>Date</span><b>'+esc(bdLabel(row))+'</b></div>'+
+    '<div class="phrow"><span>Shout-out on the Gate</span><b>'+
+      '<label class="bdchk" style="margin:0"><input type="checkbox" '+(row.show_on_gate?'checked':'')+
+      ' onchange="bdToggleShow(this.checked)"><span>'+(row.show_on_gate?'On':'Off')+'</span></label></b></div>'+
+    '<p class="bdnote">Only you and club admins can see the date. With the shout-out on, others in the session just see "Birthday Night".</p>'+
+    '<div class="controls"><button class="small ghost" onclick="bdRenderProfile(true)">✏️ Edit</button>'+
+    '<button class="small ghost" style="color:var(--red)" onclick="bdProfRemove()">Remove my birthday</button></div>';
+}
+async function bdProfSave(){
+  const v=bdRead("bpMonth","bpDay"), err=document.getElementById("bpErr");
+  if(!v||v==="partial") return err.textContent="Pick both the month and the day.";
+  const ok=await bdUpsert(bdShared(v.m,v.d,document.getElementById("bpShow").checked));
+  if(!ok) return err.textContent="Couldn't save — check your connection and try again.";
+  toast("🎂 Birthday saved"); bdRenderProfile(); bdRefreshGate();
+}
+async function bdToggleShow(on){
+  const row=window.__myBday; if(!row||row.status!=="shared") return;
+  const ok=await bdUpsert(bdShared(row.bmonth,row.bday,on));
+  toast(ok? (on?"Gate shout-out on":"Gate shout-out off") : "Couldn't save — try again");
+  bdRenderProfile(); bdRefreshGate();
+}
+async function bdProfRemove(){
+  if(!await uiConfirm("Remove your birthday? The date is deleted and we won't ask again.",
+    {title:"Remove birthday", ok:"Remove"})) return;
+  const ok=await bdUpsert(bdDeclined());
+  toast(ok? "Birthday removed" : "Couldn't remove — try again");
+  bdRenderProfile(); bdRefreshGate();
+}
+/* Gate: popup (own), status band (own), "Birthday Night" card + court 🎂 (others who opted in) */
+window.__bdaySet=new Set(); window.__myBdayTonight=false;
+let __bdGateSess=null, __bdGateDate=null, __bdGateTimer=null;
+const BD_LINES=[
+  "The Upside Down lit the candles for you. Tonight the courts are yours — make a wish, then make it a <b>smash</b>.",
+  "Another lap around the sun, another season of smashes. The whole club is rallying for you tonight.",
+  "The Party Leader has been told. Expect a <b>birthday-grade</b> rally."
+];
+function bdShowPopup(ymd){
+  const ov=document.getElementById("msOver"); if(!ov) return;
+  const y=String(ymd).slice(0,4), key="ss_bday_pop_"+auth.uid+"_"+y;
+  try{ if(localStorage.getItem(key)) return; }catch(e){}
+  if(ov.classList.contains("on") || document.querySelector(".overlay.open")){
+    setTimeout(()=>bdShowPopup(ymd),3000); return;   // don't stack on another popup
+  }
+  const name=(myProfile&&(myProfile.reclub_name||myProfile.full_name))||"friend";
+  window.__msCur={id:"bday-"+y};
+  document.getElementById("msKick").textContent="BIRTHDAY NIGHT";
+  document.getElementById("msEmoji").textContent="🎂";
+  document.getElementById("msHead").innerHTML="Happy Birthday, "+esc(name)+"!";
+  document.getElementById("msSub").innerHTML=BD_LINES[(+y)%BD_LINES.length];
+  document.getElementById("msXp").innerHTML='<span style="background:linear-gradient(90deg,#7a3c5c,#caa64e);color:#170a10">🎂 BIRTHDAY NIGHT</span>';
+  document.getElementById("msProg").innerHTML="";
+  const cf=document.getElementById("msConf"), cols=["#eac25f","#e8a8c6","#7cd18f","#f0e6cc","#7fb0e0"];
+  cf.innerHTML=Array.from({length:56},()=>{
+    const l=Math.random()*100, d=(2.2+Math.random()*2.4).toFixed(2), dl=(Math.random()*1.3).toFixed(2);
+    return '<i style="left:'+l.toFixed(1)+'%;top:-8%;width:'+(4+Math.round(Math.random()*4))+
+      'px;height:'+(9+Math.round(Math.random()*6))+'px;background:'+cols[Math.floor(Math.random()*5)]+
+      ';animation-duration:'+d+'s;animation-delay:'+dl+'s"></i>';
+  }).join("");
+  const okb=ov.querySelector(".msok"); if(okb) okb.textContent="Let's play";
+  ov.classList.add("bdayover","on");
+  try{ localStorage.setItem(key,"1"); }catch(e){}
+  try{ if(navigator.vibrate) navigator.vibrate([18,60,18,60,40]); }catch(e){}
+}
+function bdGateCardRender(){
+  const others=(window.__bdayOthers||[]);
+  let card=document.getElementById("bdayGateCard");
+  if(!others.length){ if(card) card.style.display="none"; return; }
+  if(!card){
+    card=document.createElement("div"); card.className="phcard"; card.id="bdayGateCard";
+    const anchor=document.getElementById("qStatusCard");
+    if(anchor&&anchor.parentNode) anchor.parentNode.insertBefore(card,anchor); else return;
+  }
+  const names=others.map(x=>'<b>'+esc(x.display_name||"A player")+'</b>');
+  const who=names.length===1? names[0] : names.slice(0,-1).join(", ")+" &amp; "+names[names.length-1];
+  const verb=others.length===1? "is" : "are";
+  card.innerHTML='<div class="bgi"><div class="bgic">🎂</div><div><div class="bgt">Birthday Night</div>'+
+    '<div class="bgd">'+who+' '+verb+' celebrating tonight. Say happy birthday between rallies.</div></div></div>';
+  card.style.display="";
+}
+async function bdRefreshGate(){
+  if(!__bdGateSess||!SUPA.url) return;
+  const r=await sFetch("/rest/v1/rpc/session_birthdays",{method:"POST",body:{p_session:__bdGateSess}}).catch(()=>null);
+  if(r&&r.ok){
+    const rows=await r.json().catch(()=>[]);
+    const me=auth&&auth.uid;
+    window.__bdaySet=new Set(rows.map(x=>x.profile_id));
+    window.__bdayOthers=rows.filter(x=>x.profile_id!==me);
+    bdGateCardRender();
+    if(window.__lastBoardState && window.__pbRepaint) window.__pbRepaint();   // add court 🎂 now
+  }
+}
+async function bdGateInit(sessionId, sessionDate){
+  __bdGateSess=sessionId; __bdGateDate=sessionDate||null;
+  window.__myBdayTonight=false; window.__bdaySet=new Set(); window.__bdayOthers=[];
+  bdGateCardRender();
+  clearInterval(__bdGateTimer);
+  if(!sessionDate) return;
+  const row=await bdLoadMine();
+  if(row && row.status==="shared" && bdMatches(row.bmonth,row.bday,sessionDate)){
+    window.__myBdayTonight=true;
+    if(window.__lastBoardState) renderQueueStatus(window.__lastBoardState);
+    bdShowPopup(sessionDate);
+  }
+  await bdRefreshGate();
+  __bdGateTimer=setInterval(()=>{ if(!document.hidden && __bdGateSess===sessionId) bdRefreshGate(); },60000);
+}
 async function mountPlayerBoard(sessionId){
   try{ localStorage.setItem("ss_lastSession", sessionId); }catch(e){}
   loadBench(sessionId);
@@ -9016,8 +9297,9 @@ async function mountPlayerBoard(sessionId){
     if(window.__benchSession) loadBench(window.__benchSession);
     if(window.__mySessionId){ try{ loadWhosIn(); }catch(e){} }
   },20000);
-  sFetch("/rest/v1/sessions?id=eq."+sessionId+"&select=settings")
+  sFetch("/rest/v1/sessions?id=eq."+sessionId+"&select=settings,session_date")
     .then(r=>r.ok?r.json():[]).then(rows=>{
+      try{ bdGateInit(sessionId, rows[0]&&rows[0].session_date); }catch(e){}   // birthdays: session date, not phone clock
       window.__sessionDouble=!!(rows[0]&&rows[0].settings&&rows[0].settings.doubleXp);
       if(window.__sessionDouble && window.__lastBoardState) renderQueueStatus(window.__lastBoardState);
       try{ nightRecap(); }catch(e){} })   // now that the double-XP flag is known, refresh the recap
@@ -9058,6 +9340,7 @@ async function mountPlayerBoard(sessionId){
     checkSummoned(state);
     try{ flagMyCourts(state); }catch(e){}
   };
+  window.__pbRepaint=()=>{ if(window.__lastBoardState) paint(window.__lastBoardState); };   // birthdays: add court 🎂
   const pull=async()=>{
     const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=state").catch(()=>null);
     if(!r||!r.ok) return;
@@ -9481,6 +9764,7 @@ function renderQueueStatus(state){
   window.__lastStatus=s.mode;
   try{ gateTune(); }catch(e){}
   if(window.__sessionDouble) box.innerHTML+='<div class="dxbanner">\u26A1 2\u00d7 XP TONIGHT</div>';
+  if(window.__myBdayTonight) box.innerHTML+='<div class="bdband">\ud83c\udf82 IT\u2019S YOUR BIRTHDAY NIGHT</div>';
 }
 function checkSummoned(state){
   const me=(myProfile&&myProfile.id)||null;
@@ -9798,6 +10082,8 @@ function msShow(m){
   const s=msSeen();
   if(s.ids.includes(m.id)) return false;          // never twice
   if(s.n>=MS_CAP) return false;                   // rare by design
+  { const ov=document.getElementById("msOver"); ov.classList.remove("bdayover");   // undo birthday styling
+    const okb=ov.querySelector(".msok"); if(okb) okb.textContent="Nice"; }
   window.__msCur=m;
   document.getElementById("msKick").textContent=m.kick;
   document.getElementById("msEmoji").textContent=m.emoji;
