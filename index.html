@@ -253,6 +253,15 @@ main{max-width:1560px;margin:0 auto;padding:16px}
   animation:syncpulse 2.5s ease-in-out infinite}
 .syncbanner b{color:#fff}
 @keyframes syncpulse{50%{box-shadow:0 8px 30px rgba(185,138,63,.6)}}
+.vobanner{position:fixed;left:12px;right:12px;bottom:64px;z-index:86;
+  background:linear-gradient(180deg,#3f7a52,#2c5c3d);color:#eaf6ee;padding:11px 14px;border-radius:14px;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13.5px;border:1px solid rgba(220,255,230,.28);
+  display:flex;align-items:center;gap:10px;justify-content:space-between}
+.vobanner .vomsg{flex:1;min-width:0}
+.vobanner .vomsg b{color:#fff}
+.vobanner button{flex:none;background:#8fce9e;color:#123018;border:0;border-radius:10px;
+  padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px}
+.vobanner button:active{transform:translateY(1px)}
 /* ---------- share card (green & gold edition) ---------- */
 .igcard{width:300px;margin:0 auto;border-radius:20px;padding:26px 16px 14px;text-align:center;color:#f0e6cc;
   background:
@@ -8466,6 +8475,7 @@ async function loadOpenSessions(){
   }
 }
 async function selectSession(id){
+  stopViewOnlyPoll(); S.__opViewOnly=false;   // leaving/changing session clears view-only follow
   if(!id){ S.db=null; save(); document.getElementById("sessInfo").textContent=""; return; }
   S.db={sessionId:id}; save();
   toast("Session linked — matches now save to the database");
@@ -8514,11 +8524,14 @@ async function resumeOpState(sessionId, opts){
         "Choose View only to look without changing the queue.",
         {title:"Someone else is running this queue", ok:"Take over", mid:"View only", cancel:"Cancel"});
       if(choice==="mid"){ S.__opViewOnly=true;             // view-only: don't seat courts, don't push
-        toast("View only — finished matches are still editable"); return; }
+        applyOpState(op);                                  // show the board now (read-only)
+        startViewOnlyPoll(sessionId);                      // …and keep it live via polling
+        showViewOnlyBanner(sessionId, whoName);            // persistent "Take over" button
+        toast("View only — following the live board (read-only)"); return; }
       if(choice!=="ok"){ return; }                         // Cancel: do nothing, leave local as-is
-      S.__opViewOnly=false;
+      S.__opViewOnly=false; stopViewOnlyPoll();
     } else {
-      S.__opViewOnly=false;
+      S.__opViewOnly=false; stopViewOnlyPoll();
     }
     applyOpState(op);
     if(!mine && !sameLogin){ toast("Live board restored — you're now running this queue"); }
@@ -8530,6 +8543,56 @@ function opAgo(ms){
   const m=Math.round(ms/60000);
   if(m<1) return "just now"; if(m<60) return m+" min ago";
   const h=Math.round(m/60); return h+" hr ago";
+}
+/* view-only live follow: re-read the operator snapshot + finished matches on a
+   timer and re-render, WITHOUT ever writing back. Makes View only a true live
+   spectator of whatever the controlling QM/admin is doing. */
+let __viewOnlyTimer=null, __voWho="";
+function stopViewOnlyPoll(){ if(__viewOnlyTimer){ clearInterval(__viewOnlyTimer); __viewOnlyTimer=null; } hideViewOnlyBanner(); }
+function showViewOnlyBanner(sessionId, whoName){
+  __voWho=whoName||"";
+  let el=document.getElementById("voBanner");
+  if(!el){ el=document.createElement("div"); el.id="voBanner"; el.className="vobanner";
+    document.body.appendChild(el); }
+  el.innerHTML='<span class="vomsg">👁 <b>View only</b>'+
+    (__voWho? ' · following '+esc(__voWho):'')+'</span>'+
+    '<button id="voTakeBtn">Take over</button>';
+  const btn=el.querySelector("#voTakeBtn");
+  if(btn) btn.onclick=()=>takeOverNow(sessionId);
+}
+function hideViewOnlyBanner(){ const el=document.getElementById("voBanner"); if(el) el.remove(); }
+/* take over directly from view-only — no re-prompt; become the active writer */
+async function takeOverNow(sessionId){
+  if(!S.db || S.db.sessionId!==sessionId) return;
+  stopViewOnlyPoll();
+  S.__opViewOnly=false;
+  try{
+    await hydrateMatchesFromServer(sessionId);
+    const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=op_state").catch(()=>null);
+    if(r&&r.ok){ const rows=await r.json().catch(()=>[]);
+      const op=rows&&rows[0]&&rows[0].op_state; if(op&&op.v) applyOpState(op); }
+    try{ renderStats(true); renderPlayers(); }catch(e){}
+    scheduleDbPush();                     // claim the board: our device becomes the latest writer
+    toast("You're now running this queue");
+  }catch(e){ toast("Couldn't take over — try again"); }
+}
+function startViewOnlyPoll(sessionId){
+  stopViewOnlyPoll();
+  __viewOnlyTimer=setInterval(async()=>{
+    // stop if we left the session or are no longer view-only (e.g. took over)
+    if(!S.__opViewOnly || !S.db || S.db.sessionId!==sessionId){ stopViewOnlyPoll(); return; }
+    if(document.hidden) return;                 // idle tab: skip this tick, keep the timer
+    try{
+      const changed=await hydrateMatchesFromServer(sessionId);
+      const r=await sFetch("/rest/v1/queue_state?session_id=eq."+sessionId+"&select=op_state")
+                .catch(()=>null);
+      if(r&&r.ok){ const rows=await r.json().catch(()=>[]);
+        const op=rows&&rows[0]&&rows[0].op_state;
+        if(op&&op.v) applyOpState(op);           // applyOpState calls save()+renderHome()
+      }
+      if(changed){ try{ renderStats(true); renderPlayers(); }catch(e){} }
+    }catch(e){ /* transient; next tick retries */ }
+  }, 10000);                                     // every 10s
 }
 /* cross-device: pull this session's finished matches from the server into S.matches
    so stats/leaderboard/liveData reflect matches finished on other devices.
